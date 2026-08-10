@@ -1,0 +1,38 @@
+import 'dart:io';
+
+class ClockInRequestModel {
+  final double latitude;
+  final double longitude;
+  final File? photo;
+  final String? notes;
+  final bool faceVerified;
+  final double? faceConfidence;
+  final List<double>? faceDescriptors;
+  final bool gpsVerified;
+  final int officeLocationId;
+
+  ClockInRequestModel({
+    required this.latitude,
+    required this.longitude,
+    this.photo,
+    this.notes,
+    this.faceVerified = false,
+    this.faceConfidence,
+    this.faceDescriptors,
+    this.gpsVerified = false,
+    required this.officeLocationId,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      'notes': notes,
+      'face_verified': faceVerified,
+      'face_confidence': faceConfidence,
+      'face_descriptors': faceDescriptors,
+      'gps_verified': gpsVerified,
+      'office_location_id': officeLocationId,
+    };
+  }
+}

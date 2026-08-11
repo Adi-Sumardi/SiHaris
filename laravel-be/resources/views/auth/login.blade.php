@@ -103,7 +103,7 @@
             <!-- Footer -->
             <div class="flex items-center justify-between">
                 <div class="text-primary-300 text-sm">
-                    &copy; {{ date('Y') }} HRIS. All rights reserved.
+                    &copy; {{ date('Y') }} {{ brand_name() }}. All rights reserved.
                 </div>
                 <a href="https://adilabs.id" target="_blank" class="text-white/60 hover:text-white/80 text-sm transition-colors">
                     Powered by adilabs.id

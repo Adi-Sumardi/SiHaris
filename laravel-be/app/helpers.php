@@ -28,7 +28,7 @@ if (! function_exists('brand_name')) {
      */
     function brand_name(): string
     {
-        return (string) (config('tenant.brand.name') ?: config('app.name', 'HRIS'));
+        return (string) (config('tenant.brand.name') ?: config('app.name', 'SiHaris'));
     }
 }
 

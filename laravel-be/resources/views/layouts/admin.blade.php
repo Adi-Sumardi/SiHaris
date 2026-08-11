@@ -81,7 +81,7 @@
                 </div>
 
                 {{-- Kehadiran --}}
-                <div x-data="{ open: {{ request()->routeIs('attendances.*') || request()->routeIs('work-schedules.*') || request()->routeIs('holidays.*') || request()->routeIs('overtime-requests.*') || request()->routeIs('overtime-settings.*') || request()->routeIs('fingerprint-devices.*') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('attendances.*') || request()->routeIs('work-schedules.*') || request()->routeIs('holidays.*') || request()->routeIs('overtime-requests.*') || request()->routeIs('overtime-settings.*') || request()->routeIs('fingerprint-devices.*') || request()->routeIs('face-recognition.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open" class="sidebar-link-light w-full justify-between">
                         <span class="flex items-center gap-3">
                             <svg class="sidebar-icon-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -92,6 +92,7 @@
                     <div x-show="open && !sidebarCollapsed" x-collapse class="mt-2 sidebar-submenu-light">
                         <a href="{{ route('attendances.index') }}" class="sidebar-sublink-light {{ request()->routeIs('attendances.index') || request()->routeIs('attendances.show') || request()->routeIs('attendances.create') || request()->routeIs('attendances.edit') ? 'active' : '' }}">Daftar Kehadiran</a>
                         <a href="{{ route('attendances.report') }}" class="sidebar-sublink-light {{ request()->routeIs('attendances.report') ? 'active' : '' }}">Laporan Kehadiran</a>
+                        <a href="{{ route('face-recognition.index') }}" class="sidebar-sublink-light {{ request()->routeIs('face-recognition.*') ? 'active' : '' }}">Pendaftaran Wajah</a>
                         <a href="{{ route('work-schedules.index') }}" class="sidebar-sublink-light {{ request()->routeIs('work-schedules.*') ? 'active' : '' }}">Jadwal Kerja</a>
                         <a href="{{ route('holidays.index') }}" class="sidebar-sublink-light {{ request()->routeIs('holidays.*') ? 'active' : '' }}">Hari Libur</a>
                         <a href="{{ route('fingerprint-devices.index') }}" class="sidebar-sublink-light {{ request()->routeIs('fingerprint-devices.*') ? 'active' : '' }}">Mesin Fingerprint</a>

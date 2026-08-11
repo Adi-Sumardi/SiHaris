@@ -1,11 +1,11 @@
 @extends('layouts.guest')
 
 @section('title', 'HRIS - Software Payroll & HRIS #1 Indonesia | Kelola Gaji Otomatis')
-@section('description', 'Software payroll dan HRIS terlengkap untuk Indonesia. Otomatisasi PPh 21, BPJS, kehadiran GPS, cuti online, slip gaji digital. Gratis 14 hari. Dipercaya 500+ perusahaan.')
+@section('description', 'Software payroll dan HRIS terlengkap untuk Indonesia. Otomatisasi PPh 21, BPJS, kehadiran GPS, cuti online, slip gaji digital. Dipercaya 500+ perusahaan.')
 @section('keywords', 'software payroll indonesia, aplikasi hris, software gaji karyawan, aplikasi hr indonesia, payroll online, sistem penggajian, hitung pph 21 otomatis, bpjs ketenagakerjaan, absensi gps, aplikasi cuti karyawan, software hrd terbaik, manajemen karyawan, slip gaji digital, face recognition attendance')
 
 @section('og_title', 'HRIS - Software Payroll & HRIS #1 Indonesia')
-@section('og_description', 'Otomatisasi penggajian, PPh 21, BPJS, kehadiran GPS & cuti dalam satu platform cloud. Gratis 14 hari!')
+@section('og_description', 'Otomatisasi penggajian, PPh 21, BPJS, kehadiran GPS & cuti dalam satu platform cloud.')
 
 @push('structured-data')
 {{-- Organization Schema --}}

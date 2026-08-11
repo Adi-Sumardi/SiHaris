@@ -16,7 +16,7 @@
             {{-- Title --}}
             <h1 class="text-2xl font-bold text-secondary-900 mb-2">Langganan Anda Telah Berakhir</h1>
             <p class="text-secondary-600 mb-6">
-                Masa langganan perusahaan Anda telah habis. Silakan perpanjang langganan untuk melanjutkan menggunakan GajiPro.
+                Masa langganan perusahaan Anda telah habis. Silakan perpanjang langganan untuk melanjutkan menggunakan HRIS.
             </p>
 
             {{-- Actions --}}

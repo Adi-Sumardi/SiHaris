@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Dashboard') - GajiPro Superadmin</title>
+    <title>@yield('title', 'Dashboard') - HRIS Superadmin</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -297,7 +297,7 @@
 
             {{-- Footer --}}
             <footer class="py-4 px-6 text-center text-sm text-slate-500 border-t border-slate-200 bg-white">
-                &copy; {{ date('Y') }} GajiPro Superadmin Panel. All rights reserved.
+                &copy; {{ date('Y') }} HRIS Superadmin Panel. All rights reserved.
             </footer>
         </div>
     </div>

@@ -1,7 +1,7 @@
 @extends('layouts.guest')
 
-@section('title', 'Syarat dan Ketentuan - GajiPro')
-@section('description', 'Syarat dan Ketentuan penggunaan layanan GajiPro.')
+@section('title', 'Syarat dan Ketentuan - HRIS')
+@section('description', 'Syarat dan Ketentuan penggunaan layanan HRIS.')
 
 @section('content')
     @include('components.navbar')
@@ -21,17 +21,17 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">1. Penerimaan Ketentuan</h2>
                         <p class="text-secondary-600 mb-4">
-                            Dengan mengakses atau menggunakan layanan GajiPro ("Layanan"), Anda menyetujui untuk terikat oleh Syarat dan Ketentuan ini. Jika Anda tidak menyetujui syarat-syarat ini, Anda tidak diperkenankan menggunakan Layanan kami.
+                            Dengan mengakses atau menggunakan layanan HRIS ("Layanan"), Anda menyetujui untuk terikat oleh Syarat dan Ketentuan ini. Jika Anda tidak menyetujui syarat-syarat ini, Anda tidak diperkenankan menggunakan Layanan kami.
                         </p>
                         <p class="text-secondary-600">
-                            GajiPro berhak untuk mengubah Syarat dan Ketentuan ini kapan saja. Perubahan akan berlaku efektif setelah dipublikasikan di situs web kami. Penggunaan Layanan secara berkelanjutan setelah perubahan tersebut merupakan penerimaan Anda terhadap syarat yang diperbarui.
+                            HRIS berhak untuk mengubah Syarat dan Ketentuan ini kapan saja. Perubahan akan berlaku efektif setelah dipublikasikan di situs web kami. Penggunaan Layanan secara berkelanjutan setelah perubahan tersebut merupakan penerimaan Anda terhadap syarat yang diperbarui.
                         </p>
                     </section>
 
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">2. Deskripsi Layanan</h2>
                         <p class="text-secondary-600 mb-4">
-                            GajiPro adalah platform Software as a Service (SaaS) yang menyediakan solusi manajemen Human Resource (HR) dan Payroll untuk bisnis di Indonesia. Layanan kami meliputi:
+                            HRIS adalah platform Software as a Service (SaaS) yang menyediakan solusi manajemen Human Resource (HR) dan Payroll untuk bisnis di Indonesia. Layanan kami meliputi:
                         </p>
                         <ul class="list-disc list-inside text-secondary-600 space-y-2 ml-4">
                             <li>Manajemen data karyawan</li>
@@ -59,7 +59,7 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">4. Paket Layanan dan Pembayaran</h2>
                         <p class="text-secondary-600 mb-4">
-                            GajiPro menawarkan beberapa paket layanan dengan fitur dan harga yang berbeda:
+                            HRIS menawarkan beberapa paket layanan dengan fitur dan harga yang berbeda:
                         </p>
                         <ul class="list-disc list-inside text-secondary-600 space-y-2 ml-4">
                             <li><strong>Paket Starter:</strong> Gratis dengan fitur terbatas untuk maksimal 5 karyawan</li>
@@ -89,7 +89,7 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">6. Hak Kekayaan Intelektual</h2>
                         <p class="text-secondary-600 mb-4">
-                            Semua hak kekayaan intelektual dalam Layanan, termasuk namun tidak terbatas pada perangkat lunak, desain, logo, dan konten, adalah milik GajiPro atau pemberi lisensinya. Anda diberikan lisensi terbatas, non-eksklusif, dan tidak dapat dialihkan untuk menggunakan Layanan sesuai dengan Syarat dan Ketentuan ini.
+                            Semua hak kekayaan intelektual dalam Layanan, termasuk namun tidak terbatas pada perangkat lunak, desain, logo, dan konten, adalah milik HRIS atau pemberi lisensinya. Anda diberikan lisensi terbatas, non-eksklusif, dan tidak dapat dialihkan untuk menggunakan Layanan sesuai dengan Syarat dan Ketentuan ini.
                         </p>
                     </section>
 
@@ -110,7 +110,7 @@
                         </p>
                         <ul class="list-disc list-inside text-secondary-600 space-y-2 ml-4">
                             <li>Layanan disediakan "sebagaimana adanya" tanpa jaminan apapun</li>
-                            <li>GajiPro tidak bertanggung jawab atas kerugian tidak langsung, insidental, atau konsekuensial</li>
+                            <li>HRIS tidak bertanggung jawab atas kerugian tidak langsung, insidental, atau konsekuensial</li>
                             <li>Tanggung jawab maksimum kami terbatas pada jumlah yang Anda bayarkan dalam 12 bulan terakhir</li>
                         </ul>
                     </section>
@@ -118,7 +118,7 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">9. Pengakhiran</h2>
                         <p class="text-secondary-600 mb-4">
-                            Anda dapat menghentikan penggunaan Layanan kapan saja dengan menonaktifkan akun Anda. GajiPro dapat menangguhkan atau mengakhiri akses Anda ke Layanan jika Anda melanggar Syarat dan Ketentuan ini.
+                            Anda dapat menghentikan penggunaan Layanan kapan saja dengan menonaktifkan akun Anda. HRIS dapat menangguhkan atau mengakhiri akses Anda ke Layanan jika Anda melanggar Syarat dan Ketentuan ini.
                         </p>
                         <p class="text-secondary-600">
                             Setelah pengakhiran, Anda akan memiliki waktu 30 hari untuk mengunduh data Anda. Setelah periode tersebut, kami berhak menghapus semua data Anda dari sistem kami.

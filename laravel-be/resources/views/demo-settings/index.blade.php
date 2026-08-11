@@ -24,7 +24,7 @@
                 <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">Demo</span>
             </div>
             <p class="text-secondary-600 mb-4">
-                Anda sedang menggunakan data sampel untuk eksplorasi fitur GajiPro.
+                Anda sedang menggunakan data sampel untuk eksplorasi fitur HRIS.
                 Semua data saat ini adalah data demo dan tidak akan mempengaruhi operasional sebenarnya.
             </p>
             <div class="grid grid-cols-3 gap-4">
@@ -60,7 +60,7 @@
             </div>
             <div class="card-body pt-0">
                 <p class="text-secondary-600 text-sm mb-4">
-                    Siap menggunakan GajiPro untuk perusahaan Anda? Hapus semua data demo dan mulai memasukkan data karyawan yang sebenarnya.
+                    Siap menggunakan HRIS untuk perusahaan Anda? Hapus semua data demo dan mulai memasukkan data karyawan yang sebenarnya.
                 </p>
                 <ul class="text-sm text-secondary-600 space-y-2 mb-6">
                     <li class="flex items-start gap-2">
@@ -144,7 +144,7 @@
                         <svg :class="active === 1 ? 'rotate-180' : ''" class="w-5 h-5 text-secondary-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="active === 1" x-collapse class="px-4 pb-3">
-                        <p class="text-secondary-600 text-sm">Mode Demo memungkinkan Anda mencoba semua fitur GajiPro menggunakan data sampel. Anda bisa mengeksplorasi tanpa risiko mengacaukan data perusahaan yang sebenarnya.</p>
+                        <p class="text-secondary-600 text-sm">Mode Demo memungkinkan Anda mencoba semua fitur HRIS menggunakan data sampel. Anda bisa mengeksplorasi tanpa risiko mengacaukan data perusahaan yang sebenarnya.</p>
                     </div>
                 </div>
 
@@ -164,7 +164,7 @@
                         <svg :class="active === 3 ? 'rotate-180' : ''" class="w-5 h-5 text-secondary-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="active === 3" x-collapse class="px-4 pb-3">
-                        <p class="text-secondary-600 text-sm">Mode demo tersedia selama masa trial 14 hari. Setelah itu, Anda perlu beralih ke mode produksi atau berlangganan untuk melanjutkan menggunakan GajiPro.</p>
+                        <p class="text-secondary-600 text-sm">Mode demo tersedia selama masa trial 14 hari. Setelah itu, Anda perlu beralih ke mode produksi atau berlangganan untuk melanjutkan menggunakan HRIS.</p>
                     </div>
                 </div>
             </div>

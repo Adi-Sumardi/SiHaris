@@ -37,7 +37,7 @@
             {{-- Header --}}
             <div class="flex items-start justify-between mb-8">
                 <div>
-                    <h2 class="text-2xl font-bold text-primary-600">GajiPro</h2>
+                    <h2 class="text-2xl font-bold text-primary-600">HRIS</h2>
                     <p class="text-sm text-secondary-500 mt-1">HRIS & Payroll System</p>
                 </div>
                 <div class="text-right">

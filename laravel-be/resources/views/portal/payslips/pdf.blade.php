@@ -108,7 +108,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>GajiPro</h1>
+        <h1>HRIS</h1>
         <p>HRIS & Payroll System</p>
     </div>
 
@@ -221,7 +221,7 @@
     </div>
 
     <div class="footer">
-        <p>Dokumen ini digenerate secara otomatis oleh sistem GajiPro.</p>
+        <p>Dokumen ini digenerate secara otomatis oleh sistem HRIS.</p>
         <p>Dicetak pada: {{ now()->format('d M Y H:i') }}</p>
     </div>
 </body>

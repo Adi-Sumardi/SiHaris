@@ -141,7 +141,7 @@
     </table>
 
     <div class="footer">
-        <p>Dokumen ini digenerate secara otomatis oleh sistem GajiPro</p>
+        <p>Dokumen ini digenerate secara otomatis oleh sistem HRIS</p>
     </div>
 </body>
 </html>

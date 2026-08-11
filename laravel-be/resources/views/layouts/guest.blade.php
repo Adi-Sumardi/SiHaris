@@ -6,26 +6,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- Primary SEO --}}
-    <title>@yield('title', 'GajiPro - Software Payroll & HRIS #1 Indonesia | Kelola Gaji Otomatis')</title>
+    <title>@yield('title', 'HRIS - Software Payroll & HRIS #1 Indonesia | Kelola Gaji Otomatis')</title>
     <meta name="description" content="@yield('description', 'Software payroll dan HRIS terlengkap untuk Indonesia. Otomatisasi gaji, PPh 21, BPJS, kehadiran GPS, cuti online. Gratis 14 hari. Dipercaya 500+ perusahaan.')">
     <meta name="keywords" content="@yield('keywords', 'software payroll indonesia, aplikasi hris, software gaji karyawan, aplikasi hr indonesia, payroll online, sistem penggajian, hitung pph 21, bpjs ketenagakerjaan, absensi gps, aplikasi cuti karyawan, software hrd, manajemen karyawan')">
-    <meta name="author" content="GajiPro">
+    <meta name="author" content="HRIS">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="{{ url()->current() }}">
 
     {{-- Open Graph / Facebook --}}
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="@yield('og_title', 'GajiPro - Software Payroll & HRIS #1 Indonesia')">
+    <meta property="og:title" content="@yield('og_title', 'HRIS - Software Payroll & HRIS #1 Indonesia')">
     <meta property="og:description" content="@yield('og_description', 'Kelola gaji, PPh 21, BPJS, kehadiran & cuti dalam satu platform. Gratis 14 hari!')">
     <meta property="og:image" content="@yield('og_image', asset('images/og-image.png'))">
     <meta property="og:locale" content="id_ID">
-    <meta property="og:site_name" content="GajiPro">
+    <meta property="og:site_name" content="HRIS">
 
     {{-- Twitter Card --}}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="{{ url()->current() }}">
-    <meta name="twitter:title" content="@yield('twitter_title', 'GajiPro - Software Payroll & HRIS #1 Indonesia')">
+    <meta name="twitter:title" content="@yield('twitter_title', 'HRIS - Software Payroll & HRIS #1 Indonesia')">
     <meta name="twitter:description" content="@yield('twitter_description', 'Kelola gaji, PPh 21, BPJS, kehadiran & cuti dalam satu platform. Gratis 14 hari!')">
     <meta name="twitter:image" content="@yield('twitter_image', asset('images/og-image.png'))">
 

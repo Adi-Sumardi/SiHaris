@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Portal Karyawan') - GajiPro</title>
+    <title>@yield('title', 'Portal Karyawan') - HRIS</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +38,7 @@
                 <a href="{{ route('portal.dashboard') }}" class="flex items-center gap-3">
                     <img src="{{ asset('images/gajipro-logo-new.png') }}" alt="{{ brand_name() }}" class="w-10 h-10 rounded-xl object-cover shrink-0">
                     <div>
-                        <span class="text-lg font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">GajiPro</span>
+                        <span class="text-lg font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">HRIS</span>
                         <span class="block text-xs text-slate-500">Portal Karyawan</span>
                     </div>
                 </a>

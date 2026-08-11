@@ -5,7 +5,7 @@ return [
     'documentations' => [
         'default' => [
             'api' => [
-                'title' => 'GajiPro API Documentation',
+                'title' => 'HRIS API Documentation',
             ],
 
             'routes' => [

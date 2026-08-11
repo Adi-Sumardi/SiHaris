@@ -105,8 +105,8 @@
                 <div class="text-primary-300 text-sm">
                     &copy; {{ date('Y') }} {{ brand_name() }}. All rights reserved.
                 </div>
-                <a href="https://jagoflutter.com" target="_blank" class="text-white/60 hover:text-white/80 text-sm transition-colors">
-                    Powered by jagoflutter.com
+                <a href="https://adilabs.id" target="_blank" class="text-white/60 hover:text-white/80 text-sm transition-colors">
+                    Powered by adilabs.id
                 </a>
             </div>
         </div>

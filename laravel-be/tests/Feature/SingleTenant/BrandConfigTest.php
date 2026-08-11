@@ -30,7 +30,7 @@ describe('Brand configuration', function () {
         expect(config()->has('tenant.brand.primary_color'))->toBeTrue();
     });
 
-    it('defaults brand.name to GajiPro when not in single_mode', function () {
+    it('defaults brand.name to config(app.name) when not in single_mode', function () {
         config(['tenant.single_mode' => false]);
 
         expect(brand_name())->toBe(config('app.name'));

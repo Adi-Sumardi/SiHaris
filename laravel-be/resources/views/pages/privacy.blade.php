@@ -1,7 +1,7 @@
 @extends('layouts.guest')
 
-@section('title', 'Privacy Policy - GajiPro')
-@section('description', 'Privacy Policy for GajiPro HR & Payroll Management application regarding collection and use of data.')
+@section('title', 'Privacy Policy - HRIS')
+@section('description', 'Privacy Policy for HRIS HR & Payroll Management application regarding collection and use of data.')
 
 @section('content')
     @include('components.navbar')
@@ -21,10 +21,10 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">1. Introduction</h2>
                         <p class="text-secondary-600 mb-4">
-                            JagoFlutter ("we", "us", or "our") operates the GajiPro application, available as a web platform and mobile application (collectively, the "Service"). This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
+                            JagoFlutter ("we", "us", or "our") operates the HRIS application, available as a web platform and mobile application (collectively, the "Service"). This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
                         </p>
                         <p class="text-secondary-600">
-                            By using GajiPro, you agree to the collection and use of information in accordance with this policy.
+                            By using HRIS, you agree to the collection and use of information in accordance with this policy.
                         </p>
                     </section>
 
@@ -161,7 +161,7 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">9. Mobile App Permissions</h2>
                         <p class="text-secondary-600 mb-4">
-                            The GajiPro mobile application requires the following device permissions:
+                            The HRIS mobile application requires the following device permissions:
                         </p>
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-secondary-600 text-sm">
@@ -231,7 +231,7 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">12. Children's Privacy</h2>
                         <p class="text-secondary-600">
-                            GajiPro is a workplace application and is not intended for use by anyone under the age of 17. We do not knowingly collect personal information from children. If you become aware that a child has provided personal data to us, please contact us.
+                            HRIS is a workplace application and is not intended for use by anyone under the age of 17. We do not knowingly collect personal information from children. If you become aware that a child has provided personal data to us, please contact us.
                         </p>
                     </section>
 

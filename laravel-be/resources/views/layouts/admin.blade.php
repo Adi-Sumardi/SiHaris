@@ -449,7 +449,7 @@
 
             {{-- Footer --}}
             <footer class="py-4 px-6 text-center text-sm text-slate-500 border-t border-slate-200 bg-white">
-                &copy; {{ date('Y') }} GajiPro. All rights reserved.
+                &copy; {{ date('Y') }} HRIS. All rights reserved.
             </footer>
         </div>
     </div>

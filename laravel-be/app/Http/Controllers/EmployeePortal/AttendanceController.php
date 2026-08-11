@@ -6,17 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Services\AttendanceReconciliationService;
+use App\Services\FaceRecognitionService;
 use App\Services\GpsValidationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
     public function __construct(
         protected GpsValidationService $gpsValidationService,
-        protected AttendanceReconciliationService $reconciliationService
+        protected AttendanceReconciliationService $reconciliationService,
+        protected FaceRecognitionService $faceRecognitionService
     ) {}
 
     public function index(): View
@@ -194,5 +197,40 @@ class AttendanceController extends Controller
             'enrolled' => $isEnrolled,
             'enrolled_at' => $isEnrolled ? $embedding->enrolled_at?->toIso8601String() : null,
         ]);
+    }
+
+    public function enrollFace(Request $request): RedirectResponse
+    {
+        $user = auth()->user();
+        $employee = Employee::with('faceEmbedding')
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        // 1-time rule: If already enrolled, lock self-registration
+        if ($employee->faceEmbedding && $employee->faceEmbedding->is_active) {
+            return redirect()->route('portal.attendance.index')
+                ->with('error', 'Wajah Anda sudah terdaftar dan dikunci. Untuk mengganti foto wajah, silakan hubungi Admin / HR.');
+        }
+
+        $request->validate([
+            'photo' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $tenant = $user->company;
+
+        $photoPath = $request->file('photo')->store(
+            "face-enrollments/{$tenant->id}",
+            'public'
+        );
+
+        $this->faceRecognitionService->enrollFace(
+            $employee,
+            [],
+            $photoPath,
+            $user
+        );
+
+        return redirect()->route('portal.attendance.index')
+            ->with('success', 'Wajah Anda berhasil didaftarkan! Pendaftaran mandiri telah dikunci.');
     }
 }

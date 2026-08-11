@@ -611,8 +611,9 @@ Route::prefix('portal')->name('portal.')->middleware(['auth', 'employee'])->grou
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/announcements/{announcement}', [PortalAnnouncementController::class, 'show'])->name('announcements.show');
 
-    // Face Recognition Status
+    // Face Recognition Status & Enrollment
     Route::get('/face-recognition/status', [PortalAttendanceController::class, 'faceRecognitionStatus'])->name('face-recognition.status');
+    Route::post('/face-recognition/enroll', [PortalAttendanceController::class, 'enrollFace'])->name('face-recognition.enroll');
 });
 
 /*

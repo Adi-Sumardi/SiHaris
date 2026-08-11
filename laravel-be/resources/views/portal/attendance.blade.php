@@ -109,25 +109,50 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <h4 class="font-medium text-secondary-900 mb-1">Wajah Terdaftar</h4>
-                            <p class="text-sm text-secondary-500 mb-4">
-                                Wajah Anda sudah terdaftar untuk verifikasi absensi.
+                            <h4 class="font-medium text-secondary-900 mb-1">Wajah Terdaftar (Dikunci)</h4>
+                            <p class="text-sm text-secondary-500 mb-3">
+                                Wajah Anda telah terdaftar untuk verifikasi absensi.
                             </p>
+                            <div class="p-3 bg-secondary-50 rounded-lg text-xs text-secondary-500 mb-3">
+                                🔒 Pendaftaran mandiri telah dikunci. Jika ingin memperbarui foto wajah, silakan hubungi Admin / HR.
+                            </div>
                             <p class="text-xs text-secondary-400">
                                 Terdaftar: {{ $employee->faceEmbedding->enrolled_at->format('d M Y H:i') }}
                             </p>
                         </div>
                     @else
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-warning-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div class="text-center" x-data="{ showForm: false }">
+                            <div class="w-16 h-16 bg-warning-100 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <svg class="w-8 h-8 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                             </div>
                             <h4 class="font-medium text-warning-600 mb-1">Wajah Belum Terdaftar</h4>
-                            <p class="text-sm text-secondary-500 mb-4">
-                                Wajah Anda belum terdaftar. Hubungi admin untuk mendaftarkan wajah Anda.
+                            <p class="text-xs text-secondary-500 mb-4">
+                                Wajah Anda belum terdaftar. Anda dapat mendaftarkan foto wajah <strong>1 kali secara mandiri</strong>. Pendaftaran akan langsung dikunci setelah tersimpan.
                             </p>
+
+                            <div x-show="!showForm">
+                                <button type="button" @click="showForm = true" class="btn btn-primary w-full text-sm py-2">
+                                    📷 Daftarkan Wajah Saya (1x)
+                                </button>
+                            </div>
+
+                            <div x-show="showForm" x-transition class="mt-4 text-left border-t border-secondary-200 pt-4">
+                                <form action="{{ route('portal.face-recognition.enroll') }}" method="POST" enctype="multipart/form-data">
+                                    @csrf
+                                    <label class="block text-xs font-semibold text-secondary-700 mb-2">Upload Foto Wajah / Selfie</label>
+                                    <input type="file" name="photo" accept="image/*" capture="user" required
+                                           class="block w-full text-xs text-secondary-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-3">
+                                    <p class="text-[11px] text-secondary-400 mb-3">
+                                        ⚠️ Pastikan foto wajah terlihat jelas dan pencahayaan terang. Setelah disimpan, Anda tidak dapat mengubahnya sendiri.
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <button type="submit" class="btn btn-primary flex-1 text-xs py-2">💾 Simpan & Kunci</button>
+                                        <button type="button" @click="showForm = false" class="btn btn-secondary text-xs py-2">Batal</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     @endif
                 </div>

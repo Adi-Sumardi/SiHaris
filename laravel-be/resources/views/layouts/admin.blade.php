@@ -431,18 +431,7 @@
                     </div>
                 @endif
 
-                {{-- Flash Messages --}}
-                @if(session('success'))
-                    <x-alert type="success" class="mb-6" dismissible>
-                        {{ session('success') }}
-                    </x-alert>
-                @endif
 
-                @if(session('error'))
-                    <x-alert type="danger" class="mb-6" dismissible>
-                        {{ session('error') }}
-                    </x-alert>
-                @endif
 
                 {{-- Main Content --}}
                 @yield('content')

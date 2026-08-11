@@ -148,14 +148,7 @@
 
             {{-- Page Content --}}
             <main class="flex-1 p-4 lg:p-8">
-                {{-- Flash Messages --}}
-                @if(session('success'))
-                    <x-alert type="success" dismissible class="mb-6">{{ session('success') }}</x-alert>
-                @endif
 
-                @if(session('error'))
-                    <x-alert type="danger" dismissible class="mb-6">{{ session('error') }}</x-alert>
-                @endif
 
                 {{-- Page Header --}}
                 @hasSection('header')

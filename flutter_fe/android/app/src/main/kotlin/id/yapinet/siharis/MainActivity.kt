@@ -1,4 +1,4 @@
-package com.jagoflutter.gajipro
+package id.yapinet.siharis
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

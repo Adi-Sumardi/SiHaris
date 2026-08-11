@@ -3,10 +3,10 @@
 /// Base URL: /api/v1
 /// Authentication: Bearer Token (Sanctum)
 class Variables {
-  // Base URL - Local development (iOS simulator menjangkau host via 127.0.0.1)
-  static const String baseUrl = 'http://127.0.0.1:8000';
-  // Production:
-  // static const String baseUrl = 'https://gaji.jagofullstack.com';
+  // Production (server testing - siharis.yapinet.id):
+  static const String baseUrl = 'https://siharis.yapinet.id';
+  // Local development (iOS simulator menjangkau host via 127.0.0.1):
+  // static const String baseUrl = 'http://127.0.0.1:8000';
   // Development (ganti dengan IP local untuk device fisik / Android emulator pakai 10.0.2.2):
   // static const String baseUrl = 'http://192.168.18.183:8000';
 

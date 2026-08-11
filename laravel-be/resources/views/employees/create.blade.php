@@ -351,7 +351,7 @@
         {{-- Office Locations --}}
         @if($officeLocations->count() > 0)
         <div class="card" x-data="{
-            selectedOffices: {{ json_encode(old('office_location_ids', [])) }},
+            selectedOffices: {{ json_encode(array_map('strval', old('office_location_ids', []))) }},
             primaryOffice: '{{ old('primary_office_id') ?? '' }}',
             toggleOffice(id) {
                 const strId = String(id);

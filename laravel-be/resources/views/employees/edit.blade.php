@@ -54,7 +54,7 @@
                     {{-- Email --}}
                     <div>
                         <label for="email" class="block text-sm font-medium text-secondary-700 mb-1">Email</label>
-                        <input type="email" name="email" id="email" value="{{ old('email', $employee->email) }}" class="input w-full @error('email') border-danger-500 @enderror">
+                        <input type="email" name="email" id="email" value="{{ old('email', $employee->email ?? $employee->user?->email) }}" class="input w-full @error('email') border-danger-500 @enderror">
                         @error('email')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                         @enderror
@@ -407,8 +407,8 @@
         {{-- Office Locations --}}
         @if($officeLocations->count() > 0)
         <div class="card" x-data="{
-            selectedOffices: {{ json_encode(old('office_location_ids', $employee->officeLocations->pluck('id')->toArray())) }},
-            primaryOffice: '{{ old('primary_office_id', $employee->officeLocations->where('pivot.is_primary', true)->first()?->id) ?? '' }}',
+            selectedOffices: {{ json_encode(array_map('strval', old('office_location_ids', $employee->officeLocations->pluck('id')->toArray()))) }},
+            primaryOffice: '{{ old('primary_office_id', (string)($employee->officeLocations->where('pivot.is_primary', true)->first()?->id ?? '')) }}',
             toggleOffice(id) {
                 const strId = String(id);
                 const index = this.selectedOffices.indexOf(strId);

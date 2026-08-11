@@ -461,6 +461,20 @@
     {{-- Confirm Dialog (Global) --}}
     <x-confirm-dialog />
 
+    <script>
+        function currencyInput(initialValue) {
+            return {
+                value: initialValue || 0,
+                display: initialValue ? new Intl.NumberFormat('id-ID').format(initialValue) : '',
+                updateValue(event) {
+                    let raw = event.target.value.replace(/\D/g, '');
+                    this.value = parseInt(raw) || 0;
+                    this.display = this.value ? new Intl.NumberFormat('id-ID').format(this.value) : '';
+                }
+            }
+        }
+    </script>
+
     @if (session('success'))
     <script>
         document.addEventListener('DOMContentLoaded', function() {

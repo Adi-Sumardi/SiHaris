@@ -223,7 +223,7 @@ class EmployeeController extends Controller
             abort(404);
         }
 
-        $employee->load(['officeLocations', 'weeklySchedules']);
+        $employee->load(['officeLocations', 'weeklySchedules', 'user']);
 
         $departments = Department::where('company_id', $tenant->id)
             ->where('is_active', true)

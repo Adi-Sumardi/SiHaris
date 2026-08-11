@@ -41,6 +41,10 @@ return [
             'transport' => 'sendagomail',
         ],
 
+        'sendago' => [
+            'transport' => 'sendagomail',
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),

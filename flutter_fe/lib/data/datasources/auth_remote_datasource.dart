@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
 import '../../core/constants/variables.dart';
 import '../../core/services/http_logger.dart';
+import '../../core/services/secure_storage_service.dart';
 import '../../core/services/session_service.dart';
 import '../models/requests/register_request_model.dart';
 import '../models/requests/update_profile_request_model.dart';
@@ -14,12 +15,15 @@ import 'auth_local_datasource.dart';
 class AuthRemoteDatasource implements AuthDatasource {
   final http.Client _client;
   final AuthLocalDatasourceBase _localDatasource;
+  final SecureStorageService _secureStorage;
 
   AuthRemoteDatasource({
     http.Client? client,
     AuthLocalDatasourceBase? localDatasource,
+    SecureStorageService? secureStorage,
   })  : _client = client ?? http.Client(),
-        _localDatasource = localDatasource ?? AuthLocalDatasource();
+        _localDatasource = localDatasource ?? AuthLocalDatasource(),
+        _secureStorage = secureStorage ?? SecureStorageService.instance;
 
   @override
   Future<Either<String, AuthResponseModel>> login(
@@ -31,9 +35,13 @@ class AuthRemoteDatasource implements AuthDatasource {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
+    // Menyertakan app_device_id agar backend hanya merevoke token milik
+    // device ini saat login ulang, bukan seluruh token milik user (yang
+    // sebelumnya menyebabkan sesi di device lain ikut ter-logout paksa).
     final body = {
       'employee_id': identifier,
       'password': password,
+      'app_device_id': await _secureStorage.getOrCreateDeviceId(),
     };
 
     HttpLogger.logRequest(

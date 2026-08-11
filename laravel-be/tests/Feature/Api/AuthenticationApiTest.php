@@ -111,6 +111,40 @@ describe('POST /api/v1/auth/login', function () {
             ]);
     });
 
+    it('does not revoke tokens from other devices when logging in with a device id', function () {
+        $tokenA = $this->user->createToken('mobile-app:device-aaa')->plainTextToken;
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'employee@test.com',
+            'password' => 'password123',
+            'app_device_id' => 'device-bbb',
+        ]);
+
+        $response->assertOk();
+
+        $meResponse = $this->withHeader('Authorization', "Bearer {$tokenA}")
+            ->getJson('/api/v1/auth/profile');
+
+        $meResponse->assertOk();
+    });
+
+    it('revokes the previous token from the same device when logging in again', function () {
+        $tokenA = $this->user->createToken('mobile-app:device-aaa')->plainTextToken;
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'employee@test.com',
+            'password' => 'password123',
+            'app_device_id' => 'device-aaa',
+        ]);
+
+        $response->assertOk();
+
+        $meResponse = $this->withHeader('Authorization', "Bearer {$tokenA}")
+            ->getJson('/api/v1/auth/profile');
+
+        $meResponse->assertStatus(401);
+    });
+
     it('returns error for inactive employee', function () {
         $this->employee->update(['is_active' => false]);
 

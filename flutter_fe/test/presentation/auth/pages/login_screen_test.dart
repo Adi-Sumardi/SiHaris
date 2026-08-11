@@ -44,7 +44,7 @@ void main() {
 
       // Check header elements
       expect(find.text('Selamat Datang!'), findsOneWidget);
-      expect(find.text('Masuk ke akun HRIS Anda'), findsOneWidget);
+      expect(find.text('Masuk ke akun SiHaris Anda'), findsOneWidget);
 
       // Check form fields
       expect(find.text('Email / ID Karyawan'), findsOneWidget);

@@ -12,6 +12,7 @@ import 'package:gaji_pro/data/models/requests/update_profile_request_model.dart'
 import 'package:gaji_pro/core/constants/variables.dart';
 import '../../mocks/mock_http_client.dart';
 import '../../mocks/mock_auth_local_datasource.dart';
+import '../../mocks/mock_secure_storage_service.dart';
 
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
 
@@ -19,6 +20,7 @@ void main() {
   late AuthRemoteDatasource datasource;
   late MockHttpClient mockHttpClient;
   late MockAuthLocalDatasource mockLocalDatasource;
+  late MockSecureStorageService mockSecureStorage;
 
   setUpAll(() {
     // Initialize binding for SessionService
@@ -52,10 +54,14 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     mockHttpClient = MockHttpClient();
     mockLocalDatasource = MockAuthLocalDatasource();
+    mockSecureStorage = MockSecureStorageService();
     when(() => mockLocalDatasource.saveAuthData(any())).thenAnswer((_) async => {});
+    when(() => mockSecureStorage.getOrCreateDeviceId())
+        .thenAnswer((_) async => 'test-device-id');
     datasource = AuthRemoteDatasource(
       client: mockHttpClient,
       localDatasource: mockLocalDatasource,
+      secureStorage: mockSecureStorage,
     );
   });
 
@@ -111,6 +117,7 @@ void main() {
             body: jsonEncode({
               'employee_id': email,
               'password': password,
+              'app_device_id': 'test-device-id',
             }),
           )).called(1);
     });

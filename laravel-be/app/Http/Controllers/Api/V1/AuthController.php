@@ -414,11 +414,17 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Revoke existing tokens
-        $user->tokens()->delete();
+        // Aplikasi mobile mengirim app_device_id (anti-fraud device binding) yang juga
+        // dipakai untuk menamai token, sehingga login ulang di satu device hanya
+        // merevoke token device itu sendiri—tidak memutus sesi di device lain.
+        $deviceId = $request->input('app_device_id');
+        $tokenName = $deviceId ? "mobile-app:{$deviceId}" : 'mobile-app';
+
+        // Revoke only the token(s) previously issued to this same device/client
+        $user->tokens()->where('name', $tokenName)->delete();
 
         // Create new token
-        $token = $user->createToken('mobile-app')->plainTextToken;
+        $token = $user->createToken($tokenName)->plainTextToken;
 
         $company = $user->company;
 

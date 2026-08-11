@@ -439,7 +439,7 @@
 
             {{-- Footer --}}
             <footer class="py-4 px-6 text-center text-sm text-slate-500 border-t border-slate-200 bg-white">
-                &copy; {{ date('Y') }} HRIS. All rights reserved.
+                &copy; {{ date('Y') }} SiHaris. All rights reserved.
             </footer>
         </div>
     </div>

@@ -1,7 +1,7 @@
 @extends('layouts.guest')
 
-@section('title', 'Harga - HRIS | Paket Payroll & HR')
-@section('description', 'Pilih paket HRIS sesuai kebutuhan. Mulai gratis untuk 5 karyawan. Paket Professional mulai Rp 12.000/user/bulan.')
+@section('title', 'Harga - SiHaris | Paket Payroll & HR')
+@section('description', 'Pilih paket SiHaris sesuai kebutuhan. Mulai gratis untuk 5 karyawan. Paket Professional mulai Rp 12.000/user/bulan.')
 
 @section('content')
     @include('components.navbar')
@@ -306,7 +306,7 @@
     <section class="py-20 bg-secondary-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl font-bold text-secondary-900 mb-4">Masih ragu?</h2>
-            <p class="text-lg text-secondary-600 mb-8">Jadwalkan demo gratis dengan tim kami untuk melihat HRIS beraksi.</p>
+            <p class="text-lg text-secondary-600 mb-8">Jadwalkan demo gratis dengan tim kami untuk melihat SiHaris beraksi.</p>
             <a href="#kontak" class="btn btn-primary text-base py-4 px-8">Jadwalkan Demo Gratis</a>
         </div>
     </section>

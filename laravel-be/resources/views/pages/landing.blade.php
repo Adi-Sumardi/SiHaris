@@ -1,10 +1,10 @@
 @extends('layouts.guest')
 
-@section('title', 'HRIS - Software Payroll & HRIS #1 Indonesia | Kelola Gaji Otomatis')
+@section('title', 'SiHaris - Software Payroll & HRIS #1 Indonesia | Kelola Gaji Otomatis')
 @section('description', 'Software payroll dan HRIS terlengkap untuk Indonesia. Otomatisasi PPh 21, BPJS, kehadiran GPS, cuti online, slip gaji digital. Dipercaya 500+ perusahaan.')
 @section('keywords', 'software payroll indonesia, aplikasi hris, software gaji karyawan, aplikasi hr indonesia, payroll online, sistem penggajian, hitung pph 21 otomatis, bpjs ketenagakerjaan, absensi gps, aplikasi cuti karyawan, software hrd terbaik, manajemen karyawan, slip gaji digital, face recognition attendance')
 
-@section('og_title', 'HRIS - Software Payroll & HRIS #1 Indonesia')
+@section('og_title', 'SiHaris - Software Payroll & HRIS #1 Indonesia')
 @section('og_description', 'Otomatisasi penggajian, PPh 21, BPJS, kehadiran GPS & cuti dalam satu platform cloud.')
 
 @push('structured-data')
@@ -13,7 +13,7 @@
 {
     "@@context": "https://schema.org",
     "@@type": "Organization",
-    "name": "HRIS",
+    "name": "SiHaris",
     "url": "{{ url('/') }}",
     "logo": "{{ asset('images/logo.png') }}",
     "description": "Software Payroll dan HRIS terlengkap untuk Indonesia",
@@ -40,7 +40,7 @@
 {
     "@@context": "https://schema.org",
     "@@type": "SoftwareApplication",
-    "name": "HRIS",
+    "name": "SiHaris",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web, Android, iOS",
     "offers": {
@@ -76,7 +76,7 @@
     "mainEntity": [
         {
             "@@type": "Question",
-            "name": "Apakah data saya aman di HRIS?",
+            "name": "Apakah data saya aman di SiHaris?",
             "acceptedAnswer": {
                 "@@type": "Answer",
                 "text": "Ya, keamanan data adalah prioritas utama kami. Semua data dienkripsi dengan standar industri (AES-256) dan server kami tersertifikasi ISO 27001 dengan backup harian."
@@ -92,15 +92,15 @@
         },
         {
             "@@type": "Question",
-            "name": "Apakah HRIS bisa integrasi dengan sistem lain?",
+            "name": "Apakah SiHaris bisa integrasi dengan sistem lain?",
             "acceptedAnswer": {
                 "@@type": "Answer",
-                "text": "Ya, HRIS menyediakan REST API lengkap untuk integrasi dengan sistem akuntansi, ERP, atau sistem internal perusahaan Anda."
+                "text": "Ya, SiHaris menyediakan REST API lengkap untuk integrasi dengan sistem akuntansi, ERP, atau sistem internal perusahaan Anda."
             }
         },
         {
             "@@type": "Question",
-            "name": "Berapa biaya menggunakan HRIS?",
+            "name": "Berapa biaya menggunakan SiHaris?",
             "acceptedAnswer": {
                 "@@type": "Answer",
                 "text": "Kami menyediakan paket Starter gratis selamanya untuk 5 karyawan. Paket Professional mulai dari Rp 15.000/user/bulan dengan fitur lengkap termasuk payroll, PPh 21, dan BPJS."
@@ -180,7 +180,7 @@
                 {{-- Right - Dashboard Preview --}}
                 <div class="relative">
                     <div class="relative z-10 bg-white rounded-2xl shadow-2xl p-2 transform lg:rotate-1 hover:rotate-0 transition-transform duration-500">
-                        <img src="{{ asset('images/dashboard.png') }}" alt="Dashboard HRIS - Software Payroll Indonesia" class="rounded-xl w-full" loading="lazy">
+                        <img src="{{ asset('images/dashboard.png') }}" alt="Dashboard SiHaris - Software Payroll Indonesia" class="rounded-xl w-full" loading="lazy">
                     </div>
                     {{-- Decorative elements --}}
                     <div class="absolute -top-4 -right-4 w-24 h-24 bg-accent-500/20 rounded-full blur-2xl"></div>
@@ -228,7 +228,7 @@
                     Demo Aplikasi
                 </h2>
                 <p class="text-lg text-secondary-600 max-w-2xl mx-auto">
-                    Tonton demo lengkap fitur-fitur HRIS dan cara penggunaannya
+                    Tonton demo lengkap fitur-fitur SiHaris dan cara penggunaannya
                 </p>
             </div>
 
@@ -237,7 +237,7 @@
                 <div class="aspect-video">
                     <iframe
                         src="https://www.youtube.com/embed/-oYQ_6og058"
-                        title="HRIS Demo - Event dan Cara Pakainya"
+                        title="SiHaris Demo - Event dan Cara Pakainya"
                         frameborder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         referrerpolicy="strict-origin-when-cross-origin"
@@ -280,7 +280,7 @@
                         <div class="w-44 md:w-52 bg-white rounded-3xl p-2 shadow-xl border border-secondary-200 transform hover:scale-105 hover:shadow-2xl transition-all duration-300">
                             <img
                                 src="{{ asset('images/gajipro/mobile/' . $i . '.jpeg') }}"
-                                alt="HRIS Mobile App Screenshot {{ $i }}"
+                                alt="SiHaris Mobile App Screenshot {{ $i }}"
                                 class="rounded-2xl w-full"
                                 loading="lazy"
                             >
@@ -423,12 +423,12 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-2 gap-16 items-center">
                 <div>
-                    <span class="inline-block bg-primary-100 text-primary-700 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Mengapa HRIS?</span>
+                    <span class="inline-block bg-primary-100 text-primary-700 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Mengapa SiHaris?</span>
                     <h2 class="text-3xl md:text-4xl font-bold text-secondary-900 mb-6">
                         Software Payroll yang Dibuat Khusus untuk Indonesia
                     </h2>
                     <p class="text-lg text-secondary-600 mb-8">
-                        Berbeda dengan software payroll asing, HRIS dirancang khusus untuk regulasi Indonesia termasuk PPh 21 TER, BPJS Kesehatan & Ketenagakerjaan, THR, dan kepatuhan pajak.
+                        Berbeda dengan software payroll asing, SiHaris dirancang khusus untuk regulasi Indonesia termasuk PPh 21 TER, BPJS Kesehatan & Ketenagakerjaan, THR, dan kepatuhan pajak.
                     </p>
 
                     <div class="space-y-6">
@@ -500,7 +500,7 @@
                             </div>
                             <div>
                                 <div class="flex justify-between text-sm mb-2">
-                                    <span class="text-primary-600 font-semibold">HRIS</span>
+                                    <span class="text-primary-600 font-semibold">SiHaris</span>
                                     <span class="font-bold text-primary-600">15 menit</span>
                                 </div>
                                 <div class="h-3 bg-primary-100 rounded-full">
@@ -557,7 +557,7 @@
                 <div class="text-center flex-1 max-w-xs">
                     <div class="w-16 h-16 bg-primary-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">3</div>
                     <h3 class="text-xl font-semibold text-secondary-900 mb-3">Undang Tim</h3>
-                    <p class="text-secondary-600">Undang karyawan untuk mulai gunakan aplikasi mobile HRIS.</p>
+                    <p class="text-secondary-600">Undang karyawan untuk mulai gunakan aplikasi mobile SiHaris.</p>
                 </div>
             </div>
         </div>
@@ -581,7 +581,7 @@
                         <svg class="w-5 h-5 text-warning-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                         @endfor
                     </div>
-                    <p class="text-secondary-600 mb-6">"Sebelumnya butuh 2 hari untuk proses gaji 150 karyawan. Sekarang dengan HRIS cuma 30 menit! PPh 21 dan BPJS otomatis terhitung."</p>
+                    <p class="text-secondary-600 mb-6">"Sebelumnya butuh 2 hari untuk proses gaji 150 karyawan. Sekarang dengan SiHaris cuma 30 menit! PPh 21 dan BPJS otomatis terhitung."</p>
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold">RS</div>
                         <div>
@@ -742,7 +742,7 @@
                 {{-- FAQ 1 --}}
                 <div class="bg-white rounded-2xl border border-secondary-200">
                     <button @click="active = active === 1 ? null : 1" class="w-full px-6 py-5 text-left flex items-center justify-between">
-                        <span class="font-semibold text-secondary-900">Apakah data saya aman di HRIS?</span>
+                        <span class="font-semibold text-secondary-900">Apakah data saya aman di SiHaris?</span>
                         <svg :class="active === 1 ? 'rotate-180' : ''" class="w-5 h-5 text-secondary-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="active === 1" x-collapse class="px-6 pb-5">
@@ -764,11 +764,11 @@
                 {{-- FAQ 3 --}}
                 <div class="bg-white rounded-2xl border border-secondary-200">
                     <button @click="active = active === 3 ? null : 3" class="w-full px-6 py-5 text-left flex items-center justify-between">
-                        <span class="font-semibold text-secondary-900">Apakah HRIS sudah sesuai regulasi pajak Indonesia?</span>
+                        <span class="font-semibold text-secondary-900">Apakah SiHaris sudah sesuai regulasi pajak Indonesia?</span>
                         <svg :class="active === 3 ? 'rotate-180' : ''" class="w-5 h-5 text-secondary-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="active === 3" x-collapse class="px-6 pb-5">
-                        <p class="text-secondary-600">Ya, HRIS sudah terintegrasi dengan perhitungan PPh 21 menggunakan metode Tarif Efektif Rata-rata (TER) sesuai PMK terbaru, BPJS Kesehatan & Ketenagakerjaan, serta regulasi ketenagakerjaan Indonesia lainnya. Kami update sistem secara berkala mengikuti perubahan regulasi.</p>
+                        <p class="text-secondary-600">Ya, SiHaris sudah terintegrasi dengan perhitungan PPh 21 menggunakan metode Tarif Efektif Rata-rata (TER) sesuai PMK terbaru, BPJS Kesehatan & Ketenagakerjaan, serta regulasi ketenagakerjaan Indonesia lainnya. Kami update sistem secara berkala mengikuti perubahan regulasi.</p>
                     </div>
                 </div>
 
@@ -786,7 +786,7 @@
                 {{-- FAQ 5 --}}
                 <div class="bg-white rounded-2xl border border-secondary-200">
                     <button @click="active = active === 5 ? null : 5" class="w-full px-6 py-5 text-left flex items-center justify-between">
-                        <span class="font-semibold text-secondary-900">Bagaimana dukungan pelanggan HRIS?</span>
+                        <span class="font-semibold text-secondary-900">Bagaimana dukungan pelanggan SiHaris?</span>
                         <svg :class="active === 5 ? 'rotate-180' : ''" class="w-5 h-5 text-secondary-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="active === 5" x-collapse class="px-6 pb-5">
@@ -810,7 +810,7 @@
                         Siap Tingkatkan Efisiensi HR Anda?
                     </h2>
                     <p class="text-lg text-white/80 mb-8 max-w-xl mx-auto">
-                        Bergabung dengan 500+ perusahaan yang sudah menghemat waktu dan biaya dengan HRIS.
+                        Bergabung dengan 500+ perusahaan yang sudah menghemat waktu dan biaya dengan SiHaris.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
                         <a href="{{ route('register') }}" class="btn bg-white text-primary-600 hover:bg-white/90 text-base py-4 px-8 font-semibold">

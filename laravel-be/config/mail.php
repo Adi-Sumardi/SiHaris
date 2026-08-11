@@ -120,7 +120,7 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'noreply@gajipro.com'),
-        'name' => env('MAIL_FROM_NAME', 'HRIS'),
+        'name' => env('MAIL_FROM_NAME', 'SiHaris'),
     ],
 
 ];

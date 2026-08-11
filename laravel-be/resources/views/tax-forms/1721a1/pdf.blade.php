@@ -287,7 +287,7 @@
     </div>
 
     <div class="footer">
-        <p>Bukti Potong ini digenerate secara otomatis oleh sistem HRIS HRIS.</p>
+        <p>Bukti Potong ini digenerate secara otomatis oleh sistem SiHaris.</p>
         <p>Dicetak pada: {{ now()->format('d M Y H:i:s') }}</p>
     </div>
 </body>

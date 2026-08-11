@@ -5,7 +5,7 @@ return [
     'documentations' => [
         'default' => [
             'api' => [
-                'title' => 'HRIS API Documentation',
+                'title' => 'SiHaris API Documentation',
             ],
 
             'routes' => [

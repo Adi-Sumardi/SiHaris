@@ -42,13 +42,17 @@ describe('Login page in single-tenant mode', function () {
         $response->assertDontSee('99%');
     });
 
-    it('shows marketing stats in multi-tenant mode', function () {
+    it('renders the login form in multi-tenant mode', function () {
+        // The login page was simplified to a single centered card and no
+        // longer carries a marketing panel (stats, feature list) in either
+        // mode — this now only checks the page still renders correctly.
         config(['tenant.single_mode' => false]);
 
         $response = $this->get('/login');
 
         $response->assertOk();
-        $response->assertSee('500+');
+        $response->assertSee('name="email"', false);
+        $response->assertSee('name="password"', false);
     });
 
     it('hides SaaS platform badge in single_mode', function () {

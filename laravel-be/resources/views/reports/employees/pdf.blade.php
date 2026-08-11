@@ -141,7 +141,7 @@
     </table>
 
     <div class="footer">
-        <p>Dokumen ini digenerate secara otomatis oleh sistem HRIS</p>
+        <p>Dokumen ini digenerate secara otomatis oleh sistem SiHaris</p>
     </div>
 </body>
 </html>

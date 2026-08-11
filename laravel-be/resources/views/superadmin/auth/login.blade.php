@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Superadmin Login - HRIS</title>
-    <meta name="description" content="Masuk ke panel Superadmin HRIS.">
+    <title>Superadmin Login - SiHaris</title>
+    <meta name="description" content="Masuk ke panel Superadmin SiHaris.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

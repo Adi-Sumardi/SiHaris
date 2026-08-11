@@ -46,7 +46,7 @@ return [
     */
 
     'brand' => [
-        'name' => env('BRAND_NAME', env('APP_NAME', 'HRIS')),
+        'name' => env('BRAND_NAME', env('APP_NAME', 'SiHaris')),
         'logo_path' => env('BRAND_LOGO_PATH', 'images/brand/logo.svg'),
         'logo_mark_path' => env('BRAND_LOGO_MARK_PATH', 'images/brand/logo-mark.svg'),
         'favicon_path' => env('BRAND_FAVICON_PATH', 'images/brand/favicon.svg'),

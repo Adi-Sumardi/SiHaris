@@ -1,7 +1,7 @@
 @extends('layouts.guest')
 
-@section('title', 'Daftar - HRIS')
-@section('description', 'Daftar HRIS. Tanpa kartu kredit. Setup 5 menit. Mulai kelola payroll dan HR dengan mudah.')
+@section('title', 'Daftar - SiHaris')
+@section('description', 'Daftar SiHaris. Tanpa kartu kredit. Setup 5 menit. Mulai kelola payroll dan HR dengan mudah.')
 
 @php
     $plans = \App\Models\SubscriptionPlan::where('is_active', true)->orderBy('sort_order')->get();
@@ -27,7 +27,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <span class="text-2xl font-bold text-white">HRIS</span>
+                <span class="text-2xl font-bold text-white">SiHaris</span>
             </a>
         </div>
 
@@ -86,7 +86,7 @@
 
         {{-- Footer --}}
         <div class="relative z-10 flex items-center justify-between">
-            <p class="text-primary-300 text-sm">&copy; {{ date('Y') }} HRIS</p>
+            <p class="text-primary-300 text-sm">&copy; {{ date('Y') }} SiHaris</p>
             <a href="https://adilabs.id" target="_blank" class="text-primary-300 hover:text-primary-200 text-sm transition-colors">
                 Powered by adilabs.id
             </a>
@@ -141,7 +141,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
-                    <span class="text-xl font-bold text-secondary-900">HRIS</span>
+                    <span class="text-xl font-bold text-secondary-900">SiHaris</span>
                 </a>
             </div>
 

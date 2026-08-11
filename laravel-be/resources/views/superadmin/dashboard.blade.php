@@ -4,7 +4,7 @@
 
 @section('header')
     <h1 class="text-2xl font-bold text-secondary-900">Dashboard</h1>
-    <p class="text-secondary-500 mt-1">Overview sistem HRIS</p>
+    <p class="text-secondary-500 mt-1">Overview sistem SiHaris</p>
 @endsection
 
 @section('content')

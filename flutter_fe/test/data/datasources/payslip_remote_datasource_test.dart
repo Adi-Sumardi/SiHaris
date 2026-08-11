@@ -9,6 +9,9 @@ import 'package:gaji_pro/data/models/responses/payslip_detail_model.dart';
 import 'package:gaji_pro/data/models/responses/payslip_download_model.dart';
 import 'package:gaji_pro/data/models/responses/payslip_summary_model.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 class MockHttpClient extends Mock implements http.Client {}
 
 class MockAuthLocalDatasource extends Mock implements AuthLocalDatasourceBase {}
@@ -20,14 +23,20 @@ void main() {
   late MockHttpClient mockHttpClient;
   late MockAuthLocalDatasource mockAuthLocalDatasource;
 
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    registerFallbackValue(FakeUri());
+  });
+
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
     mockHttpClient = MockHttpClient();
     mockAuthLocalDatasource = MockAuthLocalDatasource();
     datasource = PayslipRemoteDatasource(
       client: mockHttpClient,
       authLocalDatasource: mockAuthLocalDatasource,
     );
-    registerFallbackValue(FakeUri());
   });
 
   const tAuthToken = 'test_token';
@@ -60,7 +69,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips?year=2026&page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips?year=2026&page=1'),
           headers: tHeaders,
         ),
       ).thenAnswer(
@@ -82,7 +91,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips?year=2026&page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips?year=2026&page=1'),
           headers: tHeaders,
         ),
       ).thenAnswer(
@@ -96,7 +105,7 @@ void main() {
       // assert
       verify(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips?year=2026&page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips?year=2026&page=1'),
           headers: tHeaders,
         ),
       ).called(1);
@@ -107,7 +116,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips?year=2026&page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips?year=2026&page=1'),
           headers: tHeaders,
         ),
       ).thenAnswer((_) async => http.Response('Not Found', 404));
@@ -154,7 +163,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips/1'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips/1'),
           headers: tHeaders,
         ),
       ).thenAnswer(
@@ -176,7 +185,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips/999'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips/999'),
           headers: tHeaders,
         ),
       ).thenAnswer((_) async => http.Response('Not Found', 404));
@@ -202,7 +211,7 @@ void main() {
         setUpMockToken();
         when(
           () => mockHttpClient.get(
-            Uri.parse('${Variables.baseUrl}/payslips/1/download'),
+            Uri.parse('${Variables.apiBaseUrl}/payslips/1/download'),
             headers: tHeaders,
           ),
         ).thenAnswer(
@@ -225,7 +234,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips/1/download'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips/1/download'),
           headers: tHeaders,
         ),
       ).thenAnswer((_) async => http.Response('Unauthorized', 401));
@@ -253,7 +262,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips/summary?year=2026'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips/summary?year=2026'),
           headers: tHeaders,
         ),
       ).thenAnswer(
@@ -275,7 +284,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips/summary?year=2025'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips/summary?year=2025'),
           headers: tHeaders,
         ),
       ).thenAnswer(
@@ -291,7 +300,7 @@ void main() {
       // assert
       verify(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/payslips/summary?year=2025'),
+          Uri.parse('${Variables.apiBaseUrl}/payslips/summary?year=2025'),
           headers: tHeaders,
         ),
       ).called(1);

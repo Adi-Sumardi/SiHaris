@@ -28,7 +28,7 @@ void main() {
     test('should return PendingApprovalsModel on success', () async {
       when(
         () => mockClient.get(
-          Uri.parse('${Variables.baseUrl}/approvals/pending'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/pending'),
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -49,7 +49,7 @@ void main() {
       expect(result.totalPending, 0);
       verify(
         () => mockClient.get(
-          Uri.parse('${Variables.baseUrl}/approvals/pending'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/pending'),
           headers: any(named: 'headers'),
         ),
       ).called(1);
@@ -58,7 +58,7 @@ void main() {
     test('should throw exception on error', () async {
       when(
         () => mockClient.get(
-          Uri.parse('${Variables.baseUrl}/approvals/pending'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/pending'),
           headers: any(named: 'headers'),
         ),
       ).thenAnswer((_) async => http.Response('Error', 500));
@@ -71,7 +71,7 @@ void main() {
     test('should complete successfully', () async {
       when(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/leave/1/approve'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/leave/1/approve'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -81,7 +81,7 @@ void main() {
 
       verify(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/leave/1/approve'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/leave/1/approve'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -93,7 +93,7 @@ void main() {
     test('should complete successfully with notes', () async {
       when(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/leave/1/reject'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/leave/1/reject'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -103,7 +103,7 @@ void main() {
 
       verify(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/leave/1/reject'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/leave/1/reject'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -115,7 +115,7 @@ void main() {
     test('should complete successfully', () async {
       when(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/reimbursement/5/approve'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/reimbursement/5/approve'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -125,7 +125,7 @@ void main() {
 
       verify(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/reimbursement/5/approve'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/reimbursement/5/approve'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -137,7 +137,7 @@ void main() {
     test('should complete successfully with notes', () async {
       when(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/reimbursement/5/reject'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/reimbursement/5/reject'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -147,7 +147,7 @@ void main() {
 
       verify(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/approvals/reimbursement/5/reject'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/reimbursement/5/reject'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -159,7 +159,7 @@ void main() {
     test('should return list of ApprovalHistoryModel on success', () async {
       when(
         () => mockClient.get(
-          Uri.parse('${Variables.baseUrl}/approvals/history?page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/history?page=1'),
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -186,7 +186,7 @@ void main() {
       expect(result[0].status, 'approved');
       verify(
         () => mockClient.get(
-          Uri.parse('${Variables.baseUrl}/approvals/history?page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/history?page=1'),
           headers: any(named: 'headers'),
         ),
       ).called(1);
@@ -195,7 +195,7 @@ void main() {
     test('should throw exception on error', () async {
       when(
         () => mockClient.get(
-          Uri.parse('${Variables.baseUrl}/approvals/history?page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/approvals/history?page=1'),
           headers: any(named: 'headers'),
         ),
       ).thenAnswer((_) async => http.Response('Error', 500));

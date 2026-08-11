@@ -15,7 +15,7 @@ class DeviceTokenRemoteDatasource {
   Future<void> registerToken(RegisterTokenRequestModel request) async {
     final token = await authLocalDatasource.getToken();
     final response = await client.post(
-      Uri.parse('${Variables.apiBaseUrl}/device-tokens'),
+      Uri.parse(Variables.deviceTokenRegister),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ class DeviceTokenRemoteDatasource {
   Future<void> unregisterToken(String token) async {
     final authToken = await authLocalDatasource.getToken();
     final response = await client.delete(
-      Uri.parse('${Variables.apiBaseUrl}/device-tokens'),
+      Uri.parse(Variables.deviceTokenUnregister),
       headers: {
         'Authorization': 'Bearer $authToken',
         'Content-Type': 'application/json',

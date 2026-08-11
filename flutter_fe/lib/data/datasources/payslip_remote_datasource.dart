@@ -33,7 +33,7 @@ class PayslipRemoteDatasource {
 
     try {
       final token = await authLocalDatasource.getToken();
-      _log('🔑 Token: ${token != null ? '${token.substring(0, 20)}...' : 'NULL'}');
+      _log('🔑 Token: ${token != null ? (token.length > 20 ? '${token.substring(0, 20)}...' : token) : 'NULL'}');
 
       final response = await client.get(
         Uri.parse(url),

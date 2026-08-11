@@ -8,18 +8,36 @@ import 'package:gaji_pro/presentation/face_recognition/bloc/face_enroll/face_enr
 import 'package:gaji_pro/presentation/face_recognition/bloc/face_enroll/face_enroll_state.dart';
 import 'package:gaji_pro/presentation/face_recognition/pages/face_enroll_screen.dart';
 import 'package:gaji_pro/presentation/settings/pages/settings_screen.dart';
+import 'package:gaji_pro/presentation/auth/bloc/logout/logout_bloc.dart';
+import 'package:gaji_pro/presentation/auth/bloc/logout/logout_event.dart';
+import 'package:gaji_pro/presentation/auth/bloc/logout/logout_state.dart';
 
 class MockFaceEnrollBloc extends MockBloc<FaceEnrollEvent, FaceEnrollState>
     implements FaceEnrollBloc {}
 
+class MockLogoutBloc extends MockBloc<LogoutEvent, LogoutState>
+    implements LogoutBloc {}
+
 void main() {
   late MockFaceEnrollBloc mockEnrollBloc;
+  late MockLogoutBloc mockLogoutBloc;
 
   setUp(() {
     mockEnrollBloc = MockFaceEnrollBloc();
+    mockLogoutBloc = MockLogoutBloc();
     when(() => mockEnrollBloc.state).thenReturn(FaceEnrollInitial());
     when(() => mockEnrollBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => mockLogoutBloc.state).thenReturn(LogoutInitial());
+    when(() => mockLogoutBloc.stream).thenAnswer((_) => const Stream.empty());
   });
+
+  Widget buildSubject() => MultiBlocProvider(
+    providers: [
+      BlocProvider<FaceEnrollBloc>.value(value: mockEnrollBloc),
+      BlocProvider<LogoutBloc>.value(value: mockLogoutBloc),
+    ],
+    child: const MaterialApp(home: SettingsScreen()),
+  );
 
   group('SettingsScreen — widget', () {
     testWidgets('SettingsScreen dapat diinstansiasi', (tester) async {
@@ -28,12 +46,7 @@ void main() {
     });
 
     testWidgets('menampilkan menu Face Recognition', (tester) async {
-      await tester.pumpWidget(
-        BlocProvider<FaceEnrollBloc>.value(
-          value: mockEnrollBloc,
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
+      await tester.pumpWidget(buildSubject());
       await tester.pump();
 
       expect(find.text('Face Recognition'), findsOneWidget);
@@ -42,12 +55,7 @@ void main() {
     testWidgets(
       'menu Face Recognition memiliki subtitle Belum terdaftar by default',
       (tester) async {
-        await tester.pumpWidget(
-          BlocProvider<FaceEnrollBloc>.value(
-            value: mockEnrollBloc,
-            child: const MaterialApp(home: SettingsScreen()),
-          ),
-        );
+        await tester.pumpWidget(buildSubject());
         await tester.pump();
 
         expect(find.text('Belum terdaftar'), findsOneWidget);
@@ -59,15 +67,14 @@ void main() {
     testWidgets(
       'SettingsScreen menggunakan Navigator.push (bukan pushNamed) untuk Face Recognition',
       (tester) async {
-        // Verifikasi bahwa settings screen menggunakan Navigator.push
-        // (bukan pushNamed yang tidak terdaftar di routes map)
-        // Jika pushNamed digunakan, onUnknownRoute akan dipanggil dan
-        // menampilkan "Route tidak ditemukan"
         bool unknownRouteCalled = false;
 
         await tester.pumpWidget(
-          BlocProvider<FaceEnrollBloc>.value(
-            value: mockEnrollBloc,
+          MultiBlocProvider(
+            providers: [
+              BlocProvider<FaceEnrollBloc>.value(value: mockEnrollBloc),
+              BlocProvider<LogoutBloc>.value(value: mockLogoutBloc),
+            ],
             child: MaterialApp(
               home: const SettingsScreen(),
               onUnknownRoute: (settings) {
@@ -85,17 +92,9 @@ void main() {
         );
         await tester.pump();
 
-        // Scroll ke Face Recognition menu agar bisa di-tap
         await tester.ensureVisible(find.text('Face Recognition'));
 
-        // Setelah fix (Navigator.push), onUnknownRoute seharusnya TIDAK dipanggil
-        // saat user tap Face Recognition.
-        // Note: pumpAndSettle tidak dipanggil karena FaceEnrollScreen akan
-        // mencoba inisialisasi kamera/TFLite yang gagal di test environment.
-        // Cukup verifikasi bahwa settings screen merender menu Face Recognition
-        // dan tidak menggunakan pushNamed yang broken.
         expect(find.text('Face Recognition'), findsOneWidget);
-        // onUnknownRoute tidak pernah dipanggil karena kita belum tap
         expect(unknownRouteCalled, isFalse);
       },
     );
@@ -103,15 +102,9 @@ void main() {
     testWidgets('SettingsScreen dapat dirender dengan Face Recognition menu', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        BlocProvider<FaceEnrollBloc>.value(
-          value: mockEnrollBloc,
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
+      await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      // Verify widget penting ada
       expect(find.text('Face Recognition'), findsOneWidget);
       expect(find.text('Belum terdaftar'), findsOneWidget);
       expect(find.text('Setup'), findsOneWidget);

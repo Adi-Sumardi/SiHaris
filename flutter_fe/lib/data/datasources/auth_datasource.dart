@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../models/requests/register_request_model.dart';
 import '../models/requests/update_profile_request_model.dart';
 import '../models/responses/auth_response_model.dart';
+import '../models/responses/office_location_model.dart';
 import '../models/responses/register_response_model.dart';
 
 /// Abstract class untuk Auth Datasource
@@ -31,4 +32,5 @@ abstract class AuthLocalDatasourceBase {
   Future<bool> isLoggedIn();
   Future<void> removeAuthData();
   Future<Map<String, dynamic>?> getUserData();
+  Future<List<OfficeLocationModel>> getAssignedOffices();
 }

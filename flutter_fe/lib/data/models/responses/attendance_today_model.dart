@@ -28,6 +28,16 @@ class AttendanceTodayModel {
     this.schedule,
   });
 
+  factory AttendanceTodayModel.empty({Schedule? schedule}) {
+    return AttendanceTodayModel(
+      id: 0,
+      date: DateTime.now().toIso8601String().split('T')[0],
+      status: 'not_clocked_in',
+      statusLabel: 'Belum Absen',
+      schedule: schedule,
+    );
+  }
+
   factory AttendanceTodayModel.fromJson(Map<String, dynamic> json) {
     return AttendanceTodayModel(
       id: json['id'],

@@ -1,13 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gaji_pro/data/datasources/auth_local_datasource.dart';
 import 'package:gaji_pro/data/models/responses/auth_response_model.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late AuthLocalDatasource datasource;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
     datasource = AuthLocalDatasource();
   });
 
@@ -135,6 +138,9 @@ void main() {
         'user_id': 1,
         'user_name': 'Test User',
         'user_email': 'test@example.com',
+      });
+      FlutterSecureStorage.setMockInitialValues({
+        'auth_token': 'test_token',
       });
       datasource = AuthLocalDatasource();
 

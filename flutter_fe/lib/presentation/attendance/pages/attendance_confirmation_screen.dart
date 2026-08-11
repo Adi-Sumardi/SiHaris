@@ -9,6 +9,7 @@ import 'package:gaji_pro/data/models/requests/clock_in_request_model.dart';
 import 'package:gaji_pro/data/models/requests/clock_out_request_model.dart';
 import 'package:gaji_pro/data/models/responses/office_location_model.dart';
 import 'package:gaji_pro/presentation/attendance/bloc/attendance/attendance_bloc.dart';
+import 'package:gaji_pro/presentation/attendance/bloc/attendance_today/attendance_today_bloc.dart';
 
 enum AttendanceType { clockIn, clockOut }
 
@@ -129,6 +130,15 @@ class AttendanceConfirmationScreen extends StatelessWidget {
                 duration: const Duration(seconds: 2),
               ),
             );
+
+            // Refresh today status
+            if (context.mounted) {
+              try {
+                context.read<AttendanceTodayBloc>().add(GetTodayStatus());
+              } catch (_) {
+                // AttendanceTodayBloc may not be in context tree on this screen
+              }
+            }
 
             // Pop back to AttendanceScreen with result=true to trigger refresh
             // Use popUntil to ensure we go back to the right screen

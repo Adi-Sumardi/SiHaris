@@ -43,6 +43,8 @@ void main() {
         "status_label": "Hadir",
         "office_location_name": "Head Office",
         "working_formatted": "9 Jam 0 Menit",
+        "clock_in_location": null,
+        "clock_out_location": null,
       };
 
       expect(result, expectedMap);

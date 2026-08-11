@@ -56,6 +56,7 @@ class AuthLocalDatasource implements AuthLocalDatasourceBase {
     final prefs = await SharedPreferences.getInstance();
     await _secure.removeToken();
     await _secure.removeFaceEmbedding();
+    await prefs.remove('auth_token');
     await prefs.remove(_userIdKey);
     await prefs.remove(_userNameKey);
     await prefs.remove(_userEmailKey);

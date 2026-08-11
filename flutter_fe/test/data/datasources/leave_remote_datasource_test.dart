@@ -63,7 +63,7 @@ void main() {
         setUpMockToken();
         when(
           () => mockHttpClient.get(
-            Uri.parse('${Variables.baseUrl}/leaves/types'),
+            Uri.parse('${Variables.apiBaseUrl}/leaves/types'),
             headers: tHeaders,
           ),
         ).thenAnswer(
@@ -98,7 +98,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/leaves/balance'),
+          Uri.parse('${Variables.apiBaseUrl}/leaves/balance'),
           headers: tHeaders,
         ),
       ).thenAnswer(
@@ -141,7 +141,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/leaves?page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/leaves?page=1'),
           headers: tHeaders,
         ),
       ).thenAnswer(
@@ -210,7 +210,7 @@ void main() {
       setUpMockToken();
       when(
         () => mockHttpClient.post(
-          Uri.parse('${Variables.baseUrl}/leaves/1/cancel'),
+          Uri.parse('${Variables.apiBaseUrl}/leaves/1/cancel'),
           headers: tHeaders,
           body: any(named: 'body'),
         ),

@@ -125,7 +125,7 @@ class Variables {
   static const String faceRecognitionVerify =
       '$apiBaseUrl/face-recognition/verify';
   static const String faceRecognitionEnrollment =
-      '$apiBaseUrl/face-recognition/enrollment';
+      '$apiBaseUrl/face-recognition/enroll';
 
   // ============================================
   // Office Location

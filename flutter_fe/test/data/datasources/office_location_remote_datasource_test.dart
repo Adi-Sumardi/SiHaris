@@ -24,6 +24,7 @@ void main() {
       client: mockHttpClient,
       localDatasource: mockLocalDatasource,
     );
+    when(() => mockLocalDatasource.getAssignedOffices()).thenAnswer((_) async => []);
   });
 
   const testToken = 'test_token_123';

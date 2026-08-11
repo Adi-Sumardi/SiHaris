@@ -57,10 +57,27 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
 
       if (response.statusCode == 200) {
         final data = body['data'] as Map<String, dynamic>?;
+        final scheduleJson = body['schedule'] as Map<String, dynamic>?;
+        final schedule = scheduleJson != null ? Schedule.fromJson(scheduleJson) : null;
         if (data != null) {
-          return Right(AttendanceTodayModel.fromJson(data));
+          final model = AttendanceTodayModel.fromJson(data);
+          return Right(model.schedule == null && schedule != null
+              ? AttendanceTodayModel(
+                  id: model.id,
+                  date: model.date,
+                  clockIn: model.clockIn,
+                  clockOut: model.clockOut,
+                  status: model.status,
+                  statusLabel: model.statusLabel,
+                  lateMinutes: model.lateMinutes,
+                  workingMinutes: model.workingMinutes,
+                  faceVerified: model.faceVerified,
+                  officeLocation: model.officeLocation,
+                  schedule: schedule,
+                )
+              : model);
         }
-        return const Left('Data tidak ditemukan');
+        return Right(AttendanceTodayModel.empty(schedule: schedule));
       } else if (response.statusCode == 401) {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
@@ -168,11 +185,11 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         multipartRequest.fields['notes'] = request.notes!;
       }
       if (request.faceConfidence != null) {
-        multipartRequest.fields['face_confidence'] = request.faceConfidence
-            .toString();
+        multipartRequest.fields['face_confidence'] = request.faceConfidence.toString();
       }
-      // Note: face_descriptors tidak perlu dikirim jika face_verified=true
-      // Backend akan trust client-side verification
+      if (request.faceDescriptors != null) {
+        multipartRequest.fields['face_descriptors'] = jsonEncode(request.faceDescriptors!);
+      }
 
       if (request.photo != null) {
         multipartRequest.files.add(
@@ -259,8 +276,9 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         multipartRequest.fields['face_confidence'] = request.faceConfidence
             .toString();
       }
-      // Note: face_descriptors tidak perlu dikirim jika face_verified=true
-      // Backend akan trust client-side verification
+      if (request.faceDescriptors != null) {
+        multipartRequest.fields['face_descriptors'] = jsonEncode(request.faceDescriptors!);
+      }
 
       if (request.photo != null) {
         multipartRequest.files.add(

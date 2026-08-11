@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:gaji_pro/data/datasources/auth_remote_datasource.dart';
+import 'package:gaji_pro/data/models/responses/auth_response_model.dart';
 import 'package:gaji_pro/data/models/requests/update_profile_request_model.dart';
 import 'package:gaji_pro/core/constants/variables.dart';
 import '../../mocks/mock_http_client.dart';
@@ -41,11 +44,15 @@ void main() {
 
     registerFallbackValue(FakeUri());
     registerFallbackValue(FakeBaseRequest());
+    registerFallbackValue(AuthResponseModel(success: true, message: ''));
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
     mockHttpClient = MockHttpClient();
     mockLocalDatasource = MockAuthLocalDatasource();
+    when(() => mockLocalDatasource.saveAuthData(any())).thenAnswer((_) async => {});
     datasource = AuthRemoteDatasource(
       client: mockHttpClient,
       localDatasource: mockLocalDatasource,
@@ -102,7 +109,7 @@ void main() {
               'Accept': 'application/json',
             },
             body: jsonEncode({
-              'email': email,
+              'employee_id': email,
               'password': password,
             }),
           )).called(1);

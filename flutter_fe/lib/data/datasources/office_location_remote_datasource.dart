@@ -54,8 +54,7 @@ class OfficeLocationRemoteDatasource {
 
   Future<Either<String, List<OfficeLocationModel>>> getAssignedOffices() async {
     // First try to get from local storage (saved during login)
-    final localDatasource = _localDatasource as AuthLocalDatasource;
-    final localOffices = await localDatasource.getAssignedOffices();
+    final localOffices = await _localDatasource.getAssignedOffices();
     if (localOffices.isNotEmpty) {
       return Right(localOffices);
     }

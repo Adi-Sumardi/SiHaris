@@ -12,9 +12,9 @@ void main() {
 
       expect(json['embedding_data'], isNotNull);
 
-      final embeddingData = jsonDecode(json['embedding_data'] as String);
+      final embeddingData = json['embedding_data'] as Map<String, dynamic>;
       expect(embeddingData['version'], '1.0');
-      expect(embeddingData['model'], 'tflite');
+      expect(embeddingData['model'], 'mobilefacenet-tflite');
       expect(embeddingData['descriptors'], isA<List>());
       expect(embeddingData['descriptors'].length, 192);
     });
@@ -45,7 +45,7 @@ void main() {
       final model = FaceEnrollRequestModel(descriptors: testDescriptors);
       final json = model.toJson();
 
-      final embeddingData = jsonDecode(json['embedding_data'] as String);
+      final embeddingData = json['embedding_data'] as Map<String, dynamic>;
       final descriptors = List<double>.from(embeddingData['descriptors']);
 
       expect(descriptors[0], closeTo(0.0, 0.001));

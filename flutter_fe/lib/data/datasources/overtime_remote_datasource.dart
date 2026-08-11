@@ -41,7 +41,12 @@ class OvertimeRemoteDatasource {
 
     if (response.statusCode == 200) {
       final jsonData = json.decode(response.body);
-      final List<dynamic> data = jsonData['data'];
+      final rawData = jsonData['data'];
+      final List<dynamic> data = rawData is List
+          ? rawData
+          : (rawData is Map && rawData.containsKey('data')
+              ? (rawData['data'] as List<dynamic>)
+              : <dynamic>[]);
       return data.map((e) => OvertimeModel.fromJson(e)).toList();
     } else if (response.statusCode == 401) {
       SessionService.instance.handleSessionExpired();

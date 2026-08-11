@@ -75,7 +75,7 @@ void main() {
           "is_headquarters": true,
           "is_primary": true,
         },
-        "schedule": {"start_time": "08:00", "end_time": "17:00"},
+        "schedule": {"name": null, "start_time": "08:00", "end_time": "17:00"},
       };
       expect(result, expectedMap);
     });

@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:gaji_pro/data/datasources/dashboard_remote_datasource.dart';
@@ -13,10 +15,13 @@ void main() {
   late MockAuthLocalDatasource mockLocalDatasource;
 
   setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     registerFallbackValue(FakeUri());
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
     mockHttpClient = MockHttpClient();
     mockLocalDatasource = MockAuthLocalDatasource();
     datasource = DashboardRemoteDatasource(
@@ -124,7 +129,7 @@ void main() {
       // Assert
       expect(result.isLeft(), true);
       result.fold(
-        (l) => expect(l, 'Unauthenticated'),
+        (l) => expect(l, 'Sesi Anda telah berakhir'),
         (r) => fail('Should not return Right'),
       );
     });

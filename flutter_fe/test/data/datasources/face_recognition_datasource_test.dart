@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gaji_pro/data/datasources/face_recognition_datasource.dart';
 import 'package:gaji_pro/data/models/requests/face_recognition/face_enroll_request_model.dart';
 import 'package:gaji_pro/data/models/requests/face_recognition/face_verify_request_model.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,13 +19,15 @@ void main() {
   final testDescriptors = List.generate(192, (i) => i * 0.01);
 
   setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     registerFallbackValue(Uri.parse('http://fallback.test'));
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({'token': 'test_token'});
+    FlutterSecureStorage.setMockInitialValues({});
     mockClient = MockHttpClient();
     datasource = FaceRecognitionRemoteDatasource(client: mockClient);
-    SharedPreferences.setMockInitialValues({'token': 'test_token'});
   });
 
   group('getStatus()', () {
@@ -68,7 +71,7 @@ void main() {
 
       expect(result, isA<Left>());
       result.fold(
-        (l) => expect(l, 'Unauthenticated'),
+        (l) => expect(l, 'Sesi Anda telah berakhir'),
         (r) => fail('Expected Left'),
       );
     });
@@ -126,7 +129,7 @@ void main() {
       final result = await datasource.enroll(enrollRequest);
 
       result.fold(
-        (l) => expect(l, 'Unauthenticated'),
+        (l) => expect(l, 'Sesi Anda telah berakhir'),
         (r) => fail('Expected Left'),
       );
     });
@@ -225,7 +228,7 @@ void main() {
       final result = await datasource.deleteEnrollment();
 
       result.fold(
-        (l) => expect(l, 'Unauthenticated'),
+        (l) => expect(l, 'Sesi Anda telah berakhir'),
         (r) => fail('Expected Left'),
       );
     });

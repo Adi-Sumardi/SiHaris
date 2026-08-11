@@ -100,7 +100,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.settings_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(SettingsScreen), findsOneWidget);
     });

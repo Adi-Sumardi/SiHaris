@@ -24,7 +24,7 @@ class LeaveBalanceLoaded extends LeaveBalanceState {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is LeaveBalanceLoaded && other.balances == balances;
+    return other is LeaveBalanceLoaded && listEquals(other.balances, balances);
   }
 
   @override

@@ -20,6 +20,12 @@ import 'package:gaji_pro/presentation/payslip/bloc/payslip_list/payslip_list_blo
 import 'package:gaji_pro/presentation/payslip/bloc/payslip_summary/payslip_summary_bloc.dart';
 import 'package:gaji_pro/presentation/auth/bloc/profile/profile_event.dart';
 import 'package:gaji_pro/presentation/auth/bloc/profile/profile_state.dart';
+import 'package:gaji_pro/presentation/dashboard/bloc/dashboard_bloc.dart';
+import 'package:gaji_pro/presentation/dashboard/bloc/dashboard_event.dart';
+import 'package:gaji_pro/presentation/dashboard/bloc/dashboard_state.dart';
+import 'package:gaji_pro/presentation/dashboard/bloc/quick_stats_bloc.dart';
+import 'package:gaji_pro/presentation/dashboard/bloc/quick_stats_event.dart';
+import 'package:gaji_pro/presentation/dashboard/bloc/quick_stats_state.dart';
 
 class MockLeaveListBloc extends MockBloc<LeaveListEvent, LeaveListState>
     implements LeaveListBloc {}
@@ -45,25 +51,18 @@ class MockAttendanceSummaryBloc
     extends MockBloc<AttendanceSummaryEvent, AttendanceSummaryState>
     implements AttendanceSummaryBloc {}
 
-class MockPayslipListBloc extends MockBloc<PayslipListEvent, PayslipListState>
-    implements PayslipListBloc {
-  @override
-  PayslipListState get state => PayslipListInitial();
+class MockDashboardBloc extends MockBloc<DashboardEvent, DashboardState>
+    implements DashboardBloc {}
 
-  @override
-  Stream<PayslipListState> get stream => Stream.value(PayslipListInitial());
-}
+class MockQuickStatsBloc extends MockBloc<QuickStatsEvent, QuickStatsState>
+    implements QuickStatsBloc {}
+
+class MockPayslipListBloc extends MockBloc<PayslipListEvent, PayslipListState>
+    implements PayslipListBloc {}
 
 class MockPayslipSummaryBloc
     extends MockBloc<PayslipSummaryEvent, PayslipSummaryState>
-    implements PayslipSummaryBloc {
-  @override
-  PayslipSummaryState get state => PayslipSummaryInitial();
-
-  @override
-  Stream<PayslipSummaryState> get stream =>
-      Stream.value(PayslipSummaryInitial());
-}
+    implements PayslipSummaryBloc {}
 
 class FakePayslipListEvent extends Fake implements PayslipListEvent {}
 
@@ -72,6 +71,14 @@ class FakePayslipListState extends Fake implements PayslipListState {}
 class FakePayslipSummaryEvent extends Fake implements PayslipSummaryEvent {}
 
 class FakePayslipSummaryState extends Fake implements PayslipSummaryState {}
+
+class FakeDashboardEvent extends Fake implements DashboardEvent {}
+
+class FakeDashboardState extends Fake implements DashboardState {}
+
+class FakeQuickStatsEvent extends Fake implements QuickStatsEvent {}
+
+class FakeQuickStatsState extends Fake implements QuickStatsState {}
 
 /// Helper: provide all global BLoCs needed by MainScreen tabs
 Widget wrapWithProviders(Widget child) {
@@ -84,6 +91,8 @@ Widget wrapWithProviders(Widget child) {
   final attendanceSummaryBloc = MockAttendanceSummaryBloc();
   final payslipListBloc = MockPayslipListBloc();
   final payslipSummaryBloc = MockPayslipSummaryBloc();
+  final dashboardBloc = MockDashboardBloc();
+  final quickStatsBloc = MockQuickStatsBloc();
 
   when(() => leaveListBloc.state).thenReturn(LeaveListInitial());
   when(() => leaveListBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -107,9 +116,16 @@ Widget wrapWithProviders(Widget child) {
   when(
     () => attendanceSummaryBloc.state,
   ).thenReturn(AttendanceSummaryInitial());
-  when(
-    () => attendanceSummaryBloc.stream,
-  ).thenAnswer((_) => const Stream.empty());
+  when(() => attendanceSummaryBloc.stream).thenAnswer((_) => const Stream.empty());
+
+  when(() => payslipListBloc.state).thenReturn(PayslipListInitial());
+  when(() => payslipListBloc.stream).thenAnswer((_) => const Stream.empty());
+  when(() => payslipSummaryBloc.state).thenReturn(PayslipSummaryInitial());
+  when(() => payslipSummaryBloc.stream).thenAnswer((_) => const Stream.empty());
+  when(() => dashboardBloc.state).thenReturn(DashboardInitial());
+  when(() => dashboardBloc.stream).thenAnswer((_) => const Stream.empty());
+  when(() => quickStatsBloc.state).thenReturn(QuickStatsInitial());
+  when(() => quickStatsBloc.stream).thenAnswer((_) => const Stream.empty());
 
   return MultiBlocProvider(
     providers: [
@@ -122,6 +138,8 @@ Widget wrapWithProviders(Widget child) {
       BlocProvider<AttendanceSummaryBloc>.value(value: attendanceSummaryBloc),
       BlocProvider<PayslipListBloc>.value(value: payslipListBloc),
       BlocProvider<PayslipSummaryBloc>.value(value: payslipSummaryBloc),
+      BlocProvider<DashboardBloc>.value(value: dashboardBloc),
+      BlocProvider<QuickStatsBloc>.value(value: quickStatsBloc),
     ],
     child: MaterialApp(home: child),
   );
@@ -133,6 +151,10 @@ void main() {
     registerFallbackValue(FakePayslipListState());
     registerFallbackValue(FakePayslipSummaryEvent());
     registerFallbackValue(FakePayslipSummaryState());
+    registerFallbackValue(FakeDashboardEvent());
+    registerFallbackValue(FakeDashboardState());
+    registerFallbackValue(FakeQuickStatsEvent());
+    registerFallbackValue(FakeQuickStatsState());
   });
 
   group(

@@ -60,7 +60,7 @@ void main() {
       act: (bloc) => bloc.add(const GetOvertimeList()),
       expect: () => [
         OvertimeListLoading(),
-        OvertimeListLoaded(overtimes: [tOvertimeModel], hasReachedMax: false),
+        OvertimeListLoaded(overtimes: [tOvertimeModel], hasReachedMax: true),
       ],
     );
 

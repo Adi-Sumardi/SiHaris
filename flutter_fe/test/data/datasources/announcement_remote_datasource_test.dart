@@ -82,7 +82,7 @@ void main() {
       expect(result, equals(tAnnouncementsList));
       verify(
         () => mockHttpClient.get(
-          Uri.parse('${Variables.baseUrl}/announcements?page=1'),
+          Uri.parse('${Variables.apiBaseUrl}/announcements?page=1'),
           headers: {
             'Accept': 'application/json',
             'Authorization': 'Bearer $tToken',
@@ -189,7 +189,7 @@ void main() {
       // assert
       verify(
         () => mockHttpClient.post(
-          Uri.parse('${Variables.baseUrl}/announcements/1/read'),
+          Uri.parse('${Variables.apiBaseUrl}/announcements/1/read'),
           headers: {
             'Accept': 'application/json',
             'Authorization': 'Bearer $tToken',

@@ -76,7 +76,7 @@ void main() {
     test('should complete successfully when status code is 201', () async {
       when(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/overtimes'),
+          Uri.parse('${Variables.apiBaseUrl}/overtimes'),
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         ),
@@ -93,7 +93,7 @@ void main() {
 
       verify(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/overtimes'),
+          Uri.parse('${Variables.apiBaseUrl}/overtimes'),
           headers: any(named: 'headers'),
           body: json.encode(request.toJson()), // Verifying JSON body
         ),
@@ -105,7 +105,7 @@ void main() {
     test('should complete successfully when status code is 200', () async {
       when(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/overtimes/1/cancel'),
+          Uri.parse('${Variables.apiBaseUrl}/overtimes/1/cancel'),
           headers: any(named: 'headers'),
         ),
       ).thenAnswer((_) async => http.Response('{"message": "Success"}', 200));
@@ -114,7 +114,7 @@ void main() {
 
       verify(
         () => mockClient.post(
-          Uri.parse('${Variables.baseUrl}/overtimes/1/cancel'),
+          Uri.parse('${Variables.apiBaseUrl}/overtimes/1/cancel'),
           headers: any(named: 'headers'),
         ),
       ).called(1);

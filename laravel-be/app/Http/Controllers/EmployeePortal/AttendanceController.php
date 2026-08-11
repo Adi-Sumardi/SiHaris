@@ -213,15 +213,36 @@ class AttendanceController extends Controller
         }
 
         $request->validate([
-            'photo' => ['required', 'image', 'max:5120'],
+            'photo' => ['required_without:photo_base64', 'nullable', 'image', 'max:5120'],
+            'photo_base64' => ['required_without:photo', 'nullable', 'string'],
         ]);
 
         $tenant = $user->company;
 
-        $photoPath = $request->file('photo')->store(
-            "face-enrollments/{$tenant->id}",
-            'public'
-        );
+        if ($request->filled('photo_base64')) {
+            $base64Data = $request->input('photo_base64');
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $type)) {
+                $data = substr($base64Data, strpos($base64Data, ',') + 1);
+                $ext = strtolower($type[1]);
+                if ($ext === 'jpeg') $ext = 'jpg';
+                $data = base64_decode($data);
+
+                if ($data === false) {
+                    return redirect()->route('portal.attendance.index')->with('error', 'Foto webcam tidak dapat diproses.');
+                }
+
+                $filename = 'face-enrollments/' . $tenant->id . '/' . uniqid('face_') . '.' . $ext;
+                Storage::disk('public')->put($filename, $data);
+                $photoPath = $filename;
+            } else {
+                return redirect()->route('portal.attendance.index')->with('error', 'Format foto webcam tidak valid.');
+            }
+        } else {
+            $photoPath = $request->file('photo')->store(
+                "face-enrollments/{$tenant->id}",
+                'public'
+            );
+        }
 
         $this->faceRecognitionService->enrollFace(
             $employee,

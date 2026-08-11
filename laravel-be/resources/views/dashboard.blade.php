@@ -213,7 +213,7 @@
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <p class="font-medium text-secondary-900">{{ $attendance->clock_in?->format('H:i') }}</p>
+                                    <p class="font-medium text-secondary-900">{{ $attendance->formatted_clock_in }}</p>
                                     @if($attendance->clock_in_status === 'on_time')
                                         <x-badge type="success">Tepat Waktu</x-badge>
                                     @elseif($attendance->clock_in_status === 'late')

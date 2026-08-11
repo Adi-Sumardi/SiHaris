@@ -219,10 +219,10 @@
                                         <div class="text-sm text-secondary-500">{{ $attendance->date->translatedFormat('l') }}</div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        {{ $attendance->clock_in?->format('H:i') ?? '-' }}
+                                        {{ $attendance->formatted_clock_in ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        {{ $attendance->clock_out?->format('H:i') ?? '-' }}
+                                        {{ $attendance->formatted_clock_out ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 text-center">
                                         @switch($attendance->status)

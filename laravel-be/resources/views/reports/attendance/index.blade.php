@@ -131,8 +131,8 @@
                         <p class="text-xs text-secondary-400">{{ $attendance->employee->employee_id ?? '-' }}</p>
                     </td>
                     <td class="text-secondary-600">{{ $attendance->employee->department?->name ?? '-' }}</td>
-                    <td class="text-center text-secondary-900">{{ $attendance->clock_in?->format('H:i') ?? '-' }}</td>
-                    <td class="text-center text-secondary-900">{{ $attendance->clock_out?->format('H:i') ?? '-' }}</td>
+                    <td class="text-center text-secondary-900">{{ $attendance->formatted_clock_in ?? '-' }}</td>
+                    <td class="text-center text-secondary-900">{{ $attendance->formatted_clock_out ?? '-' }}</td>
                     <td class="text-center">
                         @switch($attendance->clock_in_status)
                             @case('on_time')

@@ -158,8 +158,8 @@
                     <td>{{ $attendance->date->format('d/m/Y') }}</td>
                     <td>{{ $attendance->employee->full_name ?? '-' }}</td>
                     <td>{{ $attendance->employee->department?->name ?? '-' }}</td>
-                    <td class="text-center">{{ $attendance->clock_in?->format('H:i') ?? '-' }}</td>
-                    <td class="text-center">{{ $attendance->clock_out?->format('H:i') ?? '-' }}</td>
+                    <td class="text-center">{{ $attendance->formatted_clock_in ?? '-' }}</td>
+                    <td class="text-center">{{ $attendance->formatted_clock_out ?? '-' }}</td>
                     <td class="text-center">
                         @switch($attendance->clock_in_status)
                             @case('on_time')

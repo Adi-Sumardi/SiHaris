@@ -33,11 +33,11 @@ class ResetPasswordNotification extends Notification
 
         return (new MailMessage)
             ->subject("[$appName] Instruksi Reset Password Akun Anda")
-            ->greeting("Halo, {$notifiable->name}!")
-            ->line("Kami menerima permintaan untuk mengosongkan / meng-reset password akun $appName Anda.")
-            ->action('Reset Password Sekarang', $url)
-            ->line('Link reset password ini berlaku selama 60 menit.')
-            ->line('Jika Anda tidak pernah meminta reset password, abaikan email ini dan password Anda akan tetap aman.')
-            ->salutation("Salam hangat,\nTim $appName");
+            ->view('emails.reset-password', [
+                'url' => $url,
+                'name' => $notifiable->name ?? 'Pengguna',
+                'appName' => $appName,
+                'count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60),
+            ]);
     }
 }

@@ -25,7 +25,9 @@ class SendagoMailTransport extends AbstractTransport
         $toAddresses = array_map(fn ($address) => $address->getAddress(), $email->getTo());
         $to = implode(',', $toAddresses);
         $subject = $email->getSubject() ?? 'Notifikasi SiHaris';
-        $body = $email->getHtmlBody() ?? $email->getTextBody() ?? '';
+        $htmlBody = $email->getHtmlBody();
+        $isHtml = ! empty($htmlBody);
+        $body = $htmlBody ?? $email->getTextBody() ?? '';
 
         if (empty($this->memberId) || empty($this->secret)) {
             Log::info('SendagoMail test mode: Email not sent to API', [
@@ -44,6 +46,7 @@ class SendagoMailTransport extends AbstractTransport
                     'toAddr' => $to,
                     'subject' => $subject,
                     'body' => $body,
+                    'isHtml' => $isHtml,
                 ]);
 
             if (! $response->successful()) {

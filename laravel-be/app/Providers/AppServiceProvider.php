@@ -13,6 +13,7 @@ use App\Listeners\SendLeaveApprovalNotification;
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->environment('production') || str_starts_with((string) config('app.url'), 'https')) {
+            URL::forceScheme('https');
+        }
         // Register event listeners for push notifications
         Event::listen(AttendanceClockIn::class, SendAttendanceClockInNotification::class);
         Event::listen(AttendanceClockOut::class, SendAttendanceClockOutNotification::class);

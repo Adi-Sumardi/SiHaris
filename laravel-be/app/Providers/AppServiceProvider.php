@@ -43,5 +43,14 @@ class AppServiceProvider extends ServiceProvider
         // Register email logging listeners
         Event::listen(MessageSending::class, [LogEmailActivity::class, 'handleSending']);
         Event::listen(MessageSent::class, [LogEmailActivity::class, 'handleSent']);
+
+        // Register custom SendagoMail Transport
+        \Illuminate\Support\Facades\Mail::extend('sendagomail', function (array $config = []) {
+            return new \App\Mail\SendagoMailTransport(
+                config('services.sendagomail.base_url', 'https://sendagomail.adilabs.id'),
+                config('services.sendagomail.member_id'),
+                config('services.sendagomail.secret')
+            );
+        });
     }
 }

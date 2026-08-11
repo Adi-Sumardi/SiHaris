@@ -81,6 +81,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Send password reset notification using custom Indonesian notification template.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
+
+    /**
      * Prevent deletion of demo accounts
      */
     protected static function booted(): void

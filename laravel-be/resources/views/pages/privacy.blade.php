@@ -21,7 +21,7 @@
                     <section class="mb-8">
                         <h2 class="text-xl font-bold text-secondary-900 mb-4">1. Introduction</h2>
                         <p class="text-secondary-600 mb-4">
-                            JagoFlutter ("we", "us", or "our") operates the HRIS application, available as a web platform and mobile application (collectively, the "Service"). This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
+                            adilabs.id ("we", "us", or "our") operates the HRIS application, available as a web platform and mobile application (collectively, the "Service"). This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
                         </p>
                         <p class="text-secondary-600">
                             By using HRIS, you agree to the collection and use of information in accordance with this policy.
@@ -86,7 +86,7 @@
                             <li><strong>With Consent:</strong> When you provide explicit permission.</li>
                             <li><strong>Service Providers:</strong> Third parties that help us operate our Service (hosting, payment processing, Firebase by Google for push notifications).</li>
                             <li><strong>Legal Compliance:</strong> If required by law or legal process.</li>
-                            <li><strong>Rights Protection:</strong> To protect the rights, property, or safety of JagoFlutter and its users.</li>
+                            <li><strong>Rights Protection:</strong> To protect the rights, property, or safety of adilabs.id and its users.</li>
                             <li><strong>Business Transactions:</strong> In the event of a merger, acquisition, or asset sale.</li>
                         </ul>
                     </section>
@@ -154,7 +154,7 @@
                             <li><strong>Withdraw Consent:</strong> Revoke device permissions (camera, location) through your device settings at any time. Note that revoking certain permissions may limit app functionality.</li>
                         </ul>
                         <p class="text-secondary-600 mt-4">
-                            To exercise these rights, please contact us at hey@jagoflutter.com.
+                            To exercise these rights, please contact us at hello@adilabs.id.
                         </p>
                     </section>
 
@@ -248,9 +248,9 @@
                             If you have any questions about this Privacy Policy or wish to exercise your rights, please contact:
                         </p>
                         <div class="bg-secondary-50 rounded-xl p-6">
-                            <p class="text-secondary-600 mb-2"><strong>JagoFlutter</strong></p>
-                            <p class="text-secondary-600"><strong>Email:</strong> hey@jagoflutter.com</p>
-                            <p class="text-secondary-600"><strong>Website:</strong> <a href="https://jagoflutter.com" class="text-primary-600 hover:text-primary-700 underline" target="_blank" rel="noopener">https://jagoflutter.com</a></p>
+                            <p class="text-secondary-600 mb-2"><strong>adilabs.id</strong></p>
+                            <p class="text-secondary-600"><strong>Email:</strong> hello@adilabs.id</p>
+                            <p class="text-secondary-600"><strong>Website:</strong> <a href="https://adilabs.id" class="text-primary-600 hover:text-primary-700 underline" target="_blank" rel="noopener">https://adilabs.id</a></p>
                         </div>
                     </section>
 

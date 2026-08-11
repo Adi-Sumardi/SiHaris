@@ -49,6 +49,12 @@ class SendagoMailTransport extends AbstractTransport
                     'isHtml' => $isHtml,
                 ]);
 
+            Log::info('SendagoMail Transport Response', [
+                'to' => $to,
+                'status' => $response->status(),
+                'response' => $response->json() ?? $response->body(),
+            ]);
+
             if (! $response->successful()) {
                 Log::error('SendagoMail Transport API failed', [
                     'to' => $to,

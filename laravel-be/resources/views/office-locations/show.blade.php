@@ -23,7 +23,7 @@
                 type="button"
                 @click="$dispatch('confirm-dialog', {
                     title: 'Hapus Lokasi Kantor',
-                    message: 'Apakah Anda yakin ingin menghapus lokasi {{ $officeLocation->name }}?',
+                    message: 'Apakah Anda yakin ingin menghapus lokasi {{ addslashes($officeLocation->name) }}?',
                     confirmText: 'Ya, Hapus',
                     type: 'danger',
                     formAction: '{{ route('office-locations.destroy', $officeLocation) }}'

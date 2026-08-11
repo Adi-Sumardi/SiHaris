@@ -108,10 +108,21 @@ class OfficeLocationController extends Controller
             abort(404);
         }
 
-        $officeLocation->delete();
+        if ($officeLocation->is_headquarters) {
+            return redirect()->route('office-locations.index')
+                ->with('error', 'Kantor Pusat tidak dapat dihapus. Silakan ubah status Kantor Pusat ke lokasi lain terlebih dahulu.');
+        }
 
-        return redirect()->route('office-locations.index')
-            ->with('success', 'Lokasi kantor berhasil dihapus.');
+        try {
+            $officeLocation->employees()->detach();
+            $officeLocation->delete();
+
+            return redirect()->route('office-locations.index')
+                ->with('success', 'Lokasi kantor berhasil dihapus.');
+        } catch (\Throwable $e) {
+            return redirect()->route('office-locations.index')
+                ->with('error', 'Gagal menghapus lokasi kantor: ' . $e->getMessage());
+        }
     }
 
     public function assignEmployees(Request $request, OfficeLocation $officeLocation): RedirectResponse

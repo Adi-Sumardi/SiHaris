@@ -48,7 +48,7 @@ class PromoDialog {
                   const SizedBox(height: 12),
                   // Description
                   const Text(
-                    'Join Academy JagoFlutter GajiPro HRIS untuk mendapatkan fitur lengkapnya!',
+                    'Join Academy JagoFlutter HRIS untuk mendapatkan fitur lengkapnya!',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,

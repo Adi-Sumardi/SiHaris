@@ -6,6 +6,7 @@ import 'package:gaji_pro/core/constants/variables.dart';
 import 'package:gaji_pro/core/services/connectivity_service.dart';
 import 'package:gaji_pro/core/services/http_logger.dart';
 import 'package:gaji_pro/core/services/offline_attendance/offline_attendance_service.dart';
+import 'package:gaji_pro/core/services/secure_storage_service.dart';
 import 'package:gaji_pro/core/services/session_service.dart';
 import 'package:gaji_pro/data/datasources/auth_datasource.dart';
 import 'package:gaji_pro/data/datasources/auth_local_datasource.dart';
@@ -20,16 +21,19 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
   final AuthLocalDatasourceBase _localDatasource;
   final ConnectivityService _connectivity;
   final OfflineAttendanceService _offline;
+  final SecureStorageService _secureStorage;
 
   AttendanceRemoteDatasource({
     http.Client? client,
     AuthLocalDatasourceBase? localDatasource,
     ConnectivityService? connectivity,
     OfflineAttendanceService? offline,
+    SecureStorageService? secureStorage,
   }) : _client = client ?? http.Client(),
        _localDatasource = localDatasource ?? AuthLocalDatasource(),
        _connectivity = connectivity ?? ConnectivityServiceImpl(),
-       _offline = offline ?? OfflineAttendanceService.instance;
+       _offline = offline ?? OfflineAttendanceService.instance,
+       _secureStorage = secureStorage ?? SecureStorageService.instance;
 
   Map<String, String> _getHeaders(String? token) {
     return {
@@ -155,6 +159,10 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
       multipartRequest.fields['face_verified'] = request.faceVerified
           ? '1'
           : '0';
+      // Required by the backend's device-binding anti-fraud check: one
+      // device can only ever be used to clock in for a single employee.
+      multipartRequest.fields['app_device_id'] =
+          await _secureStorage.getOrCreateDeviceId();
 
       if (request.notes != null) {
         multipartRequest.fields['notes'] = request.notes!;
@@ -239,6 +247,10 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
       multipartRequest.fields['face_verified'] = request.faceVerified
           ? '1'
           : '0';
+      // Required by the backend's device-binding anti-fraud check: one
+      // device can only ever be used to clock in/out for a single employee.
+      multipartRequest.fields['app_device_id'] =
+          await _secureStorage.getOrCreateDeviceId();
 
       if (request.notes != null) {
         multipartRequest.fields['notes'] = request.notes!;

@@ -119,6 +119,10 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
     }
   }
 
+  /// Intentionally unsupported by the backend (returns 404 by design):
+  /// employees cannot self-delete their face enrollment to prevent erasing
+  /// and re-registering a fraudulent face without HR oversight. Do not wire
+  /// this up to a UI action expecting it to succeed.
   @override
   Future<Either<String, bool>> deleteEnrollment() async {
     try {

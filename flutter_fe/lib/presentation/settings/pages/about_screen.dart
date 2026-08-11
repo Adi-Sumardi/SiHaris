@@ -71,7 +71,7 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'GajiPro',
+              'HRIS',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -102,7 +102,7 @@ class _AboutScreenState extends State<AboutScreen> {
               const CircularProgressIndicator(),
             const SizedBox(height: 48),
             Text(
-              '© 2026 GajiPro Inc.',
+              '© 2026 HRIS Inc.',
               style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
             ),
           ],

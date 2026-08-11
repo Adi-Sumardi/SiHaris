@@ -158,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 8), // 8px spacing
           Text(
-            'Masuk ke akun GajiPro Anda',
+            'Masuk ke akun HRIS Anda',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withValues(alpha: 0.85),

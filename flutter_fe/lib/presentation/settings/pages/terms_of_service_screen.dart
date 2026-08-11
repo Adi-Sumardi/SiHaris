@@ -57,7 +57,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Dengan menggunakan aplikasi GajiPro, Anda menyetujui untuk terikat oleh syarat dan ketentuan ini. Jika Anda tidak setuju, mohon untuk tidak menggunakan aplikasi ini.',
+              'Dengan menggunakan aplikasi HRIS, Anda menyetujui untuk terikat oleh syarat dan ketentuan ini. Jika Anda tidak setuju, mohon untuk tidak menggunakan aplikasi ini.',
               style: TextStyle(height: 1.5, color: AppColors.textSecondary),
             ),
             SizedBox(height: 24),
@@ -99,7 +99,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'GajiPro tidak bertanggung jawab atas kerugian langsung atau tidak langsung yang timbul dari penggunaan aplikasi ini, termasuk kehilangan data atau gangguan layanan.',
+              'HRIS tidak bertanggung jawab atas kerugian langsung atau tidak langsung yang timbul dari penggunaan aplikasi ini, termasuk kehilangan data atau gangguan layanan.',
               style: TextStyle(height: 1.5, color: AppColors.textSecondary),
             ),
           ],

@@ -34,7 +34,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
-              'Kebijakan Privasi GajiPro',
+              'Kebijakan Privasi HRIS',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,

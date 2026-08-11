@@ -80,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen>
     final biometric = BiometricService.instance;
     if (await biometric.isEnabled() && await biometric.isAvailable()) {
       final passed = await biometric.authenticate(
-        reason: 'Buka GajiPro dengan verifikasi biometrik',
+        reason: 'Buka HRIS dengan verifikasi biometrik',
       );
       if (!mounted) return;
       if (!passed) {
@@ -162,7 +162,7 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 24),
                     // App Name
                     const Text(
-                      'GajiPro',
+                      'HRIS',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,

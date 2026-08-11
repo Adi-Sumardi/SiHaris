@@ -252,7 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Buat akun demo untuk mencoba fitur GajiPro',
+            'Buat akun demo untuk mencoba fitur HRIS',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,

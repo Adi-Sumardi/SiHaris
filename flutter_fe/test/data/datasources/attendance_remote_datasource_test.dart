@@ -9,6 +9,7 @@ import 'package:gaji_pro/data/models/requests/clock_in_request_model.dart';
 import 'package:gaji_pro/data/models/requests/clock_out_request_model.dart';
 import '../../mocks/mock_http_client.dart';
 import '../../mocks/mock_auth_local_datasource.dart';
+import '../../mocks/mock_secure_storage_service.dart';
 
 class MockFile extends Mock implements File {}
 
@@ -16,6 +17,7 @@ void main() {
   late AttendanceRemoteDatasource datasource;
   late MockHttpClient mockHttpClient;
   late MockAuthLocalDatasource mockLocalDatasource;
+  late MockSecureStorageService mockSecureStorage;
 
   setUpAll(() {
     registerFallbackValue(FakeUri());
@@ -26,9 +28,14 @@ void main() {
   setUp(() {
     mockHttpClient = MockHttpClient();
     mockLocalDatasource = MockAuthLocalDatasource();
+    mockSecureStorage = MockSecureStorageService();
+    when(
+      () => mockSecureStorage.getOrCreateDeviceId(),
+    ).thenAnswer((_) async => 'test-device-id');
     datasource = AttendanceRemoteDatasource(
       client: mockHttpClient,
       localDatasource: mockLocalDatasource,
+      secureStorage: mockSecureStorage,
     );
   });
 

@@ -19,6 +19,29 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Some plugins (e.g. tflite_flutter) still declare an older Java target
+// than the Kotlin target Flutter's Gradle tooling selects for this JDK,
+// which Gradle rejects as an inconsistent JVM target. Force every
+// subproject's Java/Kotlin compile tasks to agree on Java 17, matching
+// the app module's own configuration. Uses afterEvaluate so this runs
+// after each plugin's own (older) build.gradle has already applied.
+subprojects {
+    if (project.name == "app") return@subprojects
+    afterEvaluate {
+        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+        }
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

@@ -458,7 +458,7 @@ class GajiProApp extends StatelessWidget {
       ],
       child: MaterialApp(
         navigatorKey: SessionService.navigatorKey,
-        title: 'GajiPro',
+        title: 'HRIS',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           // ... (existing theme)

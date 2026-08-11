@@ -50,12 +50,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $userName = $user->first_name ?? $user->name ?? 'User';
+
         // Redirect employee to portal, admin/hr to dashboard
         if ($user->hasRole('employee') && ! $user->hasAnyRole(['admin', 'hr-manager', 'payroll-manager', 'manager'])) {
-            return redirect()->intended(route('portal.dashboard'));
+            return redirect()->intended(route('portal.dashboard'))
+                ->with('success', "Berhasil masuk! Selamat datang kembali, {$userName}.");
         }
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended('/dashboard')
+            ->with('success', "Berhasil masuk! Selamat datang kembali, {$userName}.");
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -65,6 +69,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect('/login')
+            ->with('success', 'Anda telah berhasil keluar (logout). Sampai jumpa!');
     }
 }

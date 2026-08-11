@@ -170,8 +170,39 @@
         </div>
     </div>
 
+    {{-- Toast Container --}}
+    <x-toast />
+
     {{-- Confirm Dialog (Global) --}}
     <x-confirm-dialog />
+
+    @if (session('success'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: {
+                    type: 'success',
+                    title: 'Berhasil',
+                    message: '{{ addslashes(session('success')) }}'
+                }
+            }));
+        });
+    </script>
+    @endif
+
+    @if (session('error'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: {
+                    type: 'danger',
+                    title: 'Gagal',
+                    message: '{{ addslashes(session('error')) }}'
+                }
+            }));
+        });
+    </script>
+    @endif
 
     @stack('scripts')
 </body>

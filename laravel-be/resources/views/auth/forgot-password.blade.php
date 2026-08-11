@@ -1,26 +1,22 @@
 @extends('layouts.guest')
 
-@section('title', 'Lupa Password - HRIS')
-@section('description', 'Reset password akun HRIS Anda.')
+@section('title', 'Lupa Password - ' . brand_name())
+@section('description', 'Reset password akun ' . brand_name() . ' Anda.')
 
 @section('content')
 <div class="min-h-screen flex">
     <!-- Left Panel - Branding -->
-    <div class="hidden lg:flex lg:w-1/2 bg-hero-gradient p-12 flex-col justify-between">
+    <div class="hidden lg:flex lg:w-1/2 bg-hero-gradient p-12 flex-col justify-between relative overflow-hidden">
         <div>
-            <a href="{{ url('/') }}" class="flex items-center gap-2">
-                <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <span class="text-xl font-bold text-white">HRIS</span>
+            <a href="{{ url('/') }}" class="flex items-center gap-3">
+                <img src="{{ asset('images/gajipro-logo-new.png') }}" alt="{{ brand_name() }}" class="w-12 h-12 rounded-xl object-cover">
+                <span class="text-2xl font-bold text-white">{{ brand_name() }}</span>
             </a>
         </div>
 
-        <div class="text-white">
+        <div class="text-white relative z-10">
             <h1 class="text-4xl font-bold mb-4">Lupa Password?</h1>
-            <p class="text-primary-200 text-lg mb-8">Tenang, kami akan bantu Anda mengatur ulang password.</p>
+            <p class="text-primary-200 text-lg mb-8">Tenang, kami akan bantu Anda mengatur ulang password akun Anda.</p>
 
             <div class="space-y-4">
                 <div class="flex items-center gap-3">
@@ -44,8 +40,8 @@
             </div>
         </div>
 
-        <div class="text-primary-300 text-sm">
-            &copy; {{ date('Y') }} HRIS. All rights reserved.
+        <div class="text-primary-300 text-sm relative z-10">
+            &copy; {{ date('Y') }} {{ brand_name() }}. All rights reserved.
         </div>
     </div>
 
@@ -54,13 +50,9 @@
         <div class="w-full max-w-md">
             <!-- Mobile Logo -->
             <div class="lg:hidden mb-8 text-center">
-                <a href="{{ url('/') }}" class="inline-flex items-center gap-2">
-                    <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <span class="text-xl font-bold text-secondary-900">HRIS</span>
+                <a href="{{ url('/') }}" class="inline-flex items-center gap-3">
+                    <img src="{{ asset('images/gajipro-logo-new.png') }}" alt="{{ brand_name() }}" class="w-10 h-10 rounded-xl object-cover">
+                    <span class="text-xl font-bold text-secondary-900">{{ brand_name() }}</span>
                 </a>
             </div>
 

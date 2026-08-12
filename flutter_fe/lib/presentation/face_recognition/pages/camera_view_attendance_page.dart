@@ -335,64 +335,94 @@ class _CameraViewState extends State<CameraViewAttendancePage> {
   );
 
   Future _startLiveFeed() async {
-    try {
-      final camera = _cameras[_cameraIndex];
+    final camera = _cameras[_cameraIndex];
 
-      _controller = CameraController(
-        camera,
-        ResolutionPreset.high,
-        enableAudio: false,
-        imageFormatGroup: Platform.isAndroid
-            ? ImageFormatGroup.nv21
-            : ImageFormatGroup.bgra8888,
-      );
+    final configsToTry = [
+      (ResolutionPreset.medium, Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888),
+      (ResolutionPreset.medium, null),
+      (ResolutionPreset.low, Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888),
+      (ResolutionPreset.low, null),
+      (ResolutionPreset.high, Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888),
+      (ResolutionPreset.high, null),
+    ];
 
-      await _controller?.initialize().timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Camera initialization timeout');
-        },
-      );
+    Object? lastError;
+    StackTrace? lastStackTrace;
 
-      if (!mounted) {
-        return;
-      }
+    for (final config in configsToTry) {
+      final preset = config.$1;
+      final formatGroup = config.$2;
 
-      _controller?.getMinZoomLevel().then((value) {
-        _currentZoomLevel = value;
-        _minAvailableZoom = value;
-      });
-      _controller?.getMaxZoomLevel().then((value) {
-        _maxAvailableZoom = value;
-      });
+      try {
+        if (_controller != null) {
+          try {
+            await _controller!.stopImageStream();
+          } catch (_) {}
+          try {
+            await _controller!.dispose();
+          } catch (_) {}
+          _controller = null;
+        }
 
-      await _controller?.startImageStream(_processCameraImage).then((value) {
+        _controller = CameraController(
+          camera,
+          preset,
+          enableAudio: false,
+          imageFormatGroup: formatGroup,
+        );
+
+        await _controller!.initialize().timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            throw Exception('Camera initialization timeout');
+          },
+        );
+
+        if (!mounted) return;
+
+        _controller?.getMinZoomLevel().then((value) {
+          _currentZoomLevel = value;
+          _minAvailableZoom = value;
+        });
+        _controller?.getMaxZoomLevel().then((value) {
+          _maxAvailableZoom = value;
+        });
+
+        await _controller?.startImageStream(_processCameraImage);
+
         if (widget.onCameraFeedReady != null) {
           widget.onCameraFeedReady!();
         }
         if (widget.onCameraLensDirectionChanged != null) {
           widget.onCameraLensDirectionChanged!(camera.lensDirection);
         }
-      });
 
-      setState(() {});
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        developer.log('Camera initialization error: $e');
-        developer.log('Stack trace: $stackTrace');
+        if (mounted) {
+          setState(() {});
+        }
+        return; // Success!
+      } catch (e, stackTrace) {
+        lastError = e;
+        lastStackTrace = stackTrace;
+        if (kDebugMode) {
+          developer.log('⚠️ Failed camera init preset=$preset formatGroup=$formatGroup: $e');
+        }
       }
+    }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menginisialisasi kamera: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+    if (kDebugMode && lastStackTrace != null) {
+      developer.log('Camera initialization error: $lastError');
+      developer.log('Stack trace: $lastStackTrace');
+    }
 
-      rethrow;
+    if (mounted && lastError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menginisialisasi kamera: ${lastError.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
   }
 

@@ -104,13 +104,51 @@ class _FaceVerifyScreenState extends State<FaceVerifyScreen> {
       orElse: () => cameras.first,
     );
 
-    _cameraController = CameraController(
-      front,
-      ResolutionPreset.medium,
-      imageFormatGroup: config.preferredImageFormat,
-      enableAudio: false,
-    );
-    await _cameraController!.initialize();
+    final configsToTry = [
+      (ResolutionPreset.medium, config.preferredImageFormat),
+      (ResolutionPreset.medium, null),
+      (ResolutionPreset.low, config.preferredImageFormat),
+      (ResolutionPreset.low, null),
+      (ResolutionPreset.high, config.preferredImageFormat),
+      (ResolutionPreset.high, null),
+    ];
+
+    bool initialized = false;
+    for (final cfg in configsToTry) {
+      try {
+        if (_cameraController != null) {
+          try {
+            await _cameraController!.stopImageStream();
+          } catch (_) {}
+          try {
+            await _cameraController!.dispose();
+          } catch (_) {}
+          _cameraController = null;
+        }
+
+        _cameraController = CameraController(
+          front,
+          cfg.$1,
+          imageFormatGroup: cfg.$2,
+          enableAudio: false,
+        );
+        await _cameraController!.initialize();
+        initialized = true;
+        break;
+      } catch (_) {}
+    }
+
+    if (!initialized) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menginisialisasi kamera.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
     _faceDetector = FaceDetector(options: detectorConfig.options);
 

@@ -261,82 +261,82 @@ class _CameraViewState extends State<CameraView> {
 
     await _initializeDeviceConfig();
 
-    final imageFormat =
+    final preferredFormat =
         _deviceConfig?.preferredImageFormat ??
         (Platform.isAndroid
             ? ImageFormatGroup.nv21
             : ImageFormatGroup.bgra8888);
 
-    if (kDebugMode) {
-      log('');
-      log('📱 Camera Configuration:');
-      log('   Image format: ${imageFormat.name}');
-      log('   Resolution: ResolutionPreset.high');
-      log('   Platform: ${Platform.operatingSystem}');
-    }
+    final configsToTry = [
+      (ResolutionPreset.medium, preferredFormat),
+      (ResolutionPreset.medium, null),
+      (ResolutionPreset.low, preferredFormat),
+      (ResolutionPreset.low, null),
+      (ResolutionPreset.high, preferredFormat),
+      (ResolutionPreset.high, null),
+    ];
 
-    _controller = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: imageFormat,
-    );
+    for (final config in configsToTry) {
+      final preset = config.$1;
+      final formatGroup = config.$2;
 
-    if (kDebugMode) {
-      log('⏳ Initializing camera controller...');
-    }
+      try {
+        if (_controller != null) {
+          try {
+            await _controller!.stopImageStream();
+          } catch (_) {}
+          try {
+            await _controller!.dispose();
+          } catch (_) {}
+          _controller = null;
+        }
 
-    _controller
-        ?.initialize()
-        .then((_) async {
-          if (!mounted) {
-            if (kDebugMode) {
-              log('⚠️ Widget unmounted during camera initialization');
-            }
-            return;
-          }
+        _controller = CameraController(
+          camera,
+          preset,
+          enableAudio: false,
+          imageFormatGroup: formatGroup,
+        );
 
-          if (kDebugMode) {
-            log('✅ Camera controller initialized!');
-            log('   Resolution: ${_controller?.value.previewSize}');
-          }
+        await _controller!.initialize();
 
-          await _applyManualCameraSettings();
+        if (!mounted) return;
 
-          _controller?.getMinZoomLevel().then((value) {
-            _currentZoomLevel = value;
-            _minAvailableZoom = value;
-          });
-          _controller?.getMaxZoomLevel().then((value) {
-            _maxAvailableZoom = value;
-          });
+        if (kDebugMode) {
+          log('✅ Camera controller initialized!');
+          log('   Preset: $preset, FormatGroup: $formatGroup');
+          log('   Resolution: ${_controller?.value.previewSize}');
+        }
 
-          if (kDebugMode) {
-            log('⏳ Starting image stream...');
-          }
+        await _applyManualCameraSettings();
 
-          _controller
-              ?.startImageStream(_processCameraImage)
-              .then((value) {
-                if (kDebugMode) {
-                  log('✅ Image stream started!');
-                  log('═══════════════════════════════════════════════════════');
-                }
-
-                if (widget.onCameraFeedReady != null) {
-                  widget.onCameraFeedReady!();
-                }
-                if (widget.onCameraLensDirectionChanged != null) {
-                  widget.onCameraLensDirectionChanged!(camera.lensDirection);
-                }
-              });
-          setState(() {});
-        })
-        .catchError((error) {
-          if (kDebugMode) {
-            log('❌ ERROR initializing camera controller: $error');
-          }
+        _controller?.getMinZoomLevel().then((value) {
+          _currentZoomLevel = value;
+          _minAvailableZoom = value;
         });
+        _controller?.getMaxZoomLevel().then((value) {
+          _maxAvailableZoom = value;
+        });
+
+        await _controller?.startImageStream(_processCameraImage);
+
+        if (widget.onCameraFeedReady != null) {
+          widget.onCameraFeedReady!();
+        }
+        if (widget.onCameraLensDirectionChanged != null) {
+          widget.onCameraLensDirectionChanged!(camera.lensDirection);
+        }
+
+        if (mounted) {
+          setState(() {});
+        }
+        return; // Success!
+      } catch (error) {
+        if (kDebugMode) {
+          log('⚠️ Failed camera init preset=$preset formatGroup=$formatGroup: $error');
+        }
+      }
+    }
   }
 
   Future _stopLiveFeed() async {

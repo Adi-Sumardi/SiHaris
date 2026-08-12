@@ -187,7 +187,7 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
       if (request.faceConfidence != null) {
         multipartRequest.fields['face_confidence'] = request.faceConfidence.toString();
       }
-      if (request.faceDescriptors != null) {
+      if (request.faceDescriptors != null && request.faceDescriptors!.length == 128) {
         multipartRequest.fields['face_descriptors'] = jsonEncode(request.faceDescriptors!);
       }
 
@@ -276,7 +276,7 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         multipartRequest.fields['face_confidence'] = request.faceConfidence
             .toString();
       }
-      if (request.faceDescriptors != null) {
+      if (request.faceDescriptors != null && request.faceDescriptors!.length == 128) {
         multipartRequest.fields['face_descriptors'] = jsonEncode(request.faceDescriptors!);
       }
 

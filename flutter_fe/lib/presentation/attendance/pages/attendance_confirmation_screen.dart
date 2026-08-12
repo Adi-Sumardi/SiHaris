@@ -87,7 +87,8 @@ class AttendanceConfirmationScreen extends StatelessWidget {
             gpsVerified: withinRadius,
             faceVerified: true,
             faceConfidence: faceConfidence,
-            faceDescriptors: faceDescriptors,
+            faceDescriptors:
+                faceDescriptors.length == 128 ? faceDescriptors : null,
             notes: notes,
           ),
         ),
@@ -102,7 +103,8 @@ class AttendanceConfirmationScreen extends StatelessWidget {
             gpsVerified: withinRadius,
             faceVerified: true,
             faceConfidence: faceConfidence,
-            faceDescriptors: faceDescriptors,
+            faceDescriptors:
+                faceDescriptors.length == 128 ? faceDescriptors : null,
             notes: notes,
           ),
         ),

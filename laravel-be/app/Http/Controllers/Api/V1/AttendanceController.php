@@ -306,6 +306,19 @@ class AttendanceController extends Controller
             'office_location_id' => 'nullable|integer|exists:office_locations,id',
         ];
 
+        // Preprocess face_descriptors if sent as JSON string via multipart/form-data
+        if ($request->has('face_descriptors')) {
+            $rawDescriptors = $request->input('face_descriptors');
+            if (is_string($rawDescriptors)) {
+                $rawDescriptors = json_decode($rawDescriptors, true);
+            }
+            if (empty($rawDescriptors) || ! is_array($rawDescriptors) || count($rawDescriptors) === 0) {
+                $request->merge(['face_descriptors' => null]);
+            } else {
+                $request->merge(['face_descriptors' => $rawDescriptors]);
+            }
+        }
+
         $request->validate($rules);
 
         // A single device cannot be shared between employees to clock in.
@@ -617,6 +630,19 @@ class AttendanceController extends Controller
             'gps_verified' => 'nullable|boolean',
             'office_location_id' => 'nullable|integer|exists:office_locations,id',
         ];
+
+        // Preprocess face_descriptors if sent as JSON string via multipart/form-data
+        if ($request->has('face_descriptors')) {
+            $rawDescriptors = $request->input('face_descriptors');
+            if (is_string($rawDescriptors)) {
+                $rawDescriptors = json_decode($rawDescriptors, true);
+            }
+            if (empty($rawDescriptors) || ! is_array($rawDescriptors) || count($rawDescriptors) === 0) {
+                $request->merge(['face_descriptors' => null]);
+            } else {
+                $request->merge(['face_descriptors' => $rawDescriptors]);
+            }
+        }
 
         $request->validate($rules);
 

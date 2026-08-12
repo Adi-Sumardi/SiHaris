@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/services/session_service.dart';
 import '../../../../data/datasources/auth_datasource.dart';
 import '../../../../data/datasources/auth_remote_datasource.dart';
 import '../../../../data/datasources/auth_local_datasource.dart';
@@ -35,6 +36,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       (authResponse) async {
         if (authResponse.success && authResponse.token != null) {
           await _localDatasource.saveAuthData(authResponse);
+          // Reset session-expired flag so future 401s on this new session
+          // can properly trigger logout again if needed.
+          SessionService.instance.reset();
           emit(LoginSuccess());
         } else {
           emit(LoginError(authResponse.message ?? 'Login gagal'));

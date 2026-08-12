@@ -409,7 +409,8 @@ class AttendanceController extends Controller
                     ], 422);
                 }
 
-                if ($requireLiveness && ! $request->boolean('liveness_passed')) {
+                $isLivenessValid = $request->has('liveness_passed') ? $request->boolean('liveness_passed') : $request->boolean('face_verified');
+                if ($requireLiveness && ! $isLivenessValid) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Liveness detection diperlukan. Pastikan Anda melakukan verifikasi wajah secara langsung (bukan foto).',
@@ -747,7 +748,8 @@ class AttendanceController extends Controller
                     ], 422);
                 }
 
-                if ($requireLiveness && ! $request->boolean('liveness_passed')) {
+                $isLivenessValid = $request->has('liveness_passed') ? $request->boolean('liveness_passed') : $request->boolean('face_verified');
+                if ($requireLiveness && ! $isLivenessValid) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Liveness detection diperlukan. Pastikan Anda melakukan verifikasi wajah secara langsung (bukan foto).',

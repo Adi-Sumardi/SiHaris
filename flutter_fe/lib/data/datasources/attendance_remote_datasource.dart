@@ -176,6 +176,9 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
       multipartRequest.fields['face_verified'] = request.faceVerified
           ? '1'
           : '0';
+      multipartRequest.fields['liveness_passed'] = request.livenessPassed
+          ? '1'
+          : '0';
       // Required by the backend's device-binding anti-fraud check: one
       // device can only ever be used to clock in for a single employee.
       multipartRequest.fields['app_device_id'] =
@@ -262,6 +265,9 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
           .toString();
       multipartRequest.fields['gps_verified'] = request.gpsVerified ? '1' : '0';
       multipartRequest.fields['face_verified'] = request.faceVerified
+          ? '1'
+          : '0';
+      multipartRequest.fields['liveness_passed'] = request.livenessPassed
           ? '1'
           : '0';
       // Required by the backend's device-binding anti-fraud check: one

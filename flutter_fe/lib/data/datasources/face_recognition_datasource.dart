@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:gaji_pro/core/constants/variables.dart';
 import 'package:gaji_pro/core/services/session_service.dart';
+import 'package:gaji_pro/data/datasources/auth_datasource.dart';
+import 'package:gaji_pro/data/datasources/auth_local_datasource.dart';
 import 'package:gaji_pro/data/models/requests/face_recognition/face_enroll_request_model.dart';
 import 'package:gaji_pro/data/models/requests/face_recognition/face_verify_request_model.dart';
 import 'package:gaji_pro/data/models/responses/face_recognition/face_recognition_status_model.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class FaceRecognitionDatasource {
   Future<Either<String, FaceRecognitionStatusModel>> getStatus();
@@ -18,12 +19,17 @@ abstract class FaceRecognitionDatasource {
 
 class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
   final http.Client client;
+  final AuthLocalDatasourceBase authLocalDatasource;
 
-  FaceRecognitionRemoteDatasource({required this.client});
+  FaceRecognitionRemoteDatasource({
+    required this.client,
+    required this.authLocalDatasource,
+  });
 
   Future<Map<String, String>> _getHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token') ?? '';
+    // PENTING: token disimpan di SecureStorage oleh AuthLocalDatasource,
+    // bukan di SharedPreferences. Selalu baca dari AuthLocalDatasource.
+    final token = await authLocalDatasource.getToken() ?? '';
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',

@@ -10,11 +10,15 @@ import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:gaji_pro/data/datasources/auth_datasource.dart';
+import '../../mocks/mock_auth_local_datasource.dart';
+
 class MockHttpClient extends Mock implements http.Client {}
 
 void main() {
   late FaceRecognitionRemoteDatasource datasource;
   late MockHttpClient mockClient;
+  late MockAuthLocalDatasource mockAuthLocalDatasource;
 
   final testDescriptors = List.generate(192, (i) => i * 0.01);
 
@@ -27,7 +31,12 @@ void main() {
     SharedPreferences.setMockInitialValues({'token': 'test_token'});
     FlutterSecureStorage.setMockInitialValues({});
     mockClient = MockHttpClient();
-    datasource = FaceRecognitionRemoteDatasource(client: mockClient);
+    mockAuthLocalDatasource = MockAuthLocalDatasource();
+    when(() => mockAuthLocalDatasource.getToken()).thenAnswer((_) async => 'test_token');
+    datasource = FaceRecognitionRemoteDatasource(
+      client: mockClient,
+      authLocalDatasource: mockAuthLocalDatasource,
+    );
   });
 
   group('getStatus()', () {

@@ -409,12 +409,18 @@ class GajiProApp extends StatelessWidget {
         // Face Recognition BLoCs
         BlocProvider(
           create: (context) => FaceRecognitionStatusBloc(
-            datasource: FaceRecognitionRemoteDatasource(client: http.Client()),
+            datasource: FaceRecognitionRemoteDatasource(
+              client: http.Client(),
+              authLocalDatasource: AuthLocalDatasource(),
+            ),
           ),
         ),
         BlocProvider(
           create: (context) => FaceEnrollBloc(
-            datasource: FaceRecognitionRemoteDatasource(client: http.Client()),
+            datasource: FaceRecognitionRemoteDatasource(
+              client: http.Client(),
+              authLocalDatasource: AuthLocalDatasource(),
+            ),
           ),
         ),
         // Office Location BLoC

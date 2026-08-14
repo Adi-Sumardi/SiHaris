@@ -15,7 +15,7 @@
     "@@type": "Organization",
     "name": "SiHaris",
     "url": "{{ url('/') }}",
-    "logo": "{{ asset('images/logo.png') }}",
+    "logo": "{{ asset('images/gajipro-logo-new.png') }}",
     "description": "Software Payroll dan HRIS terlengkap untuk Indonesia",
     "address": {
         "@@type": "PostalAddress",

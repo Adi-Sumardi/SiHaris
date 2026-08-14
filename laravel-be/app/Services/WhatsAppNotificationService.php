@@ -37,7 +37,9 @@ class WhatsAppNotificationService
     public function sendMessage(string $phone, string $message): array
     {
         if ($this->isTestMode) {
-            return ['success' => true, 'error' => null];
+            Log::warning('WhatsAppNotificationService is in TEST MODE because SENDAGO_API_KEY is not set in .env! Message was NOT sent via WhatsApp gateway.', ['phone' => $phone]);
+
+            return ['success' => true, 'error' => 'TEST_MODE_NO_API_KEY'];
         }
 
         try {

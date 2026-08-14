@@ -11,7 +11,7 @@ describe('WhatsAppNotificationService', function () {
         $service = app(WhatsAppNotificationService::class);
         $result = $service->sendMessage('081234567890', 'Halo');
 
-        expect($result)->toBe(['success' => true, 'error' => null]);
+        expect($result)->toBe(['success' => true, 'error' => 'TEST_MODE_NO_API_KEY']);
         Http::assertNothingSent();
     });
 

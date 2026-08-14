@@ -510,7 +510,7 @@ class AttendanceController extends Controller
         AttendanceClockIn::dispatch($attendance);
 
         // Dispatch job to relay clock in log to ADMS Cloud
-        $employeePin = $employee->pin ?? (string) $employee->id;
+        $employeePin = $employee->employee_id ?? (string) $employee->id;
         PushAttendanceToAdmsJob::dispatch(
             pin: $employeePin,
             timestamp: $company->now(),
@@ -858,7 +858,7 @@ class AttendanceController extends Controller
         AttendanceClockOut::dispatch($attendance);
 
         // Dispatch job to relay clock out log to ADMS Cloud
-        $employeePin = $employee->pin ?? (string) $employee->id;
+        $employeePin = $employee->employee_id ?? (string) $employee->id;
         PushAttendanceToAdmsJob::dispatch(
             pin: $employeePin,
             timestamp: $company->now(),

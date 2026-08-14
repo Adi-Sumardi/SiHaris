@@ -56,29 +56,26 @@ class SyncAdmsEmployeesJob implements ShouldQueue
                 continue;
             }
 
-            // Find matching employee in SiHaris by PIN, email, or name
+            // Find matching employee in SiHaris by employee_id (PIN), email, or name
             $query = Employee::query();
             if ($this->companyId) {
                 $query->where('company_id', $this->companyId);
             }
 
-            $employee = (clone $query)->where('pin', $pin)->first();
+            $employee = (clone $query)->where('employee_id', $pin)->first();
 
             if (! $employee && $email) {
                 $employee = (clone $query)->where('email', $email)->first();
             }
 
             if (! $employee && $name) {
-                $employee = (clone $query)->where('name', $name)->first();
+                $employee = (clone $query)->where(function ($q) use ($name) {
+                    $q->where('first_name', 'like', "%{$name}%")
+                      ->orWhere('last_name', 'like', "%{$name}%");
+                })->first();
             }
 
             if ($employee) {
-                // Ensure PIN is filled on employee record
-                if (empty($employee->pin)) {
-                    $employee->update(['pin' => $pin]);
-                    $syncedCount++;
-                }
-
                 // Ensure mapping exists in fingerprint_user_mappings
                 FingerprintUserMapping::firstOrCreate([
                     'fingerprint_device_id' => $device->id,
@@ -93,6 +90,6 @@ class SyncAdmsEmployeesJob implements ShouldQueue
 
         $device->update(['last_sync_at' => now()]);
 
-        Log::info("SyncAdmsEmployeesJob completed: Mapped {$mappedCount} employees, updated {$syncedCount} PINs.");
+        Log::info("SyncAdmsEmployeesJob completed: Mapped {$mappedCount} employees.");
     }
 }

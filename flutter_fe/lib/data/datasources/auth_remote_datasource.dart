@@ -90,6 +90,101 @@ class AuthRemoteDatasource implements AuthDatasource {
   }
 
   @override
+  Future<Either<String, Map<String, dynamic>>> requestOtp(String login) async {
+    final url = Variables.requestOtp;
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final body = {'login': login};
+
+    HttpLogger.logRequest(method: 'POST', url: url, headers: headers, body: body);
+
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final response = await _client.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      stopwatch.stop();
+
+      HttpLogger.logResponse(
+        method: 'POST',
+        url: url,
+        statusCode: response.statusCode,
+        body: response.body,
+        duration: stopwatch.elapsed,
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return Right(Map<String, dynamic>.from(data));
+      } else {
+        return Left(data['message'] ?? 'Gagal mengirim kode OTP');
+      }
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      HttpLogger.logError(method: 'POST', url: url, error: e, stackTrace: stackTrace);
+      return Left('Terjadi kesalahan: $e');
+    }
+  }
+
+  @override
+  Future<Either<String, AuthResponseModel>> verifyOtp(
+    String login,
+    String otp,
+  ) async {
+    final url = Variables.verifyOtp;
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final body = {
+      'login': login,
+      'otp': otp,
+      'app_device_id': await _secureStorage.getOrCreateDeviceId(),
+    };
+
+    HttpLogger.logRequest(method: 'POST', url: url, headers: headers, body: body);
+
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final response = await _client.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      stopwatch.stop();
+
+      HttpLogger.logResponse(
+        method: 'POST',
+        url: url,
+        statusCode: response.statusCode,
+        body: response.body,
+        duration: stopwatch.elapsed,
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return Right(AuthResponseModel.fromJson(data));
+      } else {
+        return Left(data['message'] ?? 'Verifikasi OTP gagal');
+      }
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      HttpLogger.logError(method: 'POST', url: url, error: e, stackTrace: stackTrace);
+      return Left('Terjadi kesalahan: $e');
+    }
+  }
+
+  @override
   Future<Either<String, RegisterResponseModel>> demoRegister(
     RegisterRequestModel request,
   ) async {

@@ -9,6 +9,8 @@ import '../models/responses/register_response_model.dart';
 /// Memudahkan testing dengan dependency injection
 abstract class AuthDatasource {
   Future<Either<String, AuthResponseModel>> login(String identifier, String password);
+  Future<Either<String, Map<String, dynamic>>> requestOtp(String login);
+  Future<Either<String, AuthResponseModel>> verifyOtp(String login, String otp);
   Future<Either<String, RegisterResponseModel>> demoRegister(RegisterRequestModel request);
   Future<Either<String, bool>> logout();
   Future<Either<String, (UserModel, CompanyModel?)>> getProfile();

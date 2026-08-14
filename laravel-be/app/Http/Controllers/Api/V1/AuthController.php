@@ -928,4 +928,130 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    public function requestOtp(Request $request, \App\Services\OtpService $otpService): JsonResponse
+    {
+        $request->validate([
+            'login' => 'required|string',
+        ], [
+            'login.required' => 'Nomor HP atau Email wajib diisi.',
+        ]);
+
+        $result = $otpService->requestOtp($request->login);
+
+        if (! $result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'data' => [
+                'type' => $result['type'],
+                'destination' => $result['destination'],
+                'debug_otp' => $result['debug_otp'] ?? null,
+            ],
+        ]);
+    }
+
+    public function verifyOtp(Request $request, \App\Services\OtpService $otpService): JsonResponse
+    {
+        $request->validate([
+            'login' => 'required|string',
+            'otp' => 'required|string|size:6',
+        ], [
+            'login.required' => 'Nomor HP atau Email wajib diisi.',
+            'otp.required' => 'Kode OTP 6-digit wajib diisi.',
+            'otp.size' => 'Kode OTP harus berjumlah 6 digit.',
+        ]);
+
+        $user = $otpService->verifyOtp($request->login, $request->otp);
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP tidak valid atau sudah kadaluarsa.',
+            ], 422);
+        }
+
+        $employee = $user->employee;
+        if (! $employee || ! $employee->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun karyawan tidak ditemukan atau tidak aktif.',
+            ], 403);
+        }
+
+        $deviceId = $request->input('app_device_id');
+        $tokenName = $deviceId ? "mobile-app:{$deviceId}" : 'mobile-app';
+
+        $user->tokens()->where('name', $tokenName)->delete();
+
+        // Issue token valid for 30 days
+        $tokenResult = $user->createToken(
+            name: $tokenName,
+            abilities: ['*'],
+            expiresAt: now()->addDays(30)
+        );
+        $token = $tokenResult->plainTextToken;
+
+        $company = $user->company;
+
+        $faceEnrolled = false;
+        $faceEmbedding = null;
+        if ($company->enable_face_recognition) {
+            $faceEmbeddingRecord = $employee->faceEmbedding()->where('is_active', true)->first();
+            $faceEnrolled = $faceEmbeddingRecord !== null;
+            if ($faceEnrolled) {
+                $faceEmbedding = $faceEmbeddingRecord->embedding_data;
+            }
+        }
+
+        $assignedOffices = $employee->officeLocations()
+            ->where('is_active', true)
+            ->get()
+            ->map(fn ($office) => [
+                'id' => $office->id,
+                'name' => $office->name,
+                'code' => $office->code,
+                'latitude' => $office->latitude,
+                'longitude' => $office->longitude,
+                'radius' => $office->radius,
+                'is_primary' => (bool) $office->pivot->is_primary,
+            ])
+            ->toArray();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verifikasi OTP berhasil. Login sukses.',
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+                'employee' => [
+                    'id' => $employee->id,
+                    'employee_id' => $employee->employee_id,
+                    'full_name' => $employee->full_name,
+                    'department' => $employee->department?->name,
+                    'position' => $employee->position?->name,
+                    'face_enrolled' => $faceEnrolled,
+                    'face_embedding' => $faceEmbedding,
+                    'assigned_offices' => $assignedOffices,
+                ],
+                'company' => [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'enable_face_recognition' => (bool) $company->enable_face_recognition,
+                    'face_match_threshold' => $company->face_match_threshold ?? 0.6,
+                    'enable_gps_validation' => (bool) $company->enable_gps_validation,
+                ],
+            ],
+        ]);
+    }
 }

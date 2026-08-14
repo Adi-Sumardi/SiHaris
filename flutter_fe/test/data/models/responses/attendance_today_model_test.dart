@@ -76,6 +76,8 @@ void main() {
           "is_primary": true,
         },
         "schedule": {"name": null, "start_time": "08:00", "end_time": "17:00"},
+        "clock_in_source": null,
+        "clock_out_source": null,
       };
       expect(result, expectedMap);
     });

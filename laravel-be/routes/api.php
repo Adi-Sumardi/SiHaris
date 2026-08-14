@@ -66,6 +66,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('throttle:'.(app()->environment('local') ? '60,1' : '5,1'))
             ->name('login');
 
+        Route::post('/request-otp', [AuthController::class, 'requestOtp'])
+            ->middleware('throttle:'.(app()->environment('local') ? '60,1' : '5,1'))
+            ->name('request-otp');
+
+        Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])
+            ->middleware('throttle:'.(app()->environment('local') ? '60,1' : '10,1'))
+            ->name('verify-otp');
+
         // Demo register: 3 attempts per minute per IP (spam protection)
         Route::post('/demo-register', [AuthController::class, 'demoRegister'])
             ->middleware('throttle:3,1')

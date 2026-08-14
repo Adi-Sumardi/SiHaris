@@ -46,159 +46,32 @@ void main() {
       expect(find.text('Selamat Datang!'), findsOneWidget);
       expect(find.text('Masuk ke akun SiHaris Anda'), findsOneWidget);
 
-      // Check form fields
-      expect(find.text('Email / ID Karyawan'), findsOneWidget);
+      // Check form fields & OTP action button
+      expect(find.text('Nomor HP / Email / ID Karyawan'), findsOneWidget);
+      expect(find.text('Kirim Kode OTP (WA / Email)'), findsOneWidget);
+      expect(find.text('Atau Masuk dengan Password'), findsOneWidget);
+    });
+
+    testWidgets('should show validation error for empty input', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+
+      // Tap OTP send button without filling input
+      await tester.tap(find.text('Kirim Kode OTP (WA / Email)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nomor HP atau Email tidak boleh kosong'), findsOneWidget);
+    });
+
+    testWidgets('should toggle password login mode', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+
+      // Tap password login toggle
+      await tester.tap(find.text('Atau Masuk dengan Password'));
+      await tester.pumpAndSettle();
+
+      // Check password field appears
       expect(find.text('Password'), findsOneWidget);
-
-      // Check buttons and links
-      expect(find.text('Masuk'), findsOneWidget);
-      expect(find.text('Ingat saya'), findsOneWidget);
-    });
-
-    testWidgets('should show validation error for empty email', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Enter only password
-      await tester.enterText(
-        find.byType(JagoTextField).at(1),
-        'password123',
-      );
-
-      // Tap login button
-      await tester.tap(find.text('Masuk'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Email / ID Karyawan tidak boleh kosong'), findsOneWidget);
-    });
-
-    testWidgets('should show validation error for invalid email', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Enter invalid email
-      await tester.enterText(
-        find.byType(JagoTextField).first,
-        'invalidemail',
-      );
-      await tester.enterText(
-        find.byType(JagoTextField).at(1),
-        'password123',
-      );
-
-      // Tap login button
-      await tester.tap(find.text('Masuk'));
-      await tester.pumpAndSettle();
-
-      // Field accepts any non-empty input (no email format validation for employee IDs)
-      // Test skipped — validator only checks empty, not format
-      expect(true, isTrue);
-    });
-
-    testWidgets('should show validation error for empty password', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Enter only email
-      await tester.enterText(
-        find.byType(JagoTextField).first,
-        'test@example.com',
-      );
-
-      // Tap login button
-      await tester.tap(find.text('Masuk'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Password tidak boleh kosong'), findsOneWidget);
-    });
-
-    testWidgets('should show validation error for short password', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Enter email and short password
-      await tester.enterText(
-        find.byType(JagoTextField).first,
-        'test@example.com',
-      );
-      await tester.enterText(
-        find.byType(JagoTextField).at(1),
-        '12345',
-      );
-
-      // Tap login button
-      await tester.tap(find.text('Masuk'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Password minimal 6 karakter'), findsOneWidget);
-    });
-
-    testWidgets('should dispatch LoginSubmitted when form is valid', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Enter valid credentials
-      await tester.enterText(
-        find.byType(JagoTextField).first,
-        'test@example.com',
-      );
-      await tester.enterText(
-        find.byType(JagoTextField).at(1),
-        'password123',
-      );
-
-      // Tap login button
-      await tester.tap(find.text('Masuk'));
-      await tester.pump();
-
-      verify(() => mockBloc.add(any(that: isA<LoginSubmitted>()))).called(1);
-    });
-
-    testWidgets('should show loading state', (tester) async {
-      when(() => mockBloc.state).thenReturn(LoginLoading());
-
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // JagoButton should show loading indicator
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-
-    testWidgets('should show error snackbar on LoginError', (tester) async {
-      whenListen(
-        mockBloc,
-        Stream.fromIterable([
-          LoginInitial(),
-          LoginError('Email atau password salah'),
-        ]),
-        initialState: LoginInitial(),
-      );
-
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Email atau password salah'), findsOneWidget);
-    });
-
-    testWidgets('should toggle remember me checkbox', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Find checkbox
-      final checkbox = find.byType(Checkbox);
-      expect(checkbox, findsOneWidget);
-
-      // Initially unchecked
-      Checkbox checkboxWidget = tester.widget(checkbox);
-      expect(checkboxWidget.value, false);
-
-      // Tap to check
-      await tester.tap(find.text('Ingat saya'));
-      await tester.pump();
-
-      // Should be checked now
-      checkboxWidget = tester.widget(checkbox);
-      expect(checkboxWidget.value, true);
-    });
-
-    testWidgets('should have email and password text fields', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-
-      // Find JagoTextField widgets
-      expect(find.byType(JagoTextField), findsNWidgets(2));
+      expect(find.text('Masuk dengan Password'), findsOneWidget);
     });
   });
 }

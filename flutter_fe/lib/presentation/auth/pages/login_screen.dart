@@ -7,6 +7,8 @@ import '../bloc/login/login_bloc.dart';
 import '../bloc/login/login_event.dart';
 import '../bloc/login/login_state.dart';
 import '../../home/pages/main_screen.dart';
+import '../../../data/datasources/auth_remote_datasource.dart';
+import 'otp_verification_screen.dart';
 import 'register_screen.dart';
 
 /// Login Screen with 8-point grid system
@@ -26,7 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _rememberMe = false;
+  bool _usePasswordLogin = false;
+  bool _isRequestingOtp = false;
 
   @override
   void initState() {
@@ -46,11 +49,53 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleRequestOtp() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final input = _emailController.text.trim();
+
+    setState(() {
+      _isRequestingOtp = true;
+    });
+
+    final result = await AuthRemoteDatasource().requestOtp(input);
+
+    setState(() {
+      _isRequestingOtp = false;
+    });
+
+    result.fold(
+      (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      },
+      (data) {
+        final destination = data['data']?['destination'] ?? input;
+        final type = data['data']?['type'] ?? 'phone';
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(
+              login: input,
+              destination: destination,
+              type: type,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _handlePasswordLogin() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<LoginBloc>().add(
             LoginSubmitted(
-              identifier: _emailController.text,
+              identifier: _emailController.text.trim(),
               password: _passwordController.text,
             ),
           );
@@ -105,8 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 40, // 40px dari status bar
-        bottom: 40, // 40px bottom padding
+        top: MediaQuery.of(context).padding.top + 40,
+        bottom: 40,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -121,7 +166,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: Column(
         children: [
-          // Logo - 80px (kelipatan 4)
           Container(
             width: 80,
             height: 80,
@@ -147,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20), // 20px spacing
+          const SizedBox(height: 20),
           const Text(
             'Selamat Datang!',
             style: TextStyle(
@@ -156,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8), // 8px spacing
+          const SizedBox(height: 8),
           Text(
             'Masuk ke akun SiHaris Anda',
             style: TextStyle(
@@ -171,93 +215,94 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildLoginForm() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24), // kelipatan 4/8
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Email field
             JagoTextField(
-              label: 'Email / ID Karyawan',
-              hint: 'Masukkan email atau ID karyawan',
+              label: 'Nomor HP / Email / ID Karyawan',
+              hint: 'Contoh: 08123456789 atau nama@email.com',
               controller: _emailController,
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.next,
-              prefixIcon: Icons.person_outline,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: _usePasswordLogin ? TextInputAction.next : TextInputAction.done,
+              prefixIcon: Icons.phone_android_outlined,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Email / ID Karyawan tidak boleh kosong';
+                  return 'Nomor HP atau Email tidak boleh kosong';
                 }
                 return null;
               },
             ),
-            const SizedBox(height: 20), // 20px spacing
-            // Password field
-            JagoTextField(
-              label: 'Password',
-              hint: 'Masukkan password Anda',
-              controller: _passwordController,
-              obscureText: true,
-              textInputAction: TextInputAction.done,
-              prefixIcon: Icons.lock_outlined,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Password tidak boleh kosong';
-                }
-                if (value.length < 6) {
-                  return 'Password minimal 6 karakter';
-                }
-                return null;
-              },
-              onSubmitted: (_) => _handleLogin(),
-            ),
-            const SizedBox(height: 16), // 16px spacing
-            // Remember me
-            GestureDetector(
-              onTap: () => setState(() => _rememberMe = !_rememberMe),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Checkbox(
-                      value: _rememberMe,
-                      onChanged: (value) {
-                        setState(() => _rememberMe = value ?? false);
-                      },
-                      activeColor: AppColors.primary600,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+            if (_usePasswordLogin) ...[
+              const SizedBox(height: 20),
+              JagoTextField(
+                label: 'Password',
+                hint: 'Masukkan password Anda',
+                controller: _passwordController,
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+                prefixIcon: Icons.lock_outlined,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Password tidak boleh kosong';
+                  }
+                  if (value.length < 6) {
+                    return 'Password minimal 6 karakter';
+                  }
+                  return null;
+                },
+                onSubmitted: (_) => _handlePasswordLogin(),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            if (!_usePasswordLogin) ...[
+              JagoButton(
+                text: 'Kirim Kode OTP (WA / Email)',
+                onPressed: _handleRequestOtp,
+                isLoading: _isRequestingOtp,
+                leadingIcon: Icons.send_rounded,
+              ),
+            ] else ...[
+              BlocBuilder<LoginBloc, LoginState>(
+                builder: (context, state) {
+                  return JagoButton(
+                    text: 'Masuk dengan Password',
+                    onPressed: _handlePasswordLogin,
+                    isLoading: state is LoginLoading,
+                    leadingIcon: Icons.login_rounded,
+                  );
+                },
+              ),
+            ],
+
+            const SizedBox(height: 16),
+
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    _usePasswordLogin = !_usePasswordLogin;
+                  });
+                },
+                child: Text(
+                  _usePasswordLogin
+                      ? 'Atau Masuk dengan Kode OTP (WA/Email)'
+                      : 'Atau Masuk dengan Password',
+                  style: const TextStyle(
+                    color: AppColors.primary600,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Ingat saya',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: 28), // 28px spacing
-            // Login button
-            BlocBuilder<LoginBloc, LoginState>(
-              builder: (context, state) {
-                return JagoButton(
-                  text: 'Masuk',
-                  onPressed: _handleLogin,
-                  isLoading: state is LoginLoading,
-                  leadingIcon: Icons.login_rounded,
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-            // Register link
+
+            const SizedBox(height: 12),
+
             Center(
               child: GestureDetector(
                 onTap: () {

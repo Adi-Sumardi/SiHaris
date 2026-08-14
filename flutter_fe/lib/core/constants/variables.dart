@@ -16,6 +16,8 @@ class Variables {
   // Authentication
   // ============================================
   static const String login = '$apiBaseUrl/auth/login';
+  static const String requestOtp = '$apiBaseUrl/auth/request-otp';
+  static const String verifyOtp = '$apiBaseUrl/auth/verify-otp';
   static const String demoRegister = '$apiBaseUrl/auth/demo-register';
   static const String logout = '$apiBaseUrl/auth/logout';
   static const String profile = '$apiBaseUrl/auth/profile';

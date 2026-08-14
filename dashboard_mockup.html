@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiHaris Mobile - Dashboard Mockup Spacious Options</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-50: #EFF6FF;
+            --primary-100: #DBEAFE;
+            --primary-500: #3B82F6;
+            --primary-600: #0284C7;
+            --primary-700: #0369A1;
+            --bg-color: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #64748B;
+            --text-tertiary: #94A3B8;
+            --success: #10B981;
+            --success-light: #ECFDF5;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: #0F172A;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        .header-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .options-wrapper {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .option-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .option-label {
+            color: #38BDF8;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: rgba(56, 189, 248, 0.15);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        .mobile-container {
+            width: 390px;
+            height: 780px;
+            background: var(--bg-color);
+            border-radius: 44px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 10px #1E293B;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 26px;
+            background: #1E293B;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            z-index: 100;
+        }
+
+        .status-bar {
+            height: 48px;
+            padding: 12px 24px 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 90;
+            background: linear-gradient(to bottom, var(--primary-700), var(--primary-600));
+        }
+
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 80px;
+        }
+
+        .app-content::-webkit-scrollbar { display: none; }
+
+        /* Common Clean Header Styling */
+        .header-clean {
+            background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-600) 100%);
+            padding: 16px 20px 70px 20px;
+            border-bottom-left-radius: 28px;
+            border-bottom-right-radius: 28px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle Soft Background Watermark for Option 1 */
+        .watermark-bg {
+            position: absolute;
+            right: -25px;
+            top: -20px;
+            width: 170px;
+            height: 170px;
+            object-fit: contain;
+            opacity: 0.15; /* Soft background blend */
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        .user-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 5;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .greeting-text p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+        }
+
+        .greeting-text h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            color: white;
+        }
+
+        .icon-btn .badge-dot {
+            position: absolute;
+            top: 10px;
+            right: 11px;
+            width: 8px;
+            height: 8px;
+            background-color: var(--danger);
+            border-radius: 50%;
+            border: 1.5px solid var(--primary-700);
+        }
+
+        .attendance-card {
+            margin: -50px 16px 0 16px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 12px 30px -4px rgba(2, 132, 199, 0.12);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            z-index: 10;
+        }
+
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .today-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+        }
+
+        .clock-main-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+        }
+
+        .clock-time {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .status-chip {
+            display: inline-flex;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .chip-success { background: var(--success-light); color: var(--success); }
+        .chip-muted { background: #F1F5F9; color: var(--text-tertiary); }
+
+        .scan-hero-btn {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-container { padding: 20px 16px 0 16px; }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .quick-item {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 14px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #F1F5F9;
+        }
+
+        .quick-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-cuti { background: #FFF7ED; color: #F97316; }
+        .icon-gaji { background: #ECFDF5; color: #10B981; }
+        .icon-lembur { background: #EFF6FF; color: #3B82F6; }
+        .icon-jadwal { background: #EFF6FF; color: #0284C7; }
+
+        /* Option 2: Dedicated Info Banner Card below Menu Cepat */
+        .info-card-banner {
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #BFDBFE;
+        }
+
+        .info-banner-left h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1E40AF;
+            margin-bottom: 2px;
+        }
+
+        .info-banner-left p {
+            font-size: 11px;
+            color: #3B82F6;
+        }
+
+        .info-banner-img {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 72px;
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 1px solid #F1F5F9;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            color: var(--text-tertiary);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .nav-item.active { color: var(--primary-600); }
+
+        .center-fab {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: 3px solid white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-title">✨ 2 Opsi Penataan Longgar & Bersih (Tanpa Terlalu Padat)</div>
+
+    <div class="options-wrapper">
+        
+        <!-- OPSI 1: Watermark Soft Background di Header -->
+        <div class="option-box">
+            <div class="option-label">Opsi 1: Soft Background Watermark (Header Asli + Watermark Halus)</div>
+            
+            <div class="mobile-container">
+                <div class="notch"></div>
+                <div class="status-bar">
+                    <span>13.14</span>
+                    <div>5G 85%</div>
+                </div>
+
+                <div class="app-content">
+                    <!-- Clean Header with Subtle Soft Watermark Blend -->
+                    <div class="header-clean">
+                        <!-- Soft Subtle Blend (Opacity 0.15) - Non-intrusive -->
+                        <img src="file:///Users/yapi/Adi/appdev/SiHaris/flutter_fe/assets/icons/icon_ilustrator_dashboard.png" class="watermark-bg" alt="Soft Watermark">
+
+                        <div class="user-row">
+                            <div class="user-info">
+                                <div class="avatar">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </div>
+                                <div class="greeting-text">
+                                    <p>Selamat Siang</p>
+                                    <h2>Eko Prasetyo</h2>
+                                </div>
+                            </div>
+                            <div class="icon-btn">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                                <div class="badge-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Card -->
+                    <div class="attendance-card">
+                        <div class="card-header-row">
+                            <div class="today-tag">
+                                <div class="live-dot"></div>
+                                <span>Hari Ini</span>
+                            </div>
+                            <span style="font-size:12px; color:var(--text-secondary);">Rabu, 12 Agt 2026</span>
+                        </div>
+                        <div class="clock-main-row">
+                            <div>
+                                <div style="font-size:11px; color:var(--text-tertiary);">CLOCK IN</div>
+                                <div class="clock-time">13:09</div>
+                                <span class="status-chip chip-success">Tepat Waktu</span>
+                            </div>
+                            <div>
+                                <div style="font-size:11px; color:var(--text-tertiary);">CLOCK OUT</div>
+                                <div class="clock-time">--:--</div>
+                                <span class="status-chip chip-muted">Belum Absen</span>
+                            </div>
+                            <button class="scan-hero-btn">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3"/>
+                                    <circle cx="12" cy="10" r="2.5"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Menu Cepat Section -->
+                    <div class="section-container">
+                        <div style="font-size:15px; font-weight:700; margin-bottom:12px; color:var(--text-primary);">Menu Cepat</div>
+                        <div class="quick-grid">
+                            <div class="quick-item"><div class="quick-icon-box icon-cuti">📅</div><span style="font-size:11px; font-weight:600;">Cuti</span></div>
+                            <div class="quick-item"><div class="quick-icon-box icon-gaji">🧾</div><span style="font-size:11px; font-weight:600;">Slip Gaji</span></div>
+                            <div class="quick-item"><div class="quick-icon-box icon-lembur">⏰</div><span style="font-size:11px; font-weight:600;">Lembur</span></div>
+                            <div class="quick-item"><div class="quick-icon-box icon-jadwal">📆</div><span style="font-size:11px; font-weight:600;">Jadwal</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Nav -->
+                <div class="bottom-nav">
+                    <div class="nav-item active"><span>🏠</span><span>Beranda</span></div>
+                    <div class="nav-item"><span>🕒</span><span>Riwayat</span></div>
+                    <div style="position: relative; width: 60px;">
+                        <div class="center-fab">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3"/><circle cx="12" cy="10" r="2.5"/></svg>
+                        </div>
+                    </div>
+                    <div class="nav-item"><span>🧾</span><span>Slip Gaji</span></div>
+                    <div class="nav-item"><span>👤</span><span>Profil</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPSI 2: Card Informasi Terpisah di Bawah Menu Cepat -->
+        <div class="option-box">
+            <div class="option-label">Opsi 2: Card Banner Informasi Terpisah di Bawah Menu Cepat</div>
+            
+            <div class="mobile-container">
+                <div class="notch"></div>
+                <div class="status-bar">
+                    <span>13.14</span>
+                    <div>5G 85%</div>
+                </div>
+
+                <div class="app-content">
+                    <!-- Clean Header (Strictly untouched & clean!) -->
+                    <div class="header-clean">
+                        <div class="user-row">
+                            <div class="user-info">
+                                <div class="avatar">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </div>
+                                <div class="greeting-text">
+                                    <p>Selamat Siang</p>
+                                    <h2>Eko Prasetyo</h2>
+                                </div>
+                            </div>
+                            <div class="icon-btn">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                                <div class="badge-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Card -->
+                    <div class="attendance-card">
+                        <div class="card-header-row">
+                            <div class="today-tag">
+                                <div class="live-dot"></div>
+                                <span>Hari Ini</span>
+                            </div>
+                            <span style="font-size:12px; color:var(--text-secondary);">Rabu, 12 Agt 2026</span>
+                        </div>
+                        <div class="clock-main-row">
+                            <div>
+                                <div style="font-size:11px; color:var(--text-tertiary);">CLOCK IN</div>
+                                <div class="clock-time">13:09</div>
+                                <span class="status-chip chip-success">Tepat Waktu</span>
+                            </div>
+                            <div>
+                                <div style="font-size:11px; color:var(--text-tertiary);">CLOCK OUT</div>
+                                <div class="clock-time">--:--</div>
+                                <span class="status-chip chip-muted">Belum Absen</span>
+                            </div>
+                            <button class="scan-hero-btn">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3"/>
+                                    <circle cx="12" cy="10" r="2.5"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Menu Cepat Section -->
+                    <div class="section-container">
+                        <div style="font-size:15px; font-weight:700; margin-bottom:12px; color:var(--text-primary);">Menu Cepat</div>
+                        <div class="quick-grid">
+                            <div class="quick-item"><div class="quick-icon-box icon-cuti">📅</div><span style="font-size:11px; font-weight:600;">Cuti</span></div>
+                            <div class="quick-item"><div class="quick-icon-box icon-gaji">🧾</div><span style="font-size:11px; font-weight:600;">Slip Gaji</span></div>
+                            <div class="quick-item"><div class="quick-icon-box icon-lembur">⏰</div><span style="font-size:11px; font-weight:600;">Lembur</span></div>
+                            <div class="quick-item"><div class="quick-icon-box icon-jadwal">📆</div><span style="font-size:11px; font-weight:600;">Jadwal</span></div>
+                        </div>
+
+                        <!-- Asset 3D in Dedicated Info Card (Longgar & Bersih) -->
+                        <div class="info-card-banner">
+                            <div class="info-banner-left">
+                                <h4>Portal SiHaris SDM</h4>
+                                <p>Presensi & Layanan Kehadiran Digital</p>
+                            </div>
+                            <img src="file:///Users/yapi/Adi/appdev/SiHaris/flutter_fe/assets/icons/icon_ilustrator_dashboard.png" class="info-banner-img" alt="3D Office">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Nav -->
+                <div class="bottom-nav">
+                    <div class="nav-item active"><span>🏠</span><span>Beranda</span></div>
+                    <div class="nav-item"><span>🕒</span><span>Riwayat</span></div>
+                    <div style="position: relative; width: 60px;">
+                        <div class="center-fab">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3"/><circle cx="12" cy="10" r="2.5"/></svg>
+                        </div>
+                    </div>
+                    <div class="nav-item"><span>🧾</span><span>Slip Gaji</span></div>
+                    <div class="nav-item"><span>👤</span><span>Profil</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

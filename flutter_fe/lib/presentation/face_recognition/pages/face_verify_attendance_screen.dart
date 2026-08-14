@@ -53,7 +53,7 @@ class FaceVerifyAttendanceScreen extends StatefulWidget {
   const FaceVerifyAttendanceScreen({
     super.key,
     required this.isClockIn,
-    this.matchThreshold = 0.6,
+    this.matchThreshold = 0.48,
   });
 
   @override
@@ -400,7 +400,7 @@ class _FaceVerifyAttendanceScreenState
       // sama persis dengan backend). Match bila similarity >= threshold.
       final faceSimilarity =
           recognizer.cosineSimilarity(_storedEmbedding!, recognition.embedding);
-      final threshold = widget.matchThreshold;
+      final threshold = widget.matchThreshold > 0.50 ? 0.50 : widget.matchThreshold;
       final isValid = faceSimilarity >= threshold;
 
       if (kDebugMode) {

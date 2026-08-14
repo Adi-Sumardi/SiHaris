@@ -11,6 +11,7 @@ void main() {
     faceDescriptors: [0.1, 0.2, 0.3],
     gpsVerified: true,
     officeLocationId: 1,
+    livenessPassed: true,
   );
 
   group('toJson', () {
@@ -27,6 +28,7 @@ void main() {
         "face_descriptors": [0.1, 0.2, 0.3],
         "gps_verified": true,
         "office_location_id": 1,
+        "liveness_passed": true,
       };
       expect(result, expectedMap);
     });

@@ -11,6 +11,7 @@ void main() {
     faceDescriptors: [0.1, 0.2, 0.3],
     gpsVerified: true,
     officeLocationId: 1,
+    livenessPassed: true,
     // photo is File, hard to test equality directly, usually excluded from Equatable/== or handled separately
   );
 
@@ -28,6 +29,7 @@ void main() {
         "face_descriptors": [0.1, 0.2, 0.3],
         "gps_verified": true,
         "office_location_id": 1,
+        "liveness_passed": true,
       };
       // We don't verify photo in toJson because it's usually sent as multipart/form-data separately
       // checks for correctness

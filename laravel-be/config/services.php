@@ -56,4 +56,9 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI', 'https://siharis.yapinet.id/auth/google/callback'),
     ],
+
+    'adms' => [
+        'base_url' => env('ADMS_BASE_URL', 'http://adms.alazhar-rm.com/api/v1/face'),
+        'api_key' => env('ADMS_API_KEY', 'adms-face-token-2026'),
+    ],
 ];

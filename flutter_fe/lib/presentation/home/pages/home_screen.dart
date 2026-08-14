@@ -93,9 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.primary600, AppColors.primary700],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary700, AppColors.primary600],
         ),
       ),
       child: SafeArea(
@@ -106,18 +106,29 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(
                 children: [
-                  // Avatar - 48px (kelipatan 8)
+                  // Avatar Fresh Styling
                   Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.primary400,
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: const Icon(
                       Icons.person_rounded,
                       color: Colors.white,
-                      size: 28,
+                      size: 26,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -128,24 +139,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           _getGreeting(),
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: Colors.white.withValues(alpha: 0.85),
                             fontSize: 12,
-                            fontWeight: FontWeight.w400,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.2,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           _userName,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Notification - 48px
+                  // Fresh Notification Bell Button
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -154,11 +167,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                     child: Container(
-                      width: 48,
-                      height: 48,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                        ),
                       ),
                       child: Stack(
                         children: [
@@ -166,12 +182,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Icon(
                               Icons.notifications_outlined,
                               color: Colors.white,
-                              size: 24,
+                              size: 22,
                             ),
                           ),
                           Positioned(
-                            right: 12,
-                            top: 12,
+                            right: 10,
+                            top: 10,
                             child: Container(
                               width: 8,
                               height: 8,
@@ -179,8 +195,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: AppColors.danger,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.primary600,
-                                  width: 2,
+                                  color: AppColors.primary700,
+                                  width: 1.5,
                                 ),
                               ),
                             ),
@@ -537,14 +553,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
-      {
-        'icon': null,
-        'svgAsset': 'assets/images/attendance.svg',
-        'label': 'Absensi',
-        'route': '/attendance',
-        'color': AppColors.primary600,
-        'bg': AppColors.primary50,
-      },
       {
         'icon': Icons.event_note_outlined,
         'svgAsset': null,

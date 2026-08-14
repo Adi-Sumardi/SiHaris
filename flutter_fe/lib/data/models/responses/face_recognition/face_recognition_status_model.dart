@@ -15,9 +15,9 @@ class FaceRecognitionCompanySettings {
       faceRecognitionEnabled: json['face_recognition_enabled'] as bool? ??
                               json['enable_face_recognition'] as bool? ?? false,
       livenessRequired: json['liveness_required'] as bool? ?? false,
-      // Default samakan dengan backend (cosine similarity 0.6).
+      // Default samakan dengan backend (cosine similarity 0.48).
       matchThreshold: (json['match_threshold'] as num?)?.toDouble() ??
-                      (json['face_match_threshold'] as num?)?.toDouble() ?? 0.6,
+                      (json['face_match_threshold'] as num?)?.toDouble() ?? 0.48,
     );
   }
 }

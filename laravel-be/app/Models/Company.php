@@ -18,7 +18,7 @@ class Company extends Model
 
     protected $attributes = [
         'enable_face_recognition' => true,
-        'face_match_threshold' => 0.60,  // Cosine similarity threshold (0.6 = moderate, 0.7 = strict)
+        'face_match_threshold' => 0.48,  // Cosine similarity threshold (0.48 = optimal mobile balance, 0.6 = strict)
         'require_liveness_detection' => true,
     ];
 

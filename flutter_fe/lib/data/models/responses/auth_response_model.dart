@@ -314,7 +314,7 @@ class CompanyModel {
     required this.name,
     this.logo,
     this.enableFaceRecognition = false,
-    this.faceMatchThreshold = 0.6,
+    this.faceMatchThreshold = 0.48,
     this.enableGpsValidation = true,
   });
 

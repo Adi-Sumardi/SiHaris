@@ -6,6 +6,8 @@ class AttendanceTodayModel {
   final String date;
   final String? clockIn;
   final String? clockOut;
+  final String? clockInSource;
+  final String? clockOutSource;
   final String status;
   final String statusLabel;
   final int lateMinutes;
@@ -19,6 +21,8 @@ class AttendanceTodayModel {
     required this.date,
     this.clockIn,
     this.clockOut,
+    this.clockInSource,
+    this.clockOutSource,
     required this.status,
     required this.statusLabel,
     this.lateMinutes = 0,
@@ -44,6 +48,8 @@ class AttendanceTodayModel {
       date: json['date'],
       clockIn: json['clock_in'],
       clockOut: json['clock_out'],
+      clockInSource: json['clock_in_source'],
+      clockOutSource: json['clock_out_source'],
       status: json['status'],
       statusLabel: json['status_label'],
       lateMinutes: json['late_minutes'] ?? 0,
@@ -64,6 +70,8 @@ class AttendanceTodayModel {
       'date': date,
       'clock_in': clockIn,
       'clock_out': clockOut,
+      'clock_in_source': clockInSource,
+      'clock_out_source': clockOutSource,
       'status': status,
       'status_label': statusLabel,
       'late_minutes': lateMinutes,

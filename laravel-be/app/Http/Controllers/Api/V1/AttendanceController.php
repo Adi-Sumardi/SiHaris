@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Events\AttendanceClockIn;
 use App\Events\AttendanceClockOut;
+use App\Jobs\PushAttendanceToAdmsJob;
 use App\Models\Attendance;
 use App\Models\FaceVerificationLog;
 use App\Services\AttendanceReconciliationService;
@@ -154,6 +155,8 @@ class AttendanceController extends Controller
                 'date' => $attendance->date->toDateString(),
                 'clock_in' => $attendance->clock_in?->setTimezone($timezone)->format('H:i'),
                 'clock_out' => $attendance->clock_out?->setTimezone($timezone)->format('H:i'),
+                'clock_in_source' => $attendance->clock_in_source,
+                'clock_out_source' => $attendance->clock_out_source,
                 'status' => $attendance->status,
                 'status_label' => $attendance->status_label,
                 'late_minutes' => $lateMinutes,
@@ -409,7 +412,7 @@ class AttendanceController extends Controller
                     ], 422);
                 }
 
-                $isLivenessValid = $request->has('liveness_passed') ? $request->boolean('liveness_passed') : $request->boolean('face_verified');
+                $isLivenessValid = $request->boolean('liveness_passed');
                 if ($requireLiveness && ! $isLivenessValid) {
                     return response()->json([
                         'success' => false,
@@ -432,7 +435,7 @@ class AttendanceController extends Controller
                 $faceResult = $this->faceRecognitionService->verifyFace(
                     $employee,
                     $request->face_descriptors,
-                    $company->face_match_threshold ?? 0.6,
+                    $company->face_match_threshold ?? 0.48,
                     'clock_in'
                 );
 
@@ -505,6 +508,16 @@ class AttendanceController extends Controller
 
         // Dispatch event for push notification
         AttendanceClockIn::dispatch($attendance);
+
+        // Dispatch job to relay clock in log to ADMS Cloud
+        $employeePin = $employee->pin ?? (string) $employee->id;
+        PushAttendanceToAdmsJob::dispatch(
+            pin: $employeePin,
+            timestamp: $company->now(),
+            type: 'in',
+            deviceId: $request->app_device_id,
+            eventId: 'SIHARIS-'.$employeePin.'-'.$attendance->id.'-clockin'
+        );
 
         $responseData = [
             'id' => $attendance->id,
@@ -771,7 +784,7 @@ class AttendanceController extends Controller
                 $faceResult = $this->faceRecognitionService->verifyFace(
                     $employee,
                     $request->face_descriptors,
-                    $company->face_match_threshold ?? 0.6,
+                    $company->face_match_threshold ?? 0.48,
                     'clock_out'
                 );
 
@@ -843,6 +856,16 @@ class AttendanceController extends Controller
 
         // Dispatch event for push notification
         AttendanceClockOut::dispatch($attendance);
+
+        // Dispatch job to relay clock out log to ADMS Cloud
+        $employeePin = $employee->pin ?? (string) $employee->id;
+        PushAttendanceToAdmsJob::dispatch(
+            pin: $employeePin,
+            timestamp: $company->now(),
+            type: 'out',
+            deviceId: $request->app_device_id,
+            eventId: 'SIHARIS-'.$employeePin.'-'.$attendance->id.'-clockout'
+        );
 
         return response()->json([
             'success' => true,

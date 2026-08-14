@@ -514,7 +514,7 @@ void main() {
       expect(company.name, 'PT Jago Gaji');
       expect(company.logo, isNull);
       expect(company.enableFaceRecognition, false); // default value
-      expect(company.faceMatchThreshold, 0.6); // default value
+      expect(company.faceMatchThreshold, 0.48); // default value
       expect(company.enableGpsValidation, true); // default value
     });
 

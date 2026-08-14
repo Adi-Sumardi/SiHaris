@@ -256,11 +256,14 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     // Ambang kecocokan wajah dari company settings. Frontend & backend kini
     // sama-sama memakai cosine similarity (0.0-1.0, makin tinggi makin cocok),
     // jadi nilai threshold dipakai langsung tanpa konversi.
-    double matchThreshold = 0.6;
+    double matchThreshold = 0.48;
     final faceStatusState = context.read<FaceRecognitionStatusBloc>().state;
     if (faceStatusState is FaceRecognitionStatusLoaded) {
       matchThreshold =
-          faceStatusState.status.companySettings?.matchThreshold ?? 0.6;
+          faceStatusState.status.companySettings?.matchThreshold ?? 0.48;
+    }
+    if (matchThreshold > 0.50) {
+      matchThreshold = 0.50;
     }
 
     final position = await _getCurrentLocation();
@@ -650,6 +653,52 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (data.clockInSource == 'fingerprint' || data.clockOutSource == 'fingerprint') ...[
+                  JagoCard(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.infoLight,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.fingerprint_rounded,
+                            color: AppColors.info,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Kanal Absensi: Mesin Fingerprint',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Absensi Anda hari ini tercatat dari Mesin Fingerprint.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 if (data.officeLocation != null) ...[
                   JagoCard(
                     child: Column(

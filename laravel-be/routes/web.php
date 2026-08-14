@@ -160,6 +160,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:5,1');
 
+    Route::post('/login/otp', [AuthenticatedSessionController::class, 'requestOtp'])
+        ->middleware('throttle:5,1')
+        ->name('login.otp');
+
+    Route::get('/login/verify-otp', [AuthenticatedSessionController::class, 'showVerifyOtp'])
+        ->name('login.verify-otp');
+
+    Route::post('/login/verify-otp', [AuthenticatedSessionController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1');
+
     // Google OAuth Routes
     Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
         ->name('auth.google');

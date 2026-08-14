@@ -19,8 +19,8 @@
    - **Base URL**: `https://api-sendago.adilabs.id`
    - **Endpoint**: `POST /api/messages`
    - **Header**: `X-API-KEY: sg_7a377488dbfd3485632982210f44557e57b6b27fa089fbe3`
-   - **Device ID**: `7923d24f-f385-44b1-97f2-91d6b038a955`
-   - **Payload**: `{"to": "0812...", "body": "...", "deviceId": "7923d24f-f385-44b1-97f2-91d6b038a955"}`
+   - **Device ID**: Biarkan kosong/tanpa `SENDAGO_DEVICE_ID` agar SendaGo mengarahkan ke device aktif default (`PMB`).
+   - **Payload**: `{"to": "0812...", "body": "..."}`
 2. **Email Gateway (SendaGo Mail API)**:
    - **Base URL**: `https://sendagomail.adilabs.id`
    - **Member ID**: `mbr_5ad25ec95ebd6db4`

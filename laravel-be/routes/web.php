@@ -282,6 +282,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('office-locations', OfficeLocationController::class);
 
     // Fingerprint Device Management (hybrid attendance)
+    Route::post('fingerprint-devices/sync-adms', [FingerprintDeviceController::class, 'syncAdms'])->name('fingerprint-devices.sync-adms');
     Route::post('fingerprint-devices/{fingerprintDevice}/regenerate-secret', [FingerprintDeviceController::class, 'regenerateSecret'])->name('fingerprint-devices.regenerate-secret');
     Route::post('fingerprint-devices/{fingerprintDevice}/mappings', [FingerprintDeviceController::class, 'addMapping'])->name('fingerprint-devices.mappings.store');
     Route::delete('fingerprint-devices/{fingerprintDevice}/mappings/{mapping}', [FingerprintDeviceController::class, 'removeMapping'])->name('fingerprint-devices.mappings.destroy');

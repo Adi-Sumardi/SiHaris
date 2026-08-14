@@ -10,16 +10,29 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-secondary-900">Mesin Fingerprint</h1>
-            <p class="text-secondary-500 mt-1">Kelola mesin absensi fingerprint dan pemetaan PIN karyawan.</p>
+            <p class="text-secondary-500 mt-1">Data mesin absensi terintegrasi via API ADMS Cloud & pemetaan PIN karyawan.</p>
         </div>
-        <a href="{{ route('fingerprint-devices.create') }}" class="btn btn-primary">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-            Tambah Mesin
-        </a>
+        <form action="{{ route('fingerprint-devices.sync-adms') }}" method="POST">
+            @csrf
+            <button type="submit" class="btn btn-primary flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Sync Data ADMS API
+            </button>
+        </form>
     </div>
 @endsection
 
 @section('content')
+    <div class="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+            <div>
+                <span class="font-semibold text-emerald-900">Integrasi API ADMS Cloud Aktif</span>
+                <p class="text-xs text-emerald-700 mt-0.5">Data mesin & transaksi dikonsumsi secara otomatis via API ADMS (http://adms.alazhar-rm.com/api/v1/face).</p>
+            </div>
+        </div>
+        <span class="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md">Status: {{ !empty($admsHealthy) ? 'Online (Connected)' : 'Standby' }}</span>
+    </div>
     @if($unmatchedCount > 0)
         <x-alert type="warning" class="mb-4">
             Ada <strong>{{ $unmatchedCount }}</strong> log absensi dari mesin fingerprint yang PIN-nya belum dipetakan ke karyawan manapun. Buka detail mesin untuk meninjau.

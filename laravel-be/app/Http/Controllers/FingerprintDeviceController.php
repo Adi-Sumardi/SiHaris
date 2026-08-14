@@ -19,6 +19,31 @@ class FingerprintDeviceController extends Controller
     {
         $tenant = app('tenant');
 
+        // Auto-create ADMS Cloud machine device if missing
+        $admsDevice = FingerprintDevice::firstOrCreate(
+            [
+                'company_id' => $tenant->id,
+                'serial_number' => 'ADMS-FACE-APP',
+            ],
+            [
+                'name' => 'ADMS Face & Fingerprint Server (Cloud)',
+                'brand' => 'solution',
+                'is_active' => true,
+                'ip_address' => 'adms.alazhar-rm.com',
+                'port' => 80,
+                'last_sync_at' => now(),
+            ]
+        );
+
+        // If no user mappings exist yet, run initial sync with ADMS API
+        if ($admsDevice->userMappings()->count() === 0) {
+            try {
+                \App\Jobs\SyncAdmsEmployeesJob::dispatchSync($tenant->id);
+            } catch (\Throwable $e) {
+                // Keep page rendering gracefully even if remote API is transiently unreachable
+            }
+        }
+
         $devices = FingerprintDevice::where('company_id', $tenant->id)
             ->with('officeLocation')
             ->withCount('userMappings')
@@ -29,7 +54,25 @@ class FingerprintDeviceController extends Controller
             ->where('status', 'unmatched')
             ->count();
 
-        return view('fingerprint-devices.index', compact('devices', 'unmatchedCount'));
+        $admsService = app(\App\Services\AdmsApiService::class);
+        $admsHealthy = $admsService->checkHealth();
+
+        return view('fingerprint-devices.index', compact('devices', 'unmatchedCount', 'admsHealthy'));
+    }
+
+    public function syncAdms(): RedirectResponse
+    {
+        $tenant = app('tenant');
+
+        try {
+            \App\Jobs\SyncAdmsEmployeesJob::dispatchSync($tenant->id);
+
+            return redirect()->route('fingerprint-devices.index')
+                ->with('success', 'Berhasil menyinkronkan data pegawai & PIN dari API ADMS Cloud.');
+        } catch (\Throwable $e) {
+            return redirect()->route('fingerprint-devices.index')
+                ->with('error', 'Gagal menyinkronkan data ADMS: '.$e->getMessage());
+        }
     }
 
     public function create(): View

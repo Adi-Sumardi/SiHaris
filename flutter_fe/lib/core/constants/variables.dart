@@ -13,7 +13,7 @@ class Variables {
   static const String apiBaseUrl = '$baseUrl/api/v1';
 
   // ============================================
-  // Authentication
+  // Authentication & Contact
   // ============================================
   static const String login = '$apiBaseUrl/auth/login';
   static const String requestOtp = '$apiBaseUrl/auth/request-otp';
@@ -23,6 +23,8 @@ class Variables {
   static const String profile = '$apiBaseUrl/auth/profile';
   static const String changePassword = '$apiBaseUrl/auth/change-password';
   static const String deleteAccount = '$apiBaseUrl/auth/delete-account';
+  static const String adminWhatsappUrl =
+      'https://wa.me/6281292702075?text=Halo%20Admin%20SiHaris%2C%20saya%20butuh%20bantuan%20mengenai%20akun%20aplikasi';
 
   // ============================================
   // Dashboard

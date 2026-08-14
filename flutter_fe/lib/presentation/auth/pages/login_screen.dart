@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/constants/variables.dart';
 import '../../../core/components/widgets.dart';
 import '../bloc/login/login_bloc.dart';
 import '../bloc/login/login_event.dart';
@@ -305,14 +307,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
             Center(
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegisterScreen(),
-                    ),
-                  );
-                },
+                onTap: _contactAdminWhatsapp,
                 child: RichText(
                   text: const TextSpan(
                     style: TextStyle(
@@ -322,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       TextSpan(text: 'Belum punya akun? '),
                       TextSpan(
-                        text: 'Daftar Demo',
+                        text: 'Kontak Admin',
                         style: TextStyle(
                           color: AppColors.primary600,
                           fontWeight: FontWeight.w600,
@@ -337,6 +332,20 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _contactAdminWhatsapp() async {
+    final uri = Uri.parse(Variables.adminWhatsappUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak dapat membuka WhatsApp. Silakan hubungi 081292702075.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   Widget _buildPoweredBy() {

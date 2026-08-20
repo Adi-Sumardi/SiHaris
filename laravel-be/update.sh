@@ -13,7 +13,7 @@ set -euo pipefail
 BRANCH="${BRANCH:-main}"
 SKIP_BUILD="${SKIP_BUILD:-false}"
 PHP_VERSION="${PHP_VERSION:-8.3}"
-WORKER_PROGRAM="${WORKER_PROGRAM:-gajipro-worker}"
+WORKER_PROGRAM="${WORKER_PROGRAM:-siharis-worker}"
 
 c_info()  { echo -e "\033[1;34m==>\033[0m $1"; }
 c_ok()    { echo -e "\033[1;32m✓\033[0m $1"; }

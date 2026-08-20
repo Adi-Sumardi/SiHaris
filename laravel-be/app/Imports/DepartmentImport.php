@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Department;
+use Maatwebsite\Excel\Concerns\RemembersRowNumber;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -10,6 +11,8 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 class DepartmentImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithValidation
 {
+    use RemembersRowNumber;
+
     protected int $companyId;
 
     protected int $successCount = 0;
@@ -29,30 +32,45 @@ class DepartmentImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithV
     public function model(array $row): ?Department
     {
         $this->currentRow++;
+        $rowNum = $this->getRowNumber() ?? $this->currentRow;
 
-        // Check if code already exists
-        $existingDepartment = Department::where('company_id', $this->companyId)
-            ->where('code', $row['kode'])
+        $code = trim((string) ($row['kode'] ?? ''));
+        $name = trim((string) ($row['nama'] ?? ''));
+        $parentCode = trim((string) ($row['kode_induk'] ?? ''));
+        $description = trim((string) ($row['deskripsi'] ?? ''));
+
+        if (empty($code) || empty($name)) {
+            $this->skipCount++;
+            $this->errors[] = "Baris {$rowNum}: Nama dan Kode wajib diisi.";
+
+            return null;
+        }
+
+        // Check if code already exists (including soft-deleted)
+        $existingDepartment = Department::withTrashed()
+            ->where('company_id', $this->companyId)
+            ->where('code', $code)
             ->first();
 
         if ($existingDepartment) {
             $this->skipCount++;
-            $this->errors[] = "Baris {$this->currentRow}: Kode '{$row['kode']}' sudah ada, dilewati.";
+            $statusText = $existingDepartment->trashed() ? ' (arsip/terhapus)' : '';
+            $this->errors[] = "Baris {$rowNum}: Kode '{$code}' sudah ada{$statusText}, dilewati.";
 
             return null;
         }
 
         // Resolve parent department
         $parentId = null;
-        if (! empty($row['kode_induk'])) {
+        if (! empty($parentCode)) {
             $parent = Department::where('company_id', $this->companyId)
-                ->where('code', $row['kode_induk'])
+                ->where('code', $parentCode)
                 ->first();
 
             if ($parent) {
                 $parentId = $parent->id;
             } else {
-                $this->errors[] = "Baris {$this->currentRow}: Kode induk '{$row['kode_induk']}' tidak ditemukan.";
+                $this->errors[] = "Baris {$rowNum}: Kode induk '{$parentCode}' tidak ditemukan (departemen tetap dibuat tanpa induk).";
             }
         }
 
@@ -61,9 +79,9 @@ class DepartmentImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithV
         return new Department([
             'company_id' => $this->companyId,
             'parent_id' => $parentId,
-            'name' => $row['nama'],
-            'code' => $row['kode'],
-            'description' => $row['deskripsi'] ?? null,
+            'name' => $name,
+            'code' => $code,
+            'description' => ! empty($description) ? $description : null,
             'is_active' => $this->parseBoolean($row['aktif'] ?? 'Ya'),
         ]);
     }

@@ -49,44 +49,62 @@ describe('PositionImport', function () {
         });
 
         it('creates positions with department reference by code', function () {
-            $position = Position::create([
-                'company_id' => $this->company->id,
-                'department_id' => $this->itDepartment->id,
-                'name' => 'Software Engineer',
-                'code' => 'SE',
+            $import = new \App\Imports\PositionImport($this->company->id);
+            $position = $import->model([
+                'nama' => 'Software Engineer',
+                'kode' => 'SE',
+                'kode_departemen' => 'IT',
                 'level' => 3,
-                'base_salary' => 10000000,
-                'is_active' => true,
+                'gaji_pokok' => 10000000,
+                'aktif' => 'Ya',
             ]);
 
+            expect($position)->not->toBeNull();
             expect($position->department_id)->toBe($this->itDepartment->id);
-            expect($position->department->code)->toBe('IT');
+            expect($position->code)->toBe('SE');
         });
 
-        it('can import positions with salary formatting', function () {
-            $importData = [
-                ['name' => 'Junior Developer', 'code' => 'JD', 'department_code' => 'IT', 'level' => 1, 'base_salary' => '5000000'],
-                ['name' => 'Senior Developer', 'code' => 'SD', 'department_code' => 'IT', 'level' => 4, 'base_salary' => '15.000.000'],
-            ];
+        it('can import positions with salary formatting including indonesian decimals', function () {
+            $import = new \App\Imports\PositionImport($this->company->id);
 
-            foreach ($importData as $row) {
-                $salary = (int) str_replace(['.', ','], '', $row['base_salary']);
-                Position::create([
-                    'company_id' => $this->company->id,
-                    'department_id' => $this->itDepartment->id,
-                    'name' => $row['name'],
-                    'code' => $row['code'],
-                    'level' => $row['level'],
-                    'base_salary' => $salary,
-                    'is_active' => true,
-                ]);
-            }
-
-            expect(Position::where('company_id', $this->company->id)->count())->toBe(2);
-            $this->assertDatabaseHas('positions', [
-                'code' => 'SD',
-                'base_salary' => 15000000,
+            $pos1 = $import->model([
+                'nama' => 'Junior Developer',
+                'kode' => 'JD',
+                'kode_departemen' => 'IT',
+                'level' => 1,
+                'gaji_pokok' => 'Rp 5.000.000,00',
+                'aktif' => 'Ya',
             ]);
+
+            $pos2 = $import->model([
+                'nama' => 'Senior Developer',
+                'kode' => 'SD',
+                'kode_departemen' => 'IT',
+                'level' => 4,
+                'gaji_pokok' => '15.000.000',
+                'aktif' => 'Ya',
+            ]);
+
+            expect($pos1->base_salary)->toBe(5000000);
+            expect($pos2->base_salary)->toBe(15000000);
+        });
+
+        it('skips soft-deleted positions without unique constraint error', function () {
+            $pos = Position::factory()->create([
+                'company_id' => $this->company->id,
+                'code' => 'OLD_POS',
+            ]);
+            $pos->delete();
+
+            $import = new \App\Imports\PositionImport($this->company->id);
+            $result = $import->model([
+                'nama' => 'New Pos',
+                'kode' => 'OLD_POS',
+                'aktif' => 'Ya',
+            ]);
+
+            expect($result)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
         });
     });
 });

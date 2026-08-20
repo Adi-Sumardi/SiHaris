@@ -37,7 +37,11 @@
 
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-secondary-700 mb-2">File Excel</label>
-                            <div class="border-2 border-dashed border-secondary-300 rounded-lg p-8 text-center hover:border-primary-400 transition-colors">
+                            <div class="border-2 border-dashed border-secondary-300 rounded-lg p-8 text-center hover:border-primary-400 transition-colors cursor-pointer"
+                                 id="dropzone"
+                                 ondragover="event.preventDefault(); this.classList.add('border-primary-500', 'bg-primary-50');"
+                                 ondragleave="this.classList.remove('border-primary-500', 'bg-primary-50');"
+                                 ondrop="handleFileDrop(event, 'file')">
                                 <input type="file" name="file" id="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="updateFileName(this)">
                                 <label for="file" class="cursor-pointer">
                                     <svg class="w-12 h-12 mx-auto text-secondary-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,8 +117,32 @@
 
     <script>
         function updateFileName(input) {
-            const fileName = input.files[0]?.name || 'Klik untuk memilih file atau drag & drop';
-            document.getElementById('file-name').textContent = fileName;
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+                const fileNameEl = document.getElementById('file-name');
+                if (fileNameEl) {
+                    fileNameEl.innerHTML = `<span class="font-medium text-secondary-900">${file.name}</span> <span class="text-xs text-secondary-500">(${sizeInMb} MB)</span>`;
+                }
+            } else {
+                const fileNameEl = document.getElementById('file-name');
+                if (fileNameEl) {
+                    fileNameEl.textContent = 'Klik untuk memilih file atau drag & drop';
+                }
+            }
+        }
+
+        function handleFileDrop(event, inputId) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-primary-500', 'bg-primary-50');
+            const files = event.dataTransfer?.files;
+            if (files && files.length > 0) {
+                const fileInput = document.getElementById(inputId);
+                if (fileInput) {
+                    fileInput.files = files;
+                    updateFileName(fileInput);
+                }
+            }
         }
     </script>
 @endsection

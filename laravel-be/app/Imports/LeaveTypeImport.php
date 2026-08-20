@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\LeaveType;
+use Maatwebsite\Excel\Concerns\RemembersRowNumber;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -10,6 +11,8 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 class LeaveTypeImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithValidation
 {
+    use RemembersRowNumber;
+
     protected int $companyId;
 
     protected int $successCount = 0;
@@ -29,37 +32,57 @@ class LeaveTypeImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVa
     public function model(array $row): ?LeaveType
     {
         $this->currentRow++;
+        $rowNum = $this->getRowNumber() ?? $this->currentRow;
 
-        // Check if code already exists
-        $existingLeaveType = LeaveType::where('company_id', $this->companyId)
-            ->where('code', $row['kode'])
+        $code = trim((string) ($row['kode'] ?? ''));
+        $name = trim((string) ($row['nama'] ?? ''));
+        $description = trim((string) ($row['deskripsi'] ?? ''));
+        $color = trim((string) ($row['warna'] ?? ''));
+
+        if (empty($code) || empty($name)) {
+            $this->skipCount++;
+            $this->errors[] = "Baris {$rowNum}: Nama dan Kode wajib diisi.";
+
+            return null;
+        }
+
+        // Check if code already exists (including soft-deleted)
+        $existingLeaveType = LeaveType::withTrashed()
+            ->where('company_id', $this->companyId)
+            ->where('code', $code)
             ->first();
 
         if ($existingLeaveType) {
             $this->skipCount++;
-            $this->errors[] = "Baris {$this->currentRow}: Kode '{$row['kode']}' sudah ada, dilewati.";
+            $statusText = $existingLeaveType->trashed() ? ' (arsip/terhapus)' : '';
+            $this->errors[] = "Baris {$rowNum}: Kode '{$code}' sudah ada{$statusText}, dilewati.";
 
             return null;
         }
+
+        $defaultDays = isset($row['jatah_hari']) && is_numeric($row['jatah_hari']) ? (int) $row['jatah_hari'] : 0;
+        $maxConsecutiveDays = ! empty($row['maksimal_hari_berturut']) && is_numeric($row['maksimal_hari_berturut']) ? (int) $row['maksimal_hari_berturut'] : null;
+        $minNoticeDays = isset($row['minimal_hari_pengajuan']) && is_numeric($row['minimal_hari_pengajuan']) ? (int) $row['minimal_hari_pengajuan'] : 0;
+        $maxCarryForwardDays = ! empty($row['maksimal_hari_dibawa']) && is_numeric($row['maksimal_hari_dibawa']) ? (int) $row['maksimal_hari_dibawa'] : null;
 
         $this->successCount++;
 
         return new LeaveType([
             'company_id' => $this->companyId,
-            'name' => $row['nama'],
-            'code' => $row['kode'],
-            'description' => $row['deskripsi'] ?? null,
-            'default_days' => $row['jatah_hari'] ?? 0,
+            'name' => $name,
+            'code' => $code,
+            'description' => ! empty($description) ? $description : null,
+            'default_days' => $defaultDays,
             'is_paid' => $this->parseBoolean($row['berbayar'] ?? 'Ya'),
             'requires_approval' => $this->parseBoolean($row['perlu_persetujuan'] ?? 'Ya'),
             'requires_attachment' => $this->parseBoolean($row['perlu_lampiran'] ?? 'Tidak'),
-            'max_consecutive_days' => $row['maksimal_hari_berturut'] ?? null,
-            'min_notice_days' => $row['minimal_hari_pengajuan'] ?? 0,
+            'max_consecutive_days' => $maxConsecutiveDays,
+            'min_notice_days' => $minNoticeDays,
             'is_carry_forward' => $this->parseBoolean($row['bisa_dibawa'] ?? 'Tidak'),
-            'max_carry_forward_days' => $row['maksimal_hari_dibawa'] ?? null,
+            'max_carry_forward_days' => $maxCarryForwardDays,
             'is_annual' => $this->parseBoolean($row['tahunan'] ?? 'Tidak'),
             'is_active' => $this->parseBoolean($row['aktif'] ?? 'Ya'),
-            'color' => $row['warna'] ?? 'primary',
+            'color' => ! empty($color) ? $color : 'primary',
         ]);
     }
 

@@ -97,9 +97,25 @@ describe('DepartmentImport', function () {
                 'code' => 'IT',
             ]);
 
-            // Try to import with same code - should skip
-            $existingCount = Department::where('company_id', $this->company->id)->count();
-            expect($existingCount)->toBe(1);
+            $import = new \App\Imports\DepartmentImport($this->company->id);
+            $res = $import->model(['nama' => 'IT Dua', 'kode' => 'IT', 'aktif' => 'Ya']);
+
+            expect($res)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
+        });
+
+        it('skips soft-deleted codes without throwing sql error', function () {
+            $dept = Department::factory()->create([
+                'company_id' => $this->company->id,
+                'code' => 'OLD_IT',
+            ]);
+            $dept->delete();
+
+            $import = new \App\Imports\DepartmentImport($this->company->id);
+            $res = $import->model(['nama' => 'New IT', 'kode' => 'OLD_IT', 'aktif' => 'Ya']);
+
+            expect($res)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
         });
 
         it('can import with parent department reference', function () {
@@ -109,16 +125,16 @@ describe('DepartmentImport', function () {
                 'code' => 'OPS',
             ]);
 
-            $child = Department::create([
-                'company_id' => $this->company->id,
-                'name' => 'Warehouse',
-                'code' => 'WH',
-                'parent_id' => $parent->id,
-                'is_active' => true,
+            $import = new \App\Imports\DepartmentImport($this->company->id);
+            $child = $import->model([
+                'nama' => 'Warehouse',
+                'kode' => 'WH',
+                'kode_induk' => 'OPS',
+                'aktif' => 'Ya',
             ]);
 
+            expect($child)->not->toBeNull();
             expect($child->parent_id)->toBe($parent->id);
-            expect($child->parent->code)->toBe('OPS');
         });
     });
 });

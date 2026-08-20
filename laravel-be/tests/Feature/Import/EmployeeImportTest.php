@@ -66,163 +66,78 @@ describe('EmployeeImport', function () {
         });
 
         it('creates employees from import data', function () {
-            $importData = [
-                [
-                    'employee_id' => 'EMP001',
-                    'first_name' => 'John',
-                    'last_name' => 'Doe',
-                    'email' => 'john.doe@example.com',
-                    'phone' => '081234567890',
-                    'gender' => 'male',
-                    'date_of_birth' => '1990-01-15',
-                    'hire_date' => '2023-01-01',
-                    'department_code' => 'IT',
-                    'position_code' => 'SE',
-                    'work_schedule_code' => 'REG',
-                    'employment_status' => 'permanent',
-                    'base_salary' => 10000000,
-                ],
-                [
-                    'employee_id' => 'EMP002',
-                    'first_name' => 'Jane',
-                    'last_name' => 'Smith',
-                    'email' => 'jane.smith@example.com',
-                    'phone' => '081234567891',
-                    'gender' => 'female',
-                    'date_of_birth' => '1992-05-20',
-                    'hire_date' => '2023-06-01',
-                    'department_code' => 'IT',
-                    'position_code' => 'SE',
-                    'work_schedule_code' => 'REG',
-                    'employment_status' => 'contract',
-                    'contract_start_date' => '2023-06-01',
-                    'contract_end_date' => '2024-06-01',
-                    'base_salary' => 8000000,
-                ],
-            ];
+            $import = new EmployeeImport($this->company->id);
 
-            foreach ($importData as $row) {
-                Employee::create([
-                    'company_id' => $this->company->id,
-                    'department_id' => $this->department->id,
-                    'position_id' => $this->position->id,
-                    'work_schedule_id' => $this->workSchedule->id,
-                    'employee_id' => $row['employee_id'],
-                    'first_name' => $row['first_name'],
-                    'last_name' => $row['last_name'],
-                    'email' => $row['email'],
-                    'phone' => $row['phone'],
-                    'gender' => $row['gender'],
-                    'date_of_birth' => $row['date_of_birth'],
-                    'hire_date' => $row['hire_date'],
-                    'employment_status' => $row['employment_status'],
-                    'contract_start_date' => $row['contract_start_date'] ?? null,
-                    'contract_end_date' => $row['contract_end_date'] ?? null,
-                    'base_salary' => $row['base_salary'],
-                    'is_active' => true,
-                ]);
-            }
-
-            expect(Employee::where('company_id', $this->company->id)->count())->toBe(2);
-            $this->assertDatabaseHas('employees', [
-                'employee_id' => 'EMP001',
-                'first_name' => 'John',
+            $emp1 = $import->model([
+                'nik' => 'EMP001',
+                'nama_depan' => 'John',
+                'nama_belakang' => 'Doe',
                 'email' => 'john.doe@example.com',
+                'telepon' => '081234567890',
+                'jenis_kelamin' => 'laki-laki',
+                'tanggal_lahir' => '1990-01-15',
+                'tanggal_masuk' => '2023-01-01',
+                'kode_departemen' => 'IT',
+                'kode_jabatan' => 'SE',
+                'kode_jadwal' => 'REG',
+                'status_karyawan' => 'tetap',
+                'gaji_pokok' => 'Rp 10.000.000,00',
             ]);
+
+            expect($emp1)->not->toBeNull();
+            expect($emp1->employee_id)->toBe('EMP001');
+            expect($emp1->department_id)->toBe($this->department->id);
+            expect($emp1->position_id)->toBe($this->position->id);
+            expect($emp1->work_schedule_id)->toBe($this->workSchedule->id);
+            expect($emp1->gender)->toBe('male');
+            expect($emp1->employment_status)->toBe('permanent');
+            expect($emp1->base_salary)->toBe(10000000);
         });
 
-        it('resolves department by code', function () {
-            $departmentCode = 'IT';
-            $department = Department::where('company_id', $this->company->id)
-                ->where('code', $departmentCode)
-                ->first();
+        it('falls back hire_date to today when empty and does not fail', function () {
+            $import = new EmployeeImport($this->company->id);
 
-            expect($department)->not->toBeNull();
-            expect($department->id)->toBe($this->department->id);
+            $emp = $import->model([
+                'nik' => 'EMP_NO_HIRE',
+                'nama_depan' => 'No',
+                'nama_belakang' => 'HireDate',
+                'tanggal_masuk' => '',
+            ]);
+
+            expect($emp)->not->toBeNull();
+            expect($emp->hire_date->format('Y-m-d'))->toBe(now()->format('Y-m-d'));
         });
 
-        it('resolves position by code', function () {
-            $positionCode = 'SE';
-            $position = Position::where('company_id', $this->company->id)
-                ->where('code', $positionCode)
-                ->first();
+        it('skips soft-deleted employee NIK without database duplicate error', function () {
+            $emp = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => 'EMP_OLD',
+            ]);
+            $emp->delete();
 
-            expect($position)->not->toBeNull();
-            expect($position->id)->toBe($this->position->id);
+            $import = new EmployeeImport($this->company->id);
+            $res = $import->model([
+                'nik' => 'EMP_OLD',
+                'nama_depan' => 'Revived',
+            ]);
+
+            expect($res)->toBeNull();
         });
 
-        it('handles salary with Indonesian number format', function () {
-            $salaryString = '10.000.000';
-            $salary = (int) str_replace(['.', ','], '', $salaryString);
+        it('handles salary with Indonesian decimal format correctly', function () {
+            $import = new EmployeeImport($this->company->id);
 
-            expect($salary)->toBe(10000000);
+            expect($import->parseSalary('10.000.000,00'))->toBe(10000000);
+            expect($import->parseSalary('Rp 7.500.000'))->toBe(7500000);
+            expect($import->parseSalary('5,000,000.50'))->toBe(5000001);
+            expect($import->parseSalary(''))->toBe(0);
         });
 
         it('parses date formats correctly', function () {
-            $date1 = \Carbon\Carbon::parse('1990-01-15');
-            $date2 = \Carbon\Carbon::createFromFormat('d/m/Y', '15/01/1990');
+            $import = new EmployeeImport($this->company->id);
 
-            expect($date1->format('Y-m-d'))->toBe('1990-01-15');
-            expect($date2->format('Y-m-d'))->toBe('1990-01-15');
-        });
-
-        it('validates unique employee_id within company', function () {
-            Employee::factory()->create([
-                'company_id' => $this->company->id,
-                'employee_id' => 'EMP001',
-            ]);
-
-            $existingEmployee = Employee::where('company_id', $this->company->id)
-                ->where('employee_id', 'EMP001')
-                ->exists();
-
-            expect($existingEmployee)->toBeTrue();
-        });
-
-        it('can import employee with bank information', function () {
-            $employee = Employee::create([
-                'company_id' => $this->company->id,
-                'department_id' => $this->department->id,
-                'position_id' => $this->position->id,
-                'employee_id' => 'EMP003',
-                'first_name' => 'Bank',
-                'last_name' => 'Test',
-                'email' => 'bank.test@example.com',
-                'gender' => 'male',
-                'hire_date' => '2023-01-01',
-                'employment_status' => 'permanent',
-                'bank_name' => 'BCA',
-                'bank_account_number' => '1234567890',
-                'bank_account_name' => 'Bank Test',
-                'is_active' => true,
-            ]);
-
-            expect($employee->bank_name)->toBe('BCA');
-            expect($employee->bank_account_number)->toBe('1234567890');
-        });
-
-        it('can import employee with BPJS information', function () {
-            $employee = Employee::create([
-                'company_id' => $this->company->id,
-                'department_id' => $this->department->id,
-                'position_id' => $this->position->id,
-                'employee_id' => 'EMP004',
-                'first_name' => 'BPJS',
-                'last_name' => 'Test',
-                'email' => 'bpjs.test@example.com',
-                'gender' => 'female',
-                'hire_date' => '2023-01-01',
-                'employment_status' => 'permanent',
-                'npwp' => '12.345.678.9-012.345',
-                'bpjs_kesehatan' => '0001234567890',
-                'bpjs_ketenagakerjaan' => '0009876543210',
-                'tax_status' => 'TK/0',
-                'is_active' => true,
-            ]);
-
-            expect($employee->npwp)->toBe('12.345.678.9-012.345');
-            expect($employee->bpjs_kesehatan)->toBe('0001234567890');
-            expect($employee->tax_status)->toBe('TK/0');
+            expect($import->parseDate('1990-01-15'))->toBe('1990-01-15');
+            expect($import->parseDate('15/01/1990'))->toBe('1990-01-15');
         });
     });
 

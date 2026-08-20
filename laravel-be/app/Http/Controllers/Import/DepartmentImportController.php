@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Imports\DepartmentImport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
 
 class DepartmentImportController extends Controller
 {
@@ -25,14 +27,16 @@ class DepartmentImportController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120'],
         ]);
 
         $tenant = app('tenant');
 
         try {
             $import = new DepartmentImport($tenant->id);
-            Excel::import($import, $request->file('file'));
+            DB::transaction(function () use ($import, $request) {
+                Excel::import($import, $request->file('file'));
+            });
 
             $successCount = $import->getSuccessCount();
             $skipCount = $import->getSkipCount();
@@ -51,6 +55,18 @@ class DepartmentImportController extends Controller
 
             return redirect()->route('imports.departments.index')
                 ->with('success', $message);
+        } catch (ValidationException $e) {
+            $validationErrors = [];
+            foreach ($e->failures() as $failure) {
+                $row = $failure->row();
+                $attribute = $failure->attribute();
+                $errorsList = implode(', ', $failure->errors());
+                $validationErrors[] = "Baris {$row} (Kolom {$attribute}): {$errorsList}";
+            }
+
+            return redirect()->route('imports.departments.index')
+                ->with('error', 'Validasi gagal pada file yang diunggah.')
+                ->with('import_errors', $validationErrors);
         } catch (\Exception $e) {
             return redirect()->route('imports.departments.index')
                 ->with('error', 'Gagal mengimpor data: '.$e->getMessage());

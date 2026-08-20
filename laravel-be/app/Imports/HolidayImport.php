@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Holiday;
+use Maatwebsite\Excel\Concerns\RemembersRowNumber;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -10,9 +11,11 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithValidation
 {
+    use RemembersRowNumber;
+
     protected int $companyId;
 
-    protected int $createdBy;
+    protected ?int $createdBy;
 
     protected int $successCount = 0;
 
@@ -23,7 +26,7 @@ class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVali
 
     protected int $currentRow = 1;
 
-    public function __construct(int $companyId, int $createdBy)
+    public function __construct(int $companyId, ?int $createdBy = null)
     {
         $this->companyId = $companyId;
         $this->createdBy = $createdBy;
@@ -32,24 +35,37 @@ class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVali
     public function model(array $row): ?Holiday
     {
         $this->currentRow++;
+        $rowNum = $this->getRowNumber() ?? $this->currentRow;
 
-        $date = $this->parseDate($row['tanggal']);
+        $name = trim((string) ($row['nama'] ?? ''));
+        $description = trim((string) ($row['deskripsi'] ?? ''));
 
-        if (! $date) {
+        if (empty($name)) {
             $this->skipCount++;
-            $this->errors[] = "Baris {$this->currentRow}: Format tanggal tidak valid.";
+            $this->errors[] = "Baris {$rowNum}: Nama hari libur wajib diisi.";
 
             return null;
         }
 
-        // Check if date already exists for this company
-        $existingHoliday = Holiday::where('company_id', $this->companyId)
+        $date = $this->parseDate($row['tanggal'] ?? null);
+
+        if (! $date) {
+            $this->skipCount++;
+            $this->errors[] = "Baris {$rowNum}: Format tanggal tidak valid.";
+
+            return null;
+        }
+
+        // Check if date already exists for this company (including soft-deleted)
+        $existingHoliday = Holiday::withTrashed()
+            ->where('company_id', $this->companyId)
             ->whereDate('date', $date)
             ->first();
 
         if ($existingHoliday) {
             $this->skipCount++;
-            $this->errors[] = "Baris {$this->currentRow}: Tanggal '{$date}' sudah terdaftar, dilewati.";
+            $statusText = $existingHoliday->trashed() ? ' (arsip/terhapus)' : '';
+            $this->errors[] = "Baris {$rowNum}: Tanggal '{$date}' sudah terdaftar{$statusText}, dilewati.";
 
             return null;
         }
@@ -58,10 +74,10 @@ class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVali
 
         return new Holiday([
             'company_id' => $this->companyId,
-            'name' => $row['nama'],
+            'name' => $name,
             'date' => $date,
             'type' => $this->parseType($row['jenis'] ?? 'national'),
-            'description' => $row['deskripsi'] ?? null,
+            'description' => ! empty($description) ? $description : null,
             'is_recurring' => $this->parseBoolean($row['berulang'] ?? 'Tidak'),
             'is_active' => $this->parseBoolean($row['aktif'] ?? 'Ya'),
             'created_by' => $this->createdBy,
@@ -84,10 +100,14 @@ class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVali
         ];
     }
 
-    protected function parseDate(mixed $value): ?string
+    public function parseDate(mixed $value): ?string
     {
         if (empty($value)) {
             return null;
+        }
+
+        if ($value instanceof \DateTime || $value instanceof \Carbon\Carbon) {
+            return $value->format('Y-m-d');
         }
 
         // Handle Excel numeric date format
@@ -100,18 +120,22 @@ class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVali
         }
 
         // Handle string date formats
-        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'Y/m/d'];
+        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'Y/m/d', 'm/d/Y'];
         foreach ($formats as $format) {
-            $date = \DateTime::createFromFormat($format, trim($value));
+            $date = \DateTime::createFromFormat($format, trim((string) $value));
             if ($date !== false) {
                 return $date->format('Y-m-d');
             }
         }
 
-        return null;
+        try {
+            return \Carbon\Carbon::parse((string) $value)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
-    protected function parseType(mixed $value): string
+    public function parseType(mixed $value): string
     {
         $value = strtolower(trim((string) $value));
 
@@ -119,6 +143,7 @@ class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVali
             'nasional', 'national' => 'national',
             'perusahaan', 'company' => 'company',
             'keagamaan', 'religious' => 'religious',
+            'cuti bersama', 'cuti_bersama', 'cutibersama', 'collective_leave', 'collective leave' => 'collective_leave',
             default => 'national',
         };
     }
@@ -131,7 +156,7 @@ class HolidayImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVali
 
         $value = strtolower(trim((string) $value));
 
-        return in_array($value, ['ya', 'yes', '1', 'true']);
+        return in_array($value, ['ya', 'yes', '1', 'true', 'aktif', 'active']);
     }
 
     public function getSuccessCount(): int

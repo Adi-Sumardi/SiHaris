@@ -41,60 +41,62 @@ describe('LeaveTypeImport', function () {
         });
 
         it('creates leave types from import data', function () {
-            $importData = [
-                [
-                    'name' => 'Cuti Tahunan',
-                    'code' => 'CT',
-                    'default_days' => 12,
-                    'is_paid' => true,
-                    'requires_approval' => true,
-                    'is_annual' => true,
-                ],
-                [
-                    'name' => 'Cuti Sakit',
-                    'code' => 'CS',
-                    'default_days' => 14,
-                    'is_paid' => true,
-                    'requires_approval' => true,
-                    'requires_attachment' => true,
-                ],
-                [
-                    'name' => 'Cuti Melahirkan',
-                    'code' => 'CM',
-                    'default_days' => 90,
-                    'is_paid' => true,
-                    'requires_approval' => true,
-                ],
-            ];
+            $import = new \App\Imports\LeaveTypeImport($this->company->id);
 
-            foreach ($importData as $row) {
-                LeaveType::create([
-                    'company_id' => $this->company->id,
-                    'name' => $row['name'],
-                    'code' => $row['code'],
-                    'default_days' => $row['default_days'],
-                    'is_paid' => $row['is_paid'] ?? true,
-                    'requires_approval' => $row['requires_approval'] ?? true,
-                    'requires_attachment' => $row['requires_attachment'] ?? false,
-                    'is_annual' => $row['is_annual'] ?? false,
-                    'is_active' => true,
-                ]);
-            }
-
-            expect(LeaveType::where('company_id', $this->company->id)->count())->toBe(3);
-            $this->assertDatabaseHas('leave_types', [
-                'code' => 'CT',
-                'default_days' => 12,
-                'is_annual' => true,
+            $lt1 = $import->model([
+                'nama' => 'Cuti Tahunan',
+                'kode' => 'CT',
+                'jatah_hari' => '12',
+                'berbayar' => 'Ya',
+                'perlu_persetujuan' => 'Ya',
+                'tahunan' => 'Ya',
+                'warna' => '',
+                'maksimal_hari_berturut' => '',
+                'aktif' => 'Ya',
             ]);
+
+            expect($lt1)->not->toBeNull();
+            expect($lt1->default_days)->toBe(12);
+            expect($lt1->max_consecutive_days)->toBeNull();
+            expect($lt1->color)->toBe('primary');
+            expect($lt1->is_annual)->toBeTrue();
         });
 
-        it('handles boolean fields from yes/no text', function () {
-            $isPaid = strtolower('Ya') === 'ya' || strtolower('Ya') === 'yes' || strtolower('Ya') === '1';
-            $isNotPaid = strtolower('Tidak') === 'ya' || strtolower('Tidak') === 'yes' || strtolower('Tidak') === '1';
+        it('handles boolean fields and empty integer sanitization', function () {
+            $import = new \App\Imports\LeaveTypeImport($this->company->id);
 
-            expect($isPaid)->toBeTrue();
-            expect($isNotPaid)->toBeFalse();
+            $lt = $import->model([
+                'nama' => 'Izin Tanpa Gaji',
+                'kode' => 'ITG',
+                'jatah_hari' => 0,
+                'berbayar' => 'Tidak',
+                'perlu_persetujuan' => 'Ya',
+                'perlu_lampiran' => 'Tidak',
+                'maksimal_hari_dibawa' => '',
+                'warna' => 'secondary',
+            ]);
+
+            expect($lt)->not->toBeNull();
+            expect($lt->is_paid)->toBeFalse();
+            expect($lt->max_carry_forward_days)->toBeNull();
+            expect($lt->color)->toBe('secondary');
+        });
+
+        it('skips soft-deleted leave types without unique error', function () {
+            $lt = LeaveType::factory()->create([
+                'company_id' => $this->company->id,
+                'code' => 'OLD_LEAVE',
+            ]);
+            $lt->delete();
+
+            $import = new \App\Imports\LeaveTypeImport($this->company->id);
+            $res = $import->model([
+                'nama' => 'New Leave',
+                'kode' => 'OLD_LEAVE',
+            ]);
+
+            expect($res)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
         });
     });
 });

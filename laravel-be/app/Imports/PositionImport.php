@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\Department;
 use App\Models\Position;
+use Maatwebsite\Excel\Concerns\RemembersRowNumber;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -11,6 +12,8 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 class PositionImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithValidation
 {
+    use RemembersRowNumber;
+
     protected int $companyId;
 
     protected int $successCount = 0;
@@ -30,42 +33,59 @@ class PositionImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVal
     public function model(array $row): ?Position
     {
         $this->currentRow++;
+        $rowNum = $this->getRowNumber() ?? $this->currentRow;
 
-        // Check if code already exists
-        $existingPosition = Position::where('company_id', $this->companyId)
-            ->where('code', $row['kode'])
+        $code = trim((string) ($row['kode'] ?? ''));
+        $name = trim((string) ($row['nama'] ?? ''));
+        $deptCode = trim((string) ($row['kode_departemen'] ?? ''));
+        $description = trim((string) ($row['deskripsi'] ?? ''));
+
+        if (empty($code) || empty($name)) {
+            $this->skipCount++;
+            $this->errors[] = "Baris {$rowNum}: Nama dan Kode wajib diisi.";
+
+            return null;
+        }
+
+        // Check if code already exists (including soft-deleted)
+        $existingPosition = Position::withTrashed()
+            ->where('company_id', $this->companyId)
+            ->where('code', $code)
             ->first();
 
         if ($existingPosition) {
             $this->skipCount++;
-            $this->errors[] = "Baris {$this->currentRow}: Kode '{$row['kode']}' sudah ada, dilewati.";
+            $statusText = $existingPosition->trashed() ? ' (arsip/terhapus)' : '';
+            $this->errors[] = "Baris {$rowNum}: Kode '{$code}' sudah ada{$statusText}, dilewati.";
 
             return null;
         }
 
         // Resolve department
         $departmentId = null;
-        if (! empty($row['kode_departemen'])) {
+        if (! empty($deptCode)) {
             $department = Department::where('company_id', $this->companyId)
-                ->where('code', $row['kode_departemen'])
+                ->where('code', $deptCode)
                 ->first();
 
             if ($department) {
                 $departmentId = $department->id;
             } else {
-                $this->errors[] = "Baris {$this->currentRow}: Departemen '{$row['kode_departemen']}' tidak ditemukan.";
+                $this->errors[] = "Baris {$rowNum}: Departemen '{$deptCode}' tidak ditemukan (jabatan dibuat tanpa departemen).";
             }
         }
+
+        $level = ! empty($row['level']) && is_numeric($row['level']) ? max(1, (int) $row['level']) : 1;
 
         $this->successCount++;
 
         return new Position([
             'company_id' => $this->companyId,
             'department_id' => $departmentId,
-            'name' => $row['nama'],
-            'code' => $row['kode'],
-            'description' => $row['deskripsi'] ?? null,
-            'level' => $row['level'] ?? 1,
+            'name' => $name,
+            'code' => $code,
+            'description' => ! empty($description) ? $description : null,
+            'level' => $level,
             'base_salary' => $this->parseSalary($row['gaji_pokok'] ?? 0),
             'is_active' => $this->parseBoolean($row['aktif'] ?? 'Ya'),
         ]);
@@ -100,14 +120,71 @@ class PositionImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVal
 
     protected function parseSalary(mixed $value): int
     {
-        if (is_numeric($value)) {
-            return (int) $value;
+        if (empty($value)) {
+            return 0;
         }
 
-        // Remove Indonesian/common number formatting
-        $value = str_replace(['.', ',', 'Rp', 'Rp.', ' '], '', (string) $value);
+        if (is_int($value)) {
+            return max(0, $value);
+        }
 
-        return (int) $value;
+        if (is_float($value)) {
+            return max(0, (int) round($value));
+        }
+
+        $str = trim((string) $value);
+        $str = preg_replace('/^(Rp|IDR)\.?\s*/i', '', $str);
+        $str = str_replace(' ', '', $str);
+
+        if (empty($str)) {
+            return 0;
+        }
+
+        // If string contains both dots and commas (e.g. 10.000.000,00 or 10,000,000.00)
+        if (str_contains($str, '.') && str_contains($str, ',')) {
+            $lastDot = strrpos($str, '.');
+            $lastComma = strrpos($str, ',');
+            if ($lastComma > $lastDot) {
+                // Indonesian format: 10.000.000,50
+                $parts = explode(',', $str);
+                $integerPart = str_replace('.', '', $parts[0]);
+                $decimalPart = isset($parts[1]) ? (float) ('0.'.$parts[1]) : 0;
+
+                return max(0, (int) round((float) $integerPart + $decimalPart));
+            } else {
+                // US format: 10,000,000.50
+                $parts = explode('.', $str);
+                $integerPart = str_replace(',', '', $parts[0]);
+                $decimalPart = isset($parts[1]) ? (float) ('0.'.$parts[1]) : 0;
+
+                return max(0, (int) round((float) $integerPart + $decimalPart));
+            }
+        }
+
+        // If only comma exists: e.g. "10000,50" (decimal) vs "10,000,000" (thousands)
+        if (str_contains($str, ',')) {
+            if (preg_match('/,\d{1,2}$/', $str) && substr_count($str, ',') === 1) {
+                $str = str_replace(',', '.', $str);
+
+                return max(0, (int) round((float) $str));
+            }
+            $str = str_replace(',', '', $str);
+
+            return max(0, (int) round((float) $str));
+        }
+
+        // If only dot exists: e.g. "10.000.000" (thousands) vs "10000.50" (decimal)
+        if (str_contains($str, '.')) {
+            if (substr_count($str, '.') > 1 || preg_match('/\.\d{3}$/', $str)) {
+                $str = str_replace('.', '', $str);
+
+                return max(0, (int) round((float) $str));
+            }
+
+            return max(0, (int) round((float) $str));
+        }
+
+        return max(0, (int) preg_replace('/[^\d]/', '', $str));
     }
 
     public function getSuccessCount(): int

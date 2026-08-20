@@ -41,62 +41,54 @@ describe('WorkScheduleImport', function () {
         });
 
         it('creates work schedules from import data', function () {
-            $importData = [
-                [
-                    'name' => 'Shift Pagi',
-                    'code' => 'PAGI',
-                    'start_time' => '08:00',
-                    'end_time' => '17:00',
-                    'break_duration' => 60,
-                    'working_days' => '1,2,3,4,5',
-                    'late_tolerance' => 15,
-                ],
-                [
-                    'name' => 'Shift Malam',
-                    'code' => 'MALAM',
-                    'start_time' => '20:00',
-                    'end_time' => '05:00',
-                    'break_duration' => 60,
-                    'working_days' => '1,2,3,4,5',
-                    'late_tolerance' => 10,
-                ],
-            ];
+            $import = new \App\Imports\WorkScheduleImport($this->company->id);
 
-            foreach ($importData as $row) {
-                $workingDays = array_map('intval', explode(',', $row['working_days']));
-                WorkSchedule::create([
-                    'company_id' => $this->company->id,
-                    'name' => $row['name'],
-                    'code' => $row['code'],
-                    'start_time' => $row['start_time'],
-                    'end_time' => $row['end_time'],
-                    'break_duration' => $row['break_duration'],
-                    'working_days' => $workingDays,
-                    'late_tolerance' => $row['late_tolerance'],
-                    'is_active' => true,
-                ]);
-            }
-
-            expect(WorkSchedule::where('company_id', $this->company->id)->count())->toBe(2);
-            $this->assertDatabaseHas('work_schedules', [
-                'code' => 'PAGI',
-                'late_tolerance' => 15,
+            $pagi = $import->model([
+                'nama' => 'Shift Pagi',
+                'kode' => 'PAGI',
+                'jam_masuk' => '08.00',
+                'jam_keluar' => '17.00',
+                'durasi_istirahat' => 60,
+                'hari_kerja' => 'Senin, Selasa, Rabu, Kamis, Jumat',
+                'toleransi_terlambat' => 15,
+                'default' => 'Ya',
+                'aktif' => 'Ya',
             ]);
+
+            expect($pagi)->not->toBeNull();
+            expect($pagi->start_time->format('H:i'))->toBe('08:00');
+            expect($pagi->end_time->format('H:i'))->toBe('17:00');
+            expect($pagi->working_hours)->toBe(8.0);
+            expect($pagi->working_days)->toEqual([1, 2, 3, 4, 5]);
+            expect($pagi->is_default)->toBeTrue();
         });
 
-        it('parses working days correctly', function () {
-            $schedule = WorkSchedule::create([
+        it('parses working days correctly from various inputs', function () {
+            $import = new \App\Imports\WorkScheduleImport($this->company->id);
+
+            expect($import->parseWorkingDays('1,2,3,4,5,6'))->toEqual([1, 2, 3, 4, 5, 6]);
+            expect($import->parseWorkingDays('Senin, Rabu, Jumat'))->toEqual([1, 3, 5]);
+            expect($import->parseWorkingDays(''))->toEqual([1, 2, 3, 4, 5]);
+        });
+
+        it('skips soft-deleted work schedules without unique collision error', function () {
+            $sched = WorkSchedule::factory()->create([
                 'company_id' => $this->company->id,
-                'name' => 'Full Week',
-                'code' => 'FW',
-                'start_time' => '09:00',
-                'end_time' => '18:00',
-                'working_days' => [1, 2, 3, 4, 5, 6],
-                'is_active' => true,
+                'code' => 'OLD_SCHED',
+            ]);
+            $sched->delete();
+
+            $import = new \App\Imports\WorkScheduleImport($this->company->id);
+            $res = $import->model([
+                'nama' => 'New Sched',
+                'kode' => 'OLD_SCHED',
+                'jam_masuk' => '08:00',
+                'jam_keluar' => '17:00',
+                'aktif' => 'Ya',
             ]);
 
-            expect($schedule->working_days)->toBeArray();
-            expect($schedule->working_days)->toContain(6);
+            expect($res)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
         });
     });
 });

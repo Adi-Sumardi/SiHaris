@@ -32,7 +32,7 @@ class HolidayTemplateExport implements FromArray, ShouldAutoSize, WithHeadings, 
             ['Hari Raya Idul Fitri', '2026-03-30', 'Keagamaan', 'Tidak', 'Ya', 'Hari Raya Idul Fitri 1 Syawal'],
             ['Hari Raya Idul Adha', '2026-06-07', 'Keagamaan', 'Tidak', 'Ya', 'Hari Raya Idul Adha'],
             ['Hari Natal', '2026-12-25', 'Keagamaan', 'Ya', 'Ya', 'Hari Raya Natal'],
-            ['Cuti Bersama Lebaran', '2026-03-31', 'Perusahaan', 'Tidak', 'Ya', 'Cuti Bersama Idul Fitri'],
+            ['Cuti Bersama Lebaran', '2026-03-31', 'Cuti Bersama', 'Tidak', 'Ya', 'Cuti Bersama Idul Fitri'],
         ];
     }
 

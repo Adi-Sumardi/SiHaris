@@ -35,11 +35,15 @@ class SyncAdmsEmployeesJob implements ShouldQueue
         $syncedCount = 0;
         $mappedCount = 0;
 
-        // Ensure default ADMS FingerprintDevice exists for mapping
+        $companyId = $this->companyId ?? 1;
+
+        // Ensure default ADMS FingerprintDevice exists for mapping within this company
         $device = FingerprintDevice::firstOrCreate(
-            ['serial_number' => 'ADMS-FACE-APP'],
             [
-                'company_id' => $this->companyId ?? 1,
+                'company_id' => $companyId,
+                'serial_number' => 'ADMS-FACE-APP',
+            ],
+            [
                 'name' => 'ADMS Face Recognition Cloud Server',
                 'brand' => 'solution',
                 'is_active' => true,

@@ -492,6 +492,34 @@
     </script>
     @endif
 
+    @if (session('warning'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: {
+                    type: 'warning',
+                    title: 'Peringatan',
+                    message: '{{ addslashes(session('warning')) }}'
+                }
+            }));
+        });
+    </script>
+    @endif
+
+    @if (session('info'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: {
+                    type: 'info',
+                    title: 'Informasi',
+                    message: '{{ addslashes(session('info')) }}'
+                }
+            }));
+        });
+    </script>
+    @endif
+
     @stack('scripts')
 </body>
 </html>

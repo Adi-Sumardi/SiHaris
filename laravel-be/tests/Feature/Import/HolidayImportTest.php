@@ -41,87 +41,59 @@ describe('HolidayImport', function () {
         });
 
         it('creates holidays from import data', function () {
-            $importData = [
-                [
-                    'name' => 'Tahun Baru',
-                    'date' => '2026-01-01',
-                    'type' => 'national',
-                    'description' => 'Perayaan Tahun Baru',
-                    'is_recurring' => true,
-                ],
-                [
-                    'name' => 'Hari Kemerdekaan',
-                    'date' => '2026-08-17',
-                    'type' => 'national',
-                    'description' => 'Hari Kemerdekaan RI',
-                    'is_recurring' => true,
-                ],
-                [
-                    'name' => 'Hari Raya Idul Fitri',
-                    'date' => '2026-03-30',
-                    'type' => 'religious',
-                    'description' => 'Hari Raya Idul Fitri 1 Syawal',
-                    'is_recurring' => false,
-                ],
-            ];
+            $import = new \App\Imports\HolidayImport($this->company->id, $this->user->id);
 
-            foreach ($importData as $row) {
-                Holiday::create([
-                    'company_id' => $this->company->id,
-                    'name' => $row['name'],
-                    'date' => $row['date'],
-                    'type' => $row['type'],
-                    'description' => $row['description'] ?? null,
-                    'is_recurring' => $row['is_recurring'] ?? false,
-                    'is_active' => true,
-                    'created_by' => $this->user->id,
-                ]);
-            }
+            $h1 = $import->model([
+                'nama' => 'Tahun Baru',
+                'tanggal' => '2026-01-01',
+                'jenis' => 'Nasional',
+                'deskripsi' => 'Perayaan Tahun Baru',
+                'berulang' => 'Ya',
+                'aktif' => 'Ya',
+            ]);
 
-            expect(Holiday::where('company_id', $this->company->id)->count())->toBe(3);
+            $h2 = $import->model([
+                'nama' => 'Cuti Bersama Lebaran',
+                'tanggal' => '2026-03-31',
+                'jenis' => 'Cuti Bersama',
+                'deskripsi' => 'Cuti bersama',
+                'berulang' => 'Tidak',
+                'aktif' => 'Ya',
+            ]);
 
-            $tahunBaru = Holiday::where('company_id', $this->company->id)
-                ->where('name', 'Tahun Baru')
-                ->whereDate('date', '2026-01-01')
-                ->first();
-            expect($tahunBaru)->not->toBeNull();
-            expect($tahunBaru->type)->toBe('national');
-            expect($tahunBaru->is_recurring)->toBeTrue();
+            expect($h1)->not->toBeNull();
+            expect($h1->type)->toBe('national');
+            expect($h1->is_recurring)->toBeTrue();
 
-            $idulFitri = Holiday::where('company_id', $this->company->id)
-                ->where('name', 'Hari Raya Idul Fitri')
-                ->first();
-            expect($idulFitri)->not->toBeNull();
-            expect($idulFitri->type)->toBe('religious');
-            expect($idulFitri->is_recurring)->toBeFalse();
+            expect($h2)->not->toBeNull();
+            expect($h2->type)->toBe('collective_leave');
+            expect($h2->is_recurring)->toBeFalse();
         });
 
-        it('handles type mapping from Indonesian text', function () {
-            $typeMapping = fn ($text) => match (strtolower(trim($text))) {
-                'nasional', 'national' => 'national',
-                'perusahaan', 'company' => 'company',
-                'keagamaan', 'religious' => 'religious',
-                default => 'national',
-            };
+        it('handles type mapping from Indonesian text including cuti bersama', function () {
+            $import = new \App\Imports\HolidayImport($this->company->id);
 
-            expect($typeMapping('Nasional'))->toBe('national');
-            expect($typeMapping('nasional'))->toBe('national');
-            expect($typeMapping('Perusahaan'))->toBe('company');
-            expect($typeMapping('Keagamaan'))->toBe('religious');
-            expect($typeMapping('religious'))->toBe('religious');
+            expect($import->parseType('Nasional'))->toBe('national');
+            expect($import->parseType('nasional'))->toBe('national');
+            expect($import->parseType('Perusahaan'))->toBe('company');
+            expect($import->parseType('Keagamaan'))->toBe('religious');
+            expect($import->parseType('religious'))->toBe('religious');
+            expect($import->parseType('Cuti Bersama'))->toBe('collective_leave');
+            expect($import->parseType('cuti_bersama'))->toBe('collective_leave');
         });
 
         it('handles boolean fields from yes/no text', function () {
-            $parseBoolean = fn ($value) => in_array(
-                strtolower(trim((string) $value)),
-                ['ya', 'yes', '1', 'true']
-            );
+            $import = new \App\Imports\HolidayImport($this->company->id);
 
-            expect($parseBoolean('Ya'))->toBeTrue();
-            expect($parseBoolean('yes'))->toBeTrue();
-            expect($parseBoolean('1'))->toBeTrue();
-            expect($parseBoolean('Tidak'))->toBeFalse();
-            expect($parseBoolean('no'))->toBeFalse();
+            $h = $import->model([
+                'nama' => 'Test Holiday',
+                'tanggal' => '2026-11-10',
+                'aktif' => 'Ya',
+                'berulang' => 'Tidak',
+            ]);
+
+            expect($h->is_active)->toBeTrue();
+            expect($h->is_recurring)->toBeFalse();
         });
 
         it('skips duplicate dates for same company', function () {
@@ -132,19 +104,32 @@ describe('HolidayImport', function () {
                 'date' => '2026-01-01',
             ]);
 
-            // Simulate import logic - skip if date already exists
-            $existingHoliday = Holiday::where('company_id', $this->company->id)
-                ->whereDate('date', '2026-01-01')
-                ->first();
+            $import = new \App\Imports\HolidayImport($this->company->id);
+            $res = $import->model([
+                'nama' => 'New Holiday',
+                'tanggal' => '2026-01-01',
+            ]);
 
-            expect($existingHoliday)->not->toBeNull();
+            expect($res)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
+        });
 
-            // Would skip this row in import
-            $shouldSkip = $existingHoliday !== null;
-            expect($shouldSkip)->toBeTrue();
+        it('skips soft-deleted holiday dates for same company', function () {
+            $h = Holiday::factory()->create([
+                'company_id' => $this->company->id,
+                'name' => 'Deleted Holiday',
+                'date' => '2026-02-02',
+            ]);
+            $h->delete();
 
-            // Final count should still be 1
-            expect(Holiday::where('company_id', $this->company->id)->count())->toBe(1);
+            $import = new \App\Imports\HolidayImport($this->company->id);
+            $res = $import->model([
+                'nama' => 'Imported Holiday',
+                'tanggal' => '2026-02-02',
+            ]);
+
+            expect($res)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
         });
     });
 });

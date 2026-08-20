@@ -48,3 +48,7 @@
 - **OTP Screen**: `lib/presentation/auth/pages/otp_verification_screen.dart` (6-digit PIN input, 60s timer).
 - **Login Screen**: `lib/presentation/auth/pages/login_screen.dart` (pilihan login OTP via WA / Email).
 - **Environment Base URL**: `https://siharis.yapinet.id`
+- **Release Keystore**: `flutter_fe/android/app/siharis.jks`
+  - **Alias**: `siharis`
+  - **Password**: `siharis2026.`
+  - **Package ID**: `id.yapinet.siharis`

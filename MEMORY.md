@@ -56,8 +56,8 @@
 ## 4. Mobile App (Flutter)
 - **OTP Screen**: `lib/presentation/auth/pages/otp_verification_screen.dart` (6-digit PIN input, 60s timer).
 - **Login Screen**: `lib/presentation/auth/pages/login_screen.dart` (pilihan login OTP via WA / Email).
-- **Profile & Biometrics**: `lib/presentation/profile/pages/profile_screen.dart` (menampilkan PIN Mesin Fingerprint dengan tombol copy, NIK KTP, serta status dan tombol aksi Pendaftaran Wajah).
-- **Face Enrollment Screen**: `lib/presentation/face_enrollment/pages/face_enrollment_screen.dart` (pendaftaran biometrik wajah 3 langkah: Depan, Kiri, Kanan).
+- **Profile & Biometrics**: `lib/presentation/profile/pages/profile_screen.dart` (menampilkan PIN Mesin Fingerprint dengan tombol copy, NIK KTP, status biometrik, pull-to-refresh untuk sinkronisasi instan, modal pengajuan reset wajah, serta tombol pendaftaran wajah).
+- **Live Face Enrollment**: `lib/presentation/face_recognition/pages/face_enroll_screen.dart` (live front camera feed dengan Google ML Kit Face Detection, real-time facial mesh/contour, MobileFaceNet TFLite 192-dimensional embedding extraction, dan auto-sync ke server).
 - **Environment Base URL**: `https://siharis.yapinet.id`
 - **Release Keystore**: `flutter_fe/android/app/siharis.jks`
   - **Alias**: `siharis`
@@ -66,7 +66,19 @@
 
 ---
 
-## 5. Employee Bulk Import & Master Data Sync
+## 5. Face Recognition & Face Reset Approval Workflow
+- **Kebijakan Pendaftaran Wajah 1x**: Pendaftaran wajah karyawan dibatasi hanya dapat dilakukan 1 kali untuk integritas dan anti-fraud absensi biometrik.
+- **Alur Permohonan Reset Wajah (Employee Request)**:
+  - Karyawan yang sudah terdaftar wajahnya dapat mengajukan permohonan reset via aplikasi mobile (`POST /api/v1/face-recognition/reset-request`) dengan menyertakan alasan.
+- **Halaman Persetujuan Administrator (Web Dashboard)**:
+  - Halaman khusus `/face-recognition/requests` untuk meninjau status permohonan (`pending`, `approved`, `rejected`).
+  - **Setujui (Approve)**: Menghapus data embedding biometrik lama karyawan di database & media storage (`EmployeeFaceEmbedding`), mengubah status `face_enrolled` menjadi `false`, sehingga karyawan dapat langsung mendaftarkan wajah baru di aplikasi HP.
+  - **Tolak (Reject)**: Menolak pengajuan dengan catatan alasan penolakan dari Administrator.
+- **Real-time Synchronization**: Layar profil aplikasi mobile dilengkapi *pull-to-refresh* (swipe refresh) agar status langsung ter-update setelah persetujuan admin tanpa perlu login ulang.
+
+---
+
+## 6. Employee Bulk Import & Master Data Sync
 - **Struktur Identitas Karyawan**:
   - **ID Karyawan** (`employee_id`): ID unik pegawai/karyawan di perusahaan.
   - **PIN** (`pin`): PIN absensi mesin fingerprint / face / ADMS.

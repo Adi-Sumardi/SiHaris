@@ -118,6 +118,9 @@
                     <form action="{{ route('face-recognition.store', $employee) }}" method="POST" enctype="multipart/form-data" x-data="faceEnrollment()">
                         @csrf
 
+                        <!-- Hidden permanent file input linked to the form submission -->
+                        <input type="file" name="photo" x-ref="photoInput" id="photo" accept="image/jpeg,image/png,image/jpg" class="hidden" @change="handleFileSelect($event)">
+
                         {{-- Camera/Upload Option --}}
                         <div class="mb-6">
                             <div class="flex gap-4 mb-4">
@@ -147,30 +150,27 @@
                                  x-on:dragleave.prevent="isDragging = false"
                                  x-on:drop.prevent="handleDrop($event)"
                                  :class="isDragging ? 'border-primary-500 bg-primary-50' : ''">
-                                <template x-if="!previewUrl">
-                                    <div>
-                                        <svg class="w-12 h-12 text-secondary-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                                        </svg>
-                                        <p class="text-secondary-600 mb-2">Drag & drop foto di sini atau</p>
-                                        <label class="btn btn-primary cursor-pointer">
-                                            <input type="file" name="photo" accept="image/*" class="hidden" @change="handleFileSelect($event)">
-                                            Pilih File
-                                        </label>
-                                        <p class="text-xs text-secondary-400 mt-2">Format: JPG, PNG. Maks: 5MB</p>
-                                    </div>
-                                </template>
-                                <template x-if="previewUrl">
-                                    <div>
-                                        <img :src="previewUrl" class="max-h-64 mx-auto rounded-lg mb-4">
-                                        <button type="button" @click="clearPreview()" class="btn btn-ghost btn-sm">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
+                                <div x-show="!previewUrl">
+                                    <svg class="w-12 h-12 text-secondary-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <p class="text-secondary-600 mb-2">Drag & drop foto di sini atau</p>
+                                    <button type="button" @click="$refs.photoInput.click()" class="btn btn-primary cursor-pointer">
+                                        Pilih File
+                                    </button>
+                                    <p class="text-xs text-secondary-400 mt-2">Format: JPG, PNG. Maks: 5MB</p>
+                                </div>
+                                <div x-show="previewUrl">
+                                    <img :src="previewUrl" class="max-h-64 mx-auto rounded-lg mb-4 border">
+                                    <div class="flex justify-center gap-2">
+                                        <button type="button" @click="$refs.photoInput.click()" class="btn btn-secondary btn-sm">
+                                            Ganti Foto
+                                        </button>
+                                        <button type="button" @click="clearPreview()" class="btn btn-danger btn-sm">
                                             Hapus
                                         </button>
                                     </div>
-                                </template>
+                                </div>
                             </div>
                             @error('photo')
                                 <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
@@ -184,23 +184,19 @@
                                 <img x-show="capturedPhoto" :src="capturedPhoto" class="w-full h-full object-cover">
 
                                 <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                                    <template x-if="!capturedPhoto">
-                                        <button type="button" @click="capturePhoto()" class="btn btn-primary">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            </svg>
-                                            Ambil Foto
-                                        </button>
-                                    </template>
-                                    <template x-if="capturedPhoto">
-                                        <button type="button" @click="retakePhoto()" class="btn btn-ghost">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                            </svg>
-                                            Ambil Ulang
-                                        </button>
-                                    </template>
+                                    <button type="button" x-show="!capturedPhoto" @click="capturePhoto()" class="btn btn-primary">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        Ambil Foto
+                                    </button>
+                                    <button type="button" x-show="capturedPhoto" @click="retakePhoto()" class="btn btn-ghost text-white">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                        </svg>
+                                        Ambil Ulang
+                                    </button>
                                 </div>
                             </div>
                             <canvas x-ref="canvas" class="hidden"></canvas>
@@ -271,6 +267,7 @@
                     const file = event.target.files[0];
                     if (file) {
                         this.previewUrl = URL.createObjectURL(file);
+                        this.capturedPhoto = null;
                     }
                 },
 
@@ -279,8 +276,8 @@
                     const file = event.dataTransfer.files[0];
                     if (file && file.type.startsWith('image/')) {
                         this.previewUrl = URL.createObjectURL(file);
-                        // Update the file input
-                        const input = this.$el.querySelector('input[type="file"]');
+                        this.capturedPhoto = null;
+                        const input = this.$refs.photoInput;
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(file);
                         input.files = dataTransfer.files;
@@ -289,8 +286,10 @@
 
                 clearPreview() {
                     this.previewUrl = null;
-                    const input = this.$el.querySelector('input[type="file"]');
-                    input.value = '';
+                    this.capturedPhoto = null;
+                    if (this.$refs.photoInput) {
+                        this.$refs.photoInput.value = '';
+                    }
                 },
 
                 async startCamera() {
@@ -301,7 +300,7 @@
                         this.$refs.video.srcObject = this.stream;
                     } catch (err) {
                         console.error('Error accessing camera:', err);
-                        alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
+                        alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan pada browser.');
                     }
                 },
 
@@ -315,25 +314,30 @@
                 capturePhoto() {
                     const video = this.$refs.video;
                     const canvas = this.$refs.canvas;
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
                     canvas.getContext('2d').drawImage(video, 0, 0);
-                    this.capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
+                    this.capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
 
                     // Convert to file and set to input
                     canvas.toBlob((blob) => {
                         const file = new File([blob], 'captured-face.jpg', { type: 'image/jpeg' });
-                        const input = this.$el.querySelector('input[type="file"]');
+                        const input = this.$refs.photoInput;
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(file);
                         input.files = dataTransfer.files;
-                    }, 'image/jpeg', 0.8);
+                        this.previewUrl = this.capturedPhoto;
+                    }, 'image/jpeg', 0.85);
 
                     this.stopCamera();
                 },
 
                 retakePhoto() {
                     this.capturedPhoto = null;
+                    this.previewUrl = null;
+                    if (this.$refs.photoInput) {
+                        this.$refs.photoInput.value = '';
+                    }
                     this.startCamera();
                 },
 
@@ -343,7 +347,6 @@
                             this.startCamera();
                         } else {
                             this.stopCamera();
-                            this.capturedPhoto = null;
                         }
                     });
                 }
@@ -352,3 +355,4 @@
     </script>
     @endpush
 @endsection
+

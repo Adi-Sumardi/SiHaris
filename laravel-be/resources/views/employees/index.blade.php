@@ -116,6 +116,9 @@
                     </td>
                     <td>
                         <span class="font-mono text-xs text-secondary-600">{{ $employee->employee_id }}</span>
+                        @if($employee->pin)
+                            <span class="block font-mono text-[10px] text-primary-600">PIN: {{ $employee->pin }}</span>
+                        @endif
                     </td>
                     <td class="text-secondary-600">{{ $employee->department?->name ?? '-' }}</td>
                     <td class="text-secondary-600">{{ $employee->position?->name ?? '-' }}</td>

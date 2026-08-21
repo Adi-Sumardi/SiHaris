@@ -259,6 +259,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
 
         $this->incrementCounter('success_count');
 
+        $pin = $this->getRowValue($row, ['pin', 'pin_finger', 'pin_mesin']);
         $email = $this->getRowValue($row, ['email']);
         $phone = $this->getRowValue($row, ['telepon', 'phone']);
         $religion = $this->getRowValue($row, ['agama', 'religion']);
@@ -286,6 +287,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
             'position_id' => $positionId,
             'work_schedule_id' => $workScheduleId,
             'employee_id' => $nik,
+            'pin' => ! empty($pin) ? trim((string) $pin) : null,
             'first_name' => $firstName,
             'last_name' => ! empty($lastName) ? $lastName : '',
             'email' => ! empty($email) ? trim((string) $email) : null,

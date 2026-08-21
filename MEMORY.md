@@ -38,8 +38,14 @@
 ---
 
 ## 3. ADMS Fingerprint & Face Attendance
-- **Machine Registration**: Tidak perlu input mesin finger manual di Web karena data diambil otomatis via API SendaGo / ADMS Cloud (`ADMS-FACE-APP`).
-- **Database Mapping**: Kolom pemetaan NIK / PIN karyawan pada database `employees` adalah `employees.employee_id` (string).
+- **Machine Registration**: Tidak perlu input mesin finger manual di Web karena data diambil otomatis via API ADMS Cloud (`ADMS-FACE-APP`).
+- **Database Mapping**:
+  - `employees.employee_id`: NIP / ID Karyawan internal kepegawaian.
+  - `employees.pin`: PIN khusus biometrik mesin fingerprint / ADMS Cloud (mis. `1032`).
+  - `fingerprint_user_mappings`: Pemetaan relasi per device (`fingerprint_device_id`, `employee_id`, `device_user_pin`).
+- **Sync ADMS & Relay**:
+  - `SyncAdmsEmployeesJob`: Sinkronisasi otomatis mencocokkan pegawai via `pin` -> `employee_id` -> `email` -> `name`, dan auto-populate `employees.pin` jika kosong.
+  - `PushAttendanceToAdmsJob`: Saat karyawan absen Face Recognition di mobile app, sistem otomatis me-relay log transaksi dengan PIN biometrik (`employees.pin` / `1032`) ke API ADMS Cloud (`POST /attendance`).
 - **Dashboard View**: Menampilkan status ADMS Cloud Server Machine di menu `/fingerprint-devices` dengan tombol **"Sync Data ADMS API"**.
 
 ---

@@ -510,7 +510,10 @@ class AttendanceController extends Controller
         AttendanceClockIn::dispatch($attendance);
 
         // Dispatch job to relay clock in log to ADMS Cloud
-        $employeePin = $employee->employee_id ?? (string) $employee->id;
+        $employeePin = $employee->pin
+            ?? \App\Models\FingerprintUserMapping::where('employee_id', $employee->id)->value('device_user_pin')
+            ?? $employee->employee_id
+            ?? (string) $employee->id;
         PushAttendanceToAdmsJob::dispatch(
             pin: $employeePin,
             timestamp: $company->now(),
@@ -858,7 +861,10 @@ class AttendanceController extends Controller
         AttendanceClockOut::dispatch($attendance);
 
         // Dispatch job to relay clock out log to ADMS Cloud
-        $employeePin = $employee->employee_id ?? (string) $employee->id;
+        $employeePin = $employee->pin
+            ?? \App\Models\FingerprintUserMapping::where('employee_id', $employee->id)->value('device_user_pin')
+            ?? $employee->employee_id
+            ?? (string) $employee->id;
         PushAttendanceToAdmsJob::dispatch(
             pin: $employeePin,
             timestamp: $company->now(),

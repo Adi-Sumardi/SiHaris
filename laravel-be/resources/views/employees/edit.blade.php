@@ -228,6 +228,25 @@
             </div>
             <div class="card-body">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {{-- NIP / Employee ID --}}
+                    <div>
+                        <label for="employee_id" class="block text-sm font-medium text-secondary-700 mb-1">NIP / ID Karyawan</label>
+                        <input type="text" name="employee_id" id="employee_id" value="{{ old('employee_id', $employee->employee_id) }}" class="input w-full @error('employee_id') border-danger-500 @enderror">
+                        @error('employee_id')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- PIN Mesin Fingerprint --}}
+                    <div>
+                        <label for="pin" class="block text-sm font-medium text-secondary-700 mb-1">PIN Mesin Fingerprint</label>
+                        <input type="text" name="pin" id="pin" value="{{ old('pin', $employee->pin) }}" class="input w-full @error('pin') border-danger-500 @enderror" placeholder="Contoh: 1032">
+                        <p class="mt-1 text-xs text-secondary-500">Nomor PIN biometrik yang terdaftar pada mesin fingerprint / ADMS.</p>
+                        @error('pin')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     {{-- Department --}}
                     <div>
                         <label for="department_id" class="block text-sm font-medium text-secondary-700 mb-1">Departemen <span class="text-danger-500">*</span></label>

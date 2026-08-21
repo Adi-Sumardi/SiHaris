@@ -83,7 +83,7 @@ describe('Employee Index', function () {
             'position_id' => $this->position->id,
         ]);
 
-        $response = $this->get('/employees?department_id=' . $dept1->id);
+        $response = $this->get('/employees?department_id='.$dept1->id);
 
         $response->assertStatus(200);
         $response->assertViewHas('employees', function ($employees) {
@@ -162,6 +162,32 @@ describe('Employee Create', function () {
             'first_name' => 'John',
             'last_name' => 'Doe',
             'email' => 'john.doe@company.com',
+            'company_id' => $this->company->id,
+        ]);
+    });
+
+    it('can create a new employee with pin and custom employee_id', function () {
+        $this->actingAs($this->admin);
+
+        $response = $this->post('/employees', [
+            'employee_id' => 'EMP-YAPI-001',
+            'pin' => '1032',
+            'first_name' => 'Adi',
+            'last_name' => 'Sumardi',
+            'email' => 'adi.sumardi@yapi.id',
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'hire_date' => '2024-01-15',
+            'employment_status' => 'permanent',
+        ]);
+
+        $response->assertRedirect('/employees');
+
+        $this->assertDatabaseHas('employees', [
+            'employee_id' => 'EMP-YAPI-001',
+            'pin' => '1032',
+            'first_name' => 'Adi',
+            'last_name' => 'Sumardi',
             'company_id' => $this->company->id,
         ]);
     });
@@ -295,6 +321,31 @@ describe('Employee Edit', function () {
         $employee->refresh();
         expect($employee->first_name)->toBe('Johnny')
             ->and($employee->last_name)->toBe('Updated');
+    });
+
+    it('can update employee pin', function () {
+        $this->actingAs($this->admin);
+
+        $employee = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'pin' => null,
+        ]);
+
+        $response = $this->put("/employees/{$employee->id}", [
+            'first_name' => $employee->first_name,
+            'pin' => '1032',
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'hire_date' => $employee->hire_date->format('Y-m-d'),
+            'employment_status' => 'permanent',
+        ]);
+
+        $response->assertRedirect("/employees/{$employee->id}");
+
+        $employee->refresh();
+        expect($employee->pin)->toBe('1032');
     });
 
     it('cannot edit employee from another company', function () {

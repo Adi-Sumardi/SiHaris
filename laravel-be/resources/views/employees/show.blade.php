@@ -83,8 +83,18 @@
                 <div class="card-body">
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <dt class="text-sm font-medium text-secondary-500">ID Karyawan</dt>
+                            <dt class="text-sm font-medium text-secondary-500">NIP / ID Karyawan</dt>
                             <dd class="mt-1 text-sm text-secondary-900 font-mono">{{ $employee->employee_id }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">PIN Mesin Fingerprint</dt>
+                            <dd class="mt-1 text-sm text-secondary-900 font-mono">
+                                @if($employee->pin)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">{{ $employee->pin }}</span>
+                                @else
+                                    <span class="text-secondary-400">-</span>
+                                @endif
+                            </dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-secondary-500">Nama Lengkap</dt>

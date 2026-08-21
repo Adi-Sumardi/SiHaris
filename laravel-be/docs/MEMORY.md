@@ -14,9 +14,12 @@ Integrasi absensi dua arah antara SiHaris Backend/Mobile App dengan **Mesin Fing
 2. **Reconciliation Engine (`AttendanceReconciliationService`)**:
    - Handles deduplication (`dedup_hash`), overnight shifts, and earliest clock-in / latest clock-out rules.
 3. **Async Relay (`PushAttendanceToAdmsJob`)**:
-   - Mobile app clock in/out is saved to SiHaris instantly and relayed asynchronously to ADMS Cloud `POST /attendance`.
+   - Mobile app clock in/out is saved to SiHaris instantly and relayed asynchronously to ADMS Cloud `POST /attendance` with the employee's biometric PIN (`employees.pin` or `fingerprint_user_mappings.device_user_pin`).
 4. **Master Employee Sync (`SyncAdmsEmployeesJob`)**:
    - Synchronizes employee PIN mappings between ADMS and SiHaris (`fingerprint_user_mappings` & `employees.pin`).
+5. **NIP vs PIN Separation**:
+   - `employees.employee_id`: Employment identifier / NIP (e.g. `EMP20260001` or custom).
+   - `employees.pin`: Dedicated biometric fingerprint machine PIN (e.g. `1032`).
 
 ---
 

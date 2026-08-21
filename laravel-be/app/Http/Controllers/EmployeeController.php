@@ -47,6 +47,7 @@ class EmployeeController extends Controller
                 $q->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -98,6 +99,8 @@ class EmployeeController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
+            'employee_id' => ['nullable', 'string', 'max:50'],
+            'pin' => ['nullable', 'string', 'max:50'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
@@ -273,6 +276,8 @@ class EmployeeController extends Controller
         }
 
         $validated = $request->validate([
+            'employee_id' => ['nullable', 'string', 'max:50'],
+            'pin' => ['nullable', 'string', 'max:50'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => $emailRule,

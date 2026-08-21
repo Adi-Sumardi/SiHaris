@@ -79,13 +79,15 @@ class UserModel {
   /// data['data'] = {user: {...}, employee: {...}, company: {...}}
   factory UserModel.fromJson(Map<String, dynamic> json) {
     // Handle both flat response (legacy) and nested {user, employee} response
-    if (json.containsKey('user')) {
+    if (json.containsKey('user') && json['user'] is Map<String, dynamic>) {
       final userJson = json['user'] as Map<String, dynamic>;
-      final employeeJson = json['employee'] as Map<String, dynamic>?;
+      final employeeJson = json['employee'] is Map<String, dynamic>
+          ? json['employee'] as Map<String, dynamic>
+          : null;
       return UserModel(
-        id: userJson['id'],
-        name: userJson['name'] ?? '',
-        email: userJson['email'] ?? '',
+        id: (userJson['id'] as num?)?.toInt() ?? 0,
+        name: userJson['name']?.toString() ?? '',
+        email: userJson['email']?.toString() ?? '',
         employee: employeeJson != null
             ? EmployeeModel.fromJson(employeeJson)
             : null,
@@ -93,9 +95,9 @@ class UserModel {
     }
     // Flat response fallback (e.g., updateProfile returns user directly)
     return UserModel(
-      id: json['id'],
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
     );
   }
 
@@ -156,20 +158,22 @@ class EmployeeModel {
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     return EmployeeModel(
-      id: json['id'],
-      employeeId: json['employee_id'] ?? '',
-      fullName: json['full_name'] ?? '',
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      phone: json['phone'],
-      photo: json['photo'],
-      department: json['department'],
-      position: json['position'],
-      hireDate: json['hire_date'],
-      employmentStatus: json['employment_status'],
-      faceEnrolled: json['face_enrolled'] ?? false,
-      faceEmbedding: json['face_embedding'] != null
-          ? FaceEmbeddingModel.fromJson(json['face_embedding'])
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      employeeId: json['employee_id']?.toString() ?? '',
+      fullName: json['full_name']?.toString() ?? '',
+      firstName: json['first_name']?.toString(),
+      lastName: json['last_name']?.toString(),
+      phone: json['phone']?.toString(),
+      photo: json['photo']?.toString(),
+      department: json['department']?.toString(),
+      position: json['position']?.toString(),
+      hireDate: json['hire_date']?.toString(),
+      employmentStatus: json['employment_status']?.toString(),
+      faceEnrolled: json['face_enrolled'] == true,
+      faceEmbedding: (json['face_embedding'] is Map<String, dynamic> &&
+              (json['face_embedding'] as Map<String, dynamic>).isNotEmpty)
+          ? FaceEmbeddingModel.fromJson(
+              json['face_embedding'] as Map<String, dynamic>)
           : null,
       assignedOffices: (json['assigned_offices'] as List<dynamic>?)
               ?.map((e) => AssignedOfficeModel.fromJson(e))
@@ -281,14 +285,18 @@ class FaceEmbeddingModel {
 
   factory FaceEmbeddingModel.fromJson(Map<String, dynamic> json) {
     // Support both 'embedding' and 'descriptors' field names
-    final embeddingList = json['embedding'] ?? json['descriptors'];
+    final rawEmbedding = json['embedding'] ?? json['descriptors'];
+    List<double> embeddingList = [];
+    if (rawEmbedding is List) {
+      embeddingList = rawEmbedding
+          .where((e) => e is num)
+          .map((e) => (e as num).toDouble())
+          .toList();
+    }
     return FaceEmbeddingModel(
-      model: json['model'] ?? '',
-      version: json['version'] ?? '',
-      embedding: (embeddingList as List<dynamic>?)
-              ?.map((e) => (e as num).toDouble())
-              .toList() ??
-          [],
+      model: json['model']?.toString() ?? '',
+      version: json['version']?.toString() ?? '',
+      embedding: embeddingList,
     );
   }
 

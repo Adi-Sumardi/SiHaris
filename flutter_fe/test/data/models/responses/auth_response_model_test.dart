@@ -176,6 +176,21 @@ void main() {
       expect(employee.faceEmbedding, isNull);
     });
 
+    test('fromJson should handle face_embedding as empty array without crashing', () {
+      final json = {
+        'id': 1,
+        'employee_id': 'EMP001',
+        'full_name': 'John Doe',
+        'face_enrolled': true,
+        'face_embedding': [],
+      };
+
+      final employee = EmployeeModel.fromJson(json);
+
+      expect(employee.faceEnrolled, true);
+      expect(employee.faceEmbedding, isNull);
+    });
+
     test('fromJson should handle null values', () {
       final json = {
         'id': 1,

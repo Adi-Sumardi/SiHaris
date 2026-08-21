@@ -435,7 +435,8 @@ class AuthController extends Controller
             $faceEmbeddingRecord = $employee->faceEmbedding()->where('is_active', true)->first();
             $faceEnrolled = $faceEmbeddingRecord !== null;
             if ($faceEnrolled) {
-                $faceEmbedding = $faceEmbeddingRecord->embedding_data;
+                $embeddingData = $faceEmbeddingRecord->embedding_data;
+                $faceEmbedding = ! empty($embeddingData) && is_array($embeddingData) ? $embeddingData : null;
             }
         }
 
@@ -621,7 +622,8 @@ class AuthController extends Controller
             $faceEmbeddingRecord = $employee->faceEmbedding()->where('is_active', true)->first();
             $faceEnrolled = $faceEmbeddingRecord !== null;
             if ($faceEnrolled) {
-                $faceEmbedding = $faceEmbeddingRecord->embedding_data;
+                $embeddingData = $faceEmbeddingRecord->embedding_data;
+                $faceEmbedding = ! empty($embeddingData) && is_array($embeddingData) ? $embeddingData : null;
             }
         }
 
@@ -1008,7 +1010,8 @@ class AuthController extends Controller
             $faceEmbeddingRecord = $employee->faceEmbedding()->where('is_active', true)->first();
             $faceEnrolled = $faceEmbeddingRecord !== null;
             if ($faceEnrolled) {
-                $faceEmbedding = $faceEmbeddingRecord->embedding_data;
+                $embeddingData = $faceEmbeddingRecord->embedding_data;
+                $faceEmbedding = ! empty($embeddingData) && is_array($embeddingData) ? $embeddingData : null;
             }
         }
 

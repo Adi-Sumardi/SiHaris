@@ -12,13 +12,22 @@
             <h1 class="text-2xl font-bold text-secondary-900">Mesin Fingerprint</h1>
             <p class="text-secondary-500 mt-1">Data mesin absensi terintegrasi via API ADMS Cloud & pemetaan PIN karyawan.</p>
         </div>
-        <form action="{{ route('fingerprint-devices.sync-adms') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn btn-primary flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Sync Data ADMS API
-            </button>
-        </form>
+        <div class="flex items-center gap-2.5">
+            <form action="{{ route('fingerprint-devices.sync-attendance') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-secondary flex items-center gap-2" title="Tarik data transaksi log presensi mesin hari ini dari ADMS">
+                    <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Sync Log Presensi
+                </button>
+            </form>
+            <form action="{{ route('fingerprint-devices.sync-adms') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-primary flex items-center gap-2" title="Sinkronkan data master pegawai & PIN dari ADMS">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Sync Data Pegawai & PIN
+                </button>
+            </form>
+        </div>
     </div>
 @endsection
 

@@ -158,4 +158,33 @@ class AdmsApiService
             ];
         }
     }
+
+    /**
+     * Fetch attendance transaction logs from ADMS API for a given date.
+     *
+     * @return array<int, array{id: int, pin: int|string, employee_id: ?int, timestamp: string, type: string, source: ?string}>
+     */
+    public function getAttendanceLogs(?string $date = null): array
+    {
+        $targetDate = $date ?? date('Y-m-d');
+
+        try {
+            $response = Http::withHeaders([
+                'X-API-KEY' => $this->apiKey,
+                'Accept' => 'application/json',
+            ])->timeout(15)->get("{$this->baseUrl}/attendance-logs", [
+                'date' => $targetDate,
+            ]);
+
+            if ($response->successful() && $response->json('success') === true) {
+                return $response->json('data') ?? [];
+            }
+
+            Log::warning("ADMS API getAttendanceLogs failed for date {$targetDate}: ".($response->json('message') ?? $response->body()));
+        } catch (\Throwable $e) {
+            Log::error("ADMS API getAttendanceLogs exception for date {$targetDate}: {$e->getMessage()}");
+        }
+
+        return [];
+    }
 }

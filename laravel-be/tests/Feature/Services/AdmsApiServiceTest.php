@@ -71,4 +71,28 @@ describe('AdmsApiService', function () {
         expect($result['success'])->toBeTrue();
         expect($result['message'])->toBe('Attendance recorded');
     });
+
+    it('fetches attendance logs successfully', function () {
+        Http::fake([
+            'http://adms.alazhar-rm.com/api/v1/face/attendance-logs*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 522650,
+                        'pin' => 1032,
+                        'employee_id' => 256,
+                        'timestamp' => '2026-08-21 07:30:17',
+                        'type' => 'in',
+                        'source' => 'face-recognition',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $logs = $this->admsService->getAttendanceLogs('2026-08-21');
+
+        expect($logs)->toHaveCount(1);
+        expect($logs[0]['pin'])->toBe(1032);
+        expect($logs[0]['type'])->toBe('in');
+    });
 });

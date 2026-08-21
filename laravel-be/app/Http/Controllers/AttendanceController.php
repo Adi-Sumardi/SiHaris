@@ -57,6 +57,25 @@ class AttendanceController extends Controller
         return view('attendances.index', compact('attendances', 'employees'));
     }
 
+    public function syncAdmsAttendance(Request $request): RedirectResponse
+    {
+        $tenant = app('tenant');
+        $date = $request->input('date', date('Y-m-d'));
+
+        try {
+            $admsService = app(\App\Services\AdmsApiService::class);
+            $reconciliationService = app(\App\Services\AttendanceReconciliationService::class);
+            $job = new \App\Jobs\SyncAdmsAttendanceJob($tenant->id, $date);
+            $result = $job->handle($admsService, $reconciliationService);
+
+            return redirect()->route('attendances.index', ['date' => $date])
+                ->with('success', "Sinkronisasi presensi ADMS berhasil. ({$result['applied']} log kehadiran diterapkan dari {$result['total']} data ADMS)");
+        } catch (\Throwable $e) {
+            return redirect()->route('attendances.index')
+                ->with('error', 'Gagal menyinkronkan presensi ADMS: '.$e->getMessage());
+        }
+    }
+
     public function create(): View
     {
         $tenant = app('tenant');

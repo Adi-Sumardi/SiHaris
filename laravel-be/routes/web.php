@@ -293,6 +293,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Fingerprint Device Management (hybrid attendance)
     Route::post('fingerprint-devices/sync-adms', [FingerprintDeviceController::class, 'syncAdms'])->name('fingerprint-devices.sync-adms');
+    Route::post('fingerprint-devices/sync-attendance', [FingerprintDeviceController::class, 'syncAttendance'])->name('fingerprint-devices.sync-attendance');
     Route::post('fingerprint-devices/{fingerprintDevice}/regenerate-secret', [FingerprintDeviceController::class, 'regenerateSecret'])->name('fingerprint-devices.regenerate-secret');
     Route::post('fingerprint-devices/{fingerprintDevice}/mappings', [FingerprintDeviceController::class, 'addMapping'])->name('fingerprint-devices.mappings.store');
     Route::delete('fingerprint-devices/{fingerprintDevice}/mappings/{mapping}', [FingerprintDeviceController::class, 'removeMapping'])->name('fingerprint-devices.mappings.destroy');
@@ -307,6 +308,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Attendance Management
     Route::get('attendances/report', [AttendanceController::class, 'report'])->name('attendances.report');
     Route::get('attendances/export', [AttendanceController::class, 'export'])->name('attendances.export');
+    Route::post('attendances/sync-adms', [AttendanceController::class, 'syncAdmsAttendance'])->name('attendances.sync-adms');
     Route::resource('attendances', AttendanceController::class);
     Route::post('attendances/clock-in', [AttendanceController::class, 'clockIn'])->name('attendances.clock-in');
     Route::post('attendances/clock-out', [AttendanceController::class, 'clockOut'])->name('attendances.clock-out');

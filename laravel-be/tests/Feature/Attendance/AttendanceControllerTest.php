@@ -66,6 +66,23 @@ describe('AttendanceController', function () {
             $response->assertSee($this->employee->full_name);
         });
 
+        it('renders safely even if employee has been soft-deleted', function () {
+            $deletedEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+            ]);
+            $attendance = Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $deletedEmployee->id,
+            ]);
+
+            $deletedEmployee->delete();
+
+            $response = $this->get(route('attendances.index'));
+
+            $response->assertOk();
+            $response->assertSee($deletedEmployee->full_name);
+        });
+
         it('can filter by date', function () {
             $today = Carbon::today();
             $yesterday = Carbon::yesterday();

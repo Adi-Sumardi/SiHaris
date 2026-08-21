@@ -12,7 +12,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-secondary-900">Detail Kehadiran</h1>
-            <p class="text-secondary-500 mt-1">{{ $attendance->date->format('d M Y') }} - {{ $attendance->employee->full_name }}</p>
+            <p class="text-secondary-500 mt-1">{{ $attendance->date->format('d M Y') }} - {{ $attendance->employee?->full_name ?? 'Karyawan (Dihapus)' }}</p>
         </div>
         <div class="flex items-center gap-3">
             <a href="{{ route('attendances.edit', $attendance) }}" class="btn btn-primary">
@@ -39,12 +39,12 @@
                 <div class="card-body">
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span class="text-primary-700 text-2xl font-medium">{{ substr($attendance->employee->first_name, 0, 1) }}</span>
+                            <span class="text-primary-700 text-2xl font-medium">{{ substr($attendance->employee?->first_name ?? '?', 0, 1) }}</span>
                         </div>
                         <div>
-                            <h4 class="text-lg font-semibold text-secondary-900">{{ $attendance->employee->full_name }}</h4>
-                            <p class="text-secondary-500">{{ $attendance->employee->employee_id }}</p>
-                            @if($attendance->employee->position)
+                            <h4 class="text-lg font-semibold text-secondary-900">{{ $attendance->employee?->full_name ?? 'Karyawan (Dihapus)' }}</h4>
+                            <p class="text-secondary-500">{{ $attendance->employee?->employee_id ?? '-' }}</p>
+                            @if($attendance->employee?->position)
                                 <p class="text-secondary-500">{{ $attendance->employee->position->name }}</p>
                             @endif
                         </div>

@@ -41,7 +41,7 @@ class RawAttendanceLog extends Model
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class)->withTrashed();
     }
 
     public function attendance(): BelongsTo

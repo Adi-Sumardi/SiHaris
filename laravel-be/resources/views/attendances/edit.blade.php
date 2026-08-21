@@ -38,7 +38,7 @@
                             Karyawan
                         </label>
                         <input type="hidden" name="employee_id" value="{{ $attendance->employee_id }}">
-                        <input type="text" value="{{ $attendance->employee->full_name }} ({{ $attendance->employee->employee_id }})"
+                        <input type="text" value="{{ $attendance->employee?->full_name ?? 'Karyawan (Dihapus)' }} ({{ $attendance->employee?->employee_id ?? '-' }})"
                                class="input w-full bg-secondary-50" disabled>
                     </div>
 

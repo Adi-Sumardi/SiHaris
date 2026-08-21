@@ -99,11 +99,11 @@
                     <td>
                         <div class="flex items-center gap-2.5">
                             <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                                <span class="text-primary-700 text-xs font-medium">{{ substr($attendance->employee->first_name, 0, 1) }}</span>
+                                <span class="text-primary-700 text-xs font-medium">{{ substr($attendance->employee?->first_name ?? '?', 0, 1) }}</span>
                             </div>
                             <div class="min-w-0">
-                                <span class="font-medium text-secondary-900 block truncate">{{ $attendance->employee->full_name }}</span>
-                                <p class="text-xs text-secondary-400">{{ $attendance->employee->employee_id }}</p>
+                                <span class="font-medium text-secondary-900 block truncate">{{ $attendance->employee?->full_name ?? 'Karyawan (Dihapus)' }}</span>
+                                <p class="text-xs text-secondary-400">{{ $attendance->employee?->employee_id ?? '-' }}</p>
                             </div>
                         </div>
                     </td>

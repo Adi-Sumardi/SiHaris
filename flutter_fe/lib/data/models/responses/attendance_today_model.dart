@@ -42,19 +42,27 @@ class AttendanceTodayModel {
     );
   }
 
+  static int _parseInt(dynamic value, [int defaultValue = 0]) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
   factory AttendanceTodayModel.fromJson(Map<String, dynamic> json) {
     return AttendanceTodayModel(
-      id: json['id'],
-      date: json['date'],
-      clockIn: json['clock_in'],
-      clockOut: json['clock_out'],
-      clockInSource: json['clock_in_source'],
-      clockOutSource: json['clock_out_source'],
-      status: json['status'],
-      statusLabel: json['status_label'],
-      lateMinutes: json['late_minutes'] ?? 0,
-      workingMinutes: json['working_minutes'] ?? 0,
-      faceVerified: json['face_verified'] ?? false,
+      id: _parseInt(json['id']),
+      date: json['date']?.toString() ?? '',
+      clockIn: json['clock_in']?.toString(),
+      clockOut: json['clock_out']?.toString(),
+      clockInSource: json['clock_in_source']?.toString(),
+      clockOutSource: json['clock_out_source']?.toString(),
+      status: json['status']?.toString() ?? '',
+      statusLabel: json['status_label']?.toString() ?? '',
+      lateMinutes: _parseInt(json['late_minutes']),
+      workingMinutes: _parseInt(json['working_minutes']),
+      faceVerified: json['face_verified'] == true,
       officeLocation: json['office_location'] != null
           ? OfficeLocationModel.fromJson(json['office_location'])
           : null,

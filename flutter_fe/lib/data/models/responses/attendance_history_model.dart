@@ -23,16 +23,24 @@ class AttendanceHistoryModel {
     this.clockOutLocation,
   });
 
+  static int _parseInt(dynamic value, [int defaultValue = 0]) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
   factory AttendanceHistoryModel.fromJson(Map<String, dynamic> json) {
     return AttendanceHistoryModel(
-      id: json['id'],
-      date: json['date'],
-      clockIn: json['clock_in'],
-      clockOut: json['clock_out'],
-      status: json['status'],
-      statusLabel: json['status_label'],
-      officeLocationName: json['office_location_name'],
-      workingFormatted: json['working_formatted'],
+      id: _parseInt(json['id']),
+      date: json['date']?.toString() ?? '',
+      clockIn: json['clock_in']?.toString(),
+      clockOut: json['clock_out']?.toString(),
+      status: json['status']?.toString() ?? '',
+      statusLabel: json['status_label']?.toString() ?? '',
+      officeLocationName: json['office_location_name']?.toString(),
+      workingFormatted: json['working_formatted']?.toString(),
       clockInLocation: json['clock_in_location'] != null
           ? AttendanceLocationModel.fromJson(json['clock_in_location'])
           : null,
@@ -134,12 +142,12 @@ class OfficeLocationModel {
 
   factory OfficeLocationModel.fromJson(Map<String, dynamic> json) {
     return OfficeLocationModel(
-      id: json['id'],
-      name: json['name'],
-      address: json['address'],
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      radius: json['radius'] ?? 100,
+      id: AttendanceHistoryModel._parseInt(json['id']),
+      name: json['name']?.toString() ?? '',
+      address: json['address']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      radius: AttendanceHistoryModel._parseInt(json['radius'], 100),
     );
   }
 

@@ -151,7 +151,7 @@ class AttendanceController extends Controller
             }
 
             $data = [
-                'id' => $attendance->id,
+                'id' => (int) $attendance->id,
                 'date' => $attendance->date->toDateString(),
                 'clock_in' => $attendance->clock_in?->setTimezone($timezone)->format('H:i'),
                 'clock_out' => $attendance->clock_out?->setTimezone($timezone)->format('H:i'),
@@ -159,14 +159,14 @@ class AttendanceController extends Controller
                 'clock_out_source' => $attendance->clock_out_source,
                 'status' => $attendance->status,
                 'status_label' => $attendance->status_label,
-                'late_minutes' => $lateMinutes,
-                'working_minutes' => $attendance->working_minutes,
+                'late_minutes' => (int) $lateMinutes,
+                'working_minutes' => (int) ($attendance->working_minutes ?? 0),
                 'schedule' => $schedule ? [
                     'start_time' => Carbon::parse($schedule->start_time)->format('H:i'),
                     'end_time' => Carbon::parse($schedule->end_time)->format('H:i'),
                 ] : null,
                 'office_location' => $attendance->officeLocation ? [
-                    'id' => $attendance->officeLocation->id,
+                    'id' => (int) $attendance->officeLocation->id,
                     'name' => $attendance->officeLocation->name,
                 ] : null,
             ];

@@ -468,6 +468,7 @@ class AuthController extends Controller
                 'employee' => [
                     'id' => $employee->id,
                     'employee_id' => $employee->employee_id,
+                    'nik' => $employee->nik ?? $employee->identity_number,
                     'pin' => $employee->pin,
                     'full_name' => $employee->full_name,
                     'department' => $employee->department?->name,
@@ -653,6 +654,7 @@ class AuthController extends Controller
                 'employee' => [
                     'id' => $employee->id,
                     'employee_id' => $employee->employee_id,
+                    'nik' => $employee->nik ?? $employee->identity_number,
                     'pin' => $employee->pin,
                     'full_name' => $employee->full_name,
                     'first_name' => $employee->first_name,

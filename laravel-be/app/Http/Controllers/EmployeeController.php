@@ -121,8 +121,16 @@ class EmployeeController extends Controller
             'gender' => ['nullable', 'in:male,female'],
             'date_of_birth' => ['nullable', 'date'],
             'marital_status' => ['nullable', 'in:single,married,divorced,widowed'],
+            'religion' => ['nullable', 'string', 'max:50'],
+            'blood_type' => ['nullable', 'string', 'max:10'],
+            'identity_address' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:100'],
+            'province' => ['nullable', 'string', 'max:100'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
+            'emergency_contact_relationship' => ['nullable', 'string', 'max:50'],
             'base_salary' => ['nullable', 'numeric', 'min:0'],
             'bank_name' => ['nullable', 'string', 'max:100'],
             'bank_account_number' => ['nullable', 'string', 'max:50'],
@@ -134,12 +142,18 @@ class EmployeeController extends Controller
             'contract_start_date' => ['nullable', 'date'],
             'contract_end_date' => ['nullable', 'date', 'after:contract_start_date'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'office_location_ids' => ['nullable', 'array'],
             'office_location_ids.*' => ['exists:office_locations,id'],
             'primary_office_id' => ['nullable', 'exists:office_locations,id'],
         ]);
 
         $validated['company_id'] = $tenant->id;
+
+        // Handle photo upload
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('employees/'.$tenant->id, 'public');
+        }
 
         // If weekly mode, clear work_schedule_id
         $scheduleMode = $request->input('schedule_mode', 'default');
@@ -293,6 +307,7 @@ class EmployeeController extends Controller
             'position_id' => ['required', 'exists:positions,id'],
             'manager_id' => ['nullable', Rule::exists('employees', 'id')->where('company_id', $tenant->id)->whereNot('id', $employee->id)],
             'hire_date' => ['required', 'date'],
+            'resignation_date' => ['nullable', 'date'],
             'employment_status' => ['required', 'in:permanent,contract,probation,intern'],
             'work_schedule_id' => ['nullable', Rule::exists('work_schedules', 'id')->where('company_id', $tenant->id)],
             'schedule_mode' => ['nullable', 'in:default,weekly'],
@@ -301,8 +316,16 @@ class EmployeeController extends Controller
             'gender' => ['nullable', 'in:male,female'],
             'date_of_birth' => ['nullable', 'date'],
             'marital_status' => ['nullable', 'in:single,married,divorced,widowed'],
+            'religion' => ['nullable', 'string', 'max:50'],
+            'blood_type' => ['nullable', 'string', 'max:10'],
+            'identity_address' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:100'],
+            'province' => ['nullable', 'string', 'max:100'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
+            'emergency_contact_relationship' => ['nullable', 'string', 'max:50'],
             'base_salary' => ['nullable', 'numeric', 'min:0'],
             'bank_name' => ['nullable', 'string', 'max:100'],
             'bank_account_number' => ['nullable', 'string', 'max:50'],
@@ -315,10 +338,16 @@ class EmployeeController extends Controller
             'contract_end_date' => ['nullable', 'date', 'after:contract_start_date'],
             'is_active' => ['nullable', 'boolean'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'office_location_ids' => ['nullable', 'array'],
             'office_location_ids.*' => ['exists:office_locations,id'],
             'primary_office_id' => ['nullable', 'exists:office_locations,id'],
         ]);
+
+        // Handle photo upload
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('employees/'.$tenant->id, 'public');
+        }
 
         $scheduleMode = $request->input('schedule_mode', 'default');
         $weeklySchedules = $request->input('weekly_schedules', []);

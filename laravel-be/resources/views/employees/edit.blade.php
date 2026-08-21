@@ -22,7 +22,7 @@
 @endsection
 
 @section('content')
-    <form action="{{ route('employees.update', $employee) }}" method="POST" class="space-y-6">
+    <form action="{{ route('employees.update', $employee) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @method('PUT')
 
@@ -115,10 +115,68 @@
                         @enderror
                     </div>
 
-                    {{-- Address --}}
+                    {{-- Religion --}}
+                    <div>
+                        <label for="religion" class="block text-sm font-medium text-secondary-700 mb-1">Agama</label>
+                        <select name="religion" id="religion" class="input w-full @error('religion') border-danger-500 @enderror">
+                            <option value="">Pilih Agama</option>
+                            @foreach(['Islam', 'Kristen Protestan', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'] as $rel)
+                                <option value="{{ $rel }}" {{ old('religion', $employee->religion) == $rel ? 'selected' : '' }}>{{ $rel }}</option>
+                            @endforeach
+                        </select>
+                        @error('religion')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Blood Type --}}
+                    <div>
+                        <label for="blood_type" class="block text-sm font-medium text-secondary-700 mb-1">Golongan Darah</label>
+                        <select name="blood_type" id="blood_type" class="input w-full @error('blood_type') border-danger-500 @enderror">
+                            <option value="">Pilih Golongan Darah</option>
+                            @foreach(['A', 'B', 'AB', 'O'] as $bt)
+                                <option value="{{ $bt }}" {{ old('blood_type', $employee->blood_type) == $bt ? 'selected' : '' }}>{{ $bt }}</option>
+                            @endforeach
+                        </select>
+                        @error('blood_type')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Photo Upload --}}
                     <div class="md:col-span-2">
-                        <label for="address" class="block text-sm font-medium text-secondary-700 mb-1">Alamat</label>
-                        <textarea name="address" id="address" rows="2" class="input w-full @error('address') border-danger-500 @enderror">{{ old('address', $employee->address) }}</textarea>
+                        <label for="photo" class="block text-sm font-medium text-secondary-700 mb-1">Foto Profil Karyawan</label>
+                        <div class="flex items-center gap-4">
+                            @if($employee->photo)
+                                <img src="{{ asset('storage/'.$employee->photo) }}" alt="{{ $employee->full_name }}" class="w-16 h-16 rounded-full object-cover border border-secondary-200 shadow-sm">
+                            @else
+                                <div class="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-500 font-semibold text-lg border border-secondary-200">
+                                    {{ strtoupper(substr($employee->first_name, 0, 1)) }}
+                                </div>
+                            @endif
+                            <div class="flex-1">
+                                <input type="file" name="photo" id="photo" accept="image/*" class="block w-full text-sm text-secondary-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 @error('photo') border-danger-500 @enderror">
+                                <p class="mt-1 text-xs text-secondary-500">Unggah file baru untuk mengganti foto (JPG, PNG, WEBP, maks 2MB).</p>
+                            </div>
+                        </div>
+                        @error('photo')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Identity Address (KTP) --}}
+                    <div class="md:col-span-2">
+                        <label for="identity_address" class="block text-sm font-medium text-secondary-700 mb-1">Alamat Sesuai KTP</label>
+                        <textarea name="identity_address" id="identity_address" rows="2" class="input w-full @error('identity_address') border-danger-500 @enderror" placeholder="Alamat lengkap sesuai identitas KTP">{{ old('identity_address', $employee->identity_address) }}</textarea>
+                        @error('identity_address')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Address (Domisili) --}}
+                    <div class="md:col-span-2">
+                        <label for="address" class="block text-sm font-medium text-secondary-700 mb-1">Alamat Domisili / Tempat Tinggal</label>
+                        <textarea name="address" id="address" rows="2" class="input w-full @error('address') border-danger-500 @enderror" placeholder="Alamat tempat tinggal saat ini">{{ old('address', $employee->address) }}</textarea>
                         @error('address')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                         @enderror
@@ -126,9 +184,64 @@
 
                     {{-- City --}}
                     <div>
-                        <label for="city" class="block text-sm font-medium text-secondary-700 mb-1">Kota</label>
-                        <input type="text" name="city" id="city" value="{{ old('city', $employee->city) }}" class="input w-full @error('city') border-danger-500 @enderror">
+                        <label for="city" class="block text-sm font-medium text-secondary-700 mb-1">Kota / Kabupaten</label>
+                        <input type="text" name="city" id="city" value="{{ old('city', $employee->city) }}" class="input w-full @error('city') border-danger-500 @enderror" placeholder="Contoh: Jakarta Timur">
                         @error('city')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Province --}}
+                    <div>
+                        <label for="province" class="block text-sm font-medium text-secondary-700 mb-1">Provinsi</label>
+                        <input type="text" name="province" id="province" value="{{ old('province', $employee->province) }}" class="input w-full @error('province') border-danger-500 @enderror" placeholder="Contoh: DKI Jakarta">
+                        @error('province')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Postal Code --}}
+                    <div>
+                        <label for="postal_code" class="block text-sm font-medium text-secondary-700 mb-1">Kode Pos</label>
+                        <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code', $employee->postal_code) }}" class="input w-full @error('postal_code') border-danger-500 @enderror" placeholder="Contoh: 13450" maxlength="10">
+                        @error('postal_code')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Emergency Contact Information --}}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Kontak Darurat</h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {{-- Emergency Contact Name --}}
+                    <div>
+                        <label for="emergency_contact_name" class="block text-sm font-medium text-secondary-700 mb-1">Nama Kontak</label>
+                        <input type="text" name="emergency_contact_name" id="emergency_contact_name" value="{{ old('emergency_contact_name', $employee->emergency_contact_name) }}" class="input w-full @error('emergency_contact_name') border-danger-500 @enderror" placeholder="Contoh: Jane Doe">
+                        @error('emergency_contact_name')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Emergency Contact Phone --}}
+                    <div>
+                        <label for="emergency_contact_phone" class="block text-sm font-medium text-secondary-700 mb-1">No. Telepon Darurat</label>
+                        <input type="text" name="emergency_contact_phone" id="emergency_contact_phone" value="{{ old('emergency_contact_phone', $employee->emergency_contact_phone) }}" class="input w-full @error('emergency_contact_phone') border-danger-500 @enderror" placeholder="Contoh: 08123456789">
+                        @error('emergency_contact_phone')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Emergency Contact Relationship --}}
+                    <div>
+                        <label for="emergency_contact_relationship" class="block text-sm font-medium text-secondary-700 mb-1">Hubungan</label>
+                        <input type="text" name="emergency_contact_relationship" id="emergency_contact_relationship" value="{{ old('emergency_contact_relationship', $employee->emergency_contact_relationship) }}" class="input w-full @error('emergency_contact_relationship') border-danger-500 @enderror" placeholder="Contoh: Pasangan / Orang Tua / Saudara">
+                        @error('emergency_contact_relationship')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -422,11 +535,21 @@
                     {{-- Is Active --}}
                     <div>
                         <label class="block text-sm font-medium text-secondary-700 mb-1">Status Aktif</label>
-                        <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <label class="inline-flex items-center gap-2 cursor-pointer mt-2">
                             <input type="hidden" name="is_active" value="0">
                             <input type="checkbox" name="is_active" value="1" {{ old('is_active', $employee->is_active) ? 'checked' : '' }} class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500">
-                            <span class="text-secondary-700">Karyawan aktif</span>
+                            <span class="text-sm text-secondary-700">Karyawan Aktif</span>
                         </label>
+                    </div>
+
+                    {{-- Resignation Date --}}
+                    <div>
+                        <label for="resignation_date" class="block text-sm font-medium text-secondary-700 mb-1">Tanggal Berhenti / Resign</label>
+                        <input type="date" name="resignation_date" id="resignation_date" value="{{ old('resignation_date', $employee->resignation_date?->format('Y-m-d')) }}" class="input w-full @error('resignation_date') border-danger-500 @enderror">
+                        <p class="mt-1 text-xs text-secondary-500">Diisi jika karyawan mengundurkan diri / berhenti.</p>
+                        @error('resignation_date')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
             </div>

@@ -143,14 +143,49 @@
                                 @endswitch
                             </dd>
                         </div>
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">Agama</dt>
+                            <dd class="mt-1 text-sm text-secondary-900">{{ $employee->religion ?? '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">Golongan Darah</dt>
+                            <dd class="mt-1 text-sm text-secondary-900">{{ $employee->blood_type ?? '-' }}</dd>
+                        </div>
                         <div class="sm:col-span-2">
-                            <dt class="text-sm font-medium text-secondary-500">Alamat</dt>
+                            <dt class="text-sm font-medium text-secondary-500">Alamat Sesuai KTP</dt>
+                            <dd class="mt-1 text-sm text-secondary-900">{{ $employee->identity_address ?? '-' }}</dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-secondary-500">Alamat Domisili</dt>
                             <dd class="mt-1 text-sm text-secondary-900">
                                 {{ $employee->address ?? '-' }}
-                                @if($employee->city)
-                                    <br>{{ $employee->city }}
+                                @if($employee->city || $employee->province || $employee->postal_code)
+                                    <br>{{ implode(', ', array_filter([$employee->city, $employee->province, $employee->postal_code])) }}
                                 @endif
                             </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            {{-- Emergency Contact Information --}}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Kontak Darurat</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">Nama Kontak</dt>
+                            <dd class="mt-1 text-sm text-secondary-900 font-medium">{{ $employee->emergency_contact_name ?? '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">No. Telepon</dt>
+                            <dd class="mt-1 text-sm text-secondary-900 font-mono">{{ $employee->emergency_contact_phone ?? '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">Hubungan</dt>
+                            <dd class="mt-1 text-sm text-secondary-900">{{ $employee->emergency_contact_relationship ?? '-' }}</dd>
                         </div>
                     </dl>
                 </div>

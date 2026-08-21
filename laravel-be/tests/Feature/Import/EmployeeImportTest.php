@@ -1,9 +1,11 @@
 <?php
 
+use App\Exports\Templates\EmployeeTemplateExport;
 use App\Imports\EmployeeImport;
 use App\Models\Company;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\OfficeLocation;
 use App\Models\Position;
 use App\Models\User;
 use App\Models\WorkSchedule;
@@ -39,6 +41,12 @@ beforeEach(function () {
         'name' => 'Shift Reguler',
         'code' => 'REG',
     ]);
+
+    $this->officeLocation = OfficeLocation::factory()->create([
+        'company_id' => $this->company->id,
+        'name' => 'Head Office',
+        'code' => 'HO',
+    ]);
 });
 
 describe('EmployeeImport', function () {
@@ -56,6 +64,22 @@ describe('EmployeeImport', function () {
             $response->assertOk();
             $response->assertDownload('template_karyawan.xlsx');
         });
+
+        it('has expected headings in template export', function () {
+            $export = new EmployeeTemplateExport;
+            $headings = $export->headings();
+
+            expect($headings)->toContain('NIK')
+                ->toContain('PIN')
+                ->toContain('Nama Depan')
+                ->toContain('Nama Belakang')
+                ->toContain('Kode Departemen')
+                ->toContain('Kode Jabatan')
+                ->toContain('Kode Jadwal')
+                ->toContain('NIK Manajer')
+                ->toContain('Kode Lokasi Kantor')
+                ->toContain('Aktif');
+        });
     });
 
     describe('import process', function () {
@@ -70,6 +94,7 @@ describe('EmployeeImport', function () {
 
             $emp1 = $import->model([
                 'nik' => 'EMP001',
+                'pin' => '101',
                 'nama_depan' => 'John',
                 'nama_belakang' => 'Doe',
                 'email' => 'john.doe@example.com',
@@ -86,12 +111,146 @@ describe('EmployeeImport', function () {
 
             expect($emp1)->not->toBeNull();
             expect($emp1->employee_id)->toBe('EMP001');
+            expect($emp1->pin)->toBe('101');
             expect($emp1->department_id)->toBe($this->department->id);
             expect($emp1->position_id)->toBe($this->position->id);
             expect($emp1->work_schedule_id)->toBe($this->workSchedule->id);
             expect($emp1->gender)->toBe('male');
             expect($emp1->employment_status)->toBe('permanent');
             expect($emp1->base_salary)->toBe(10000000);
+        });
+
+        it('handles numeric NIK and phone from Excel correctly', function () {
+            $import = new EmployeeImport($this->company->id);
+
+            $emp = $import->model([
+                'nik' => 1001,
+                'pin' => 123,
+                'nama_depan' => 'Numeric',
+                'nama_belakang' => 'Test',
+                'telepon' => 81234567890,
+                'no_ktp' => 1234567890123456,
+            ]);
+
+            expect($emp)->not->toBeNull();
+            expect($emp->employee_id)->toBe('1001');
+            expect($emp->pin)->toBe('123');
+            expect($emp->phone)->toBe('81234567890');
+            expect($emp->identity_number)->toBe('1234567890123456');
+        });
+
+        it('matches department, position, schedule case-insensitively and by name', function () {
+            $import = new EmployeeImport($this->company->id);
+
+            // Lowercase codes
+            $emp1 = $import->model([
+                'nik' => 'EMP_CASE_1',
+                'nama_depan' => 'Case',
+                'nama_belakang' => 'Test',
+                'kode_departemen' => 'it',
+                'kode_jabatan' => 'se',
+                'kode_jadwal' => 'reg',
+            ]);
+
+            expect($emp1)->not->toBeNull();
+            expect($emp1->department_id)->toBe($this->department->id);
+            expect($emp1->position_id)->toBe($this->position->id);
+            expect($emp1->work_schedule_id)->toBe($this->workSchedule->id);
+
+            // Names instead of codes
+            $emp2 = $import->model([
+                'nik' => 'EMP_NAME_1',
+                'nama_depan' => 'Name',
+                'nama_belakang' => 'Test',
+                'kode_departemen' => 'IT Department',
+                'kode_jabatan' => 'Software Engineer',
+                'kode_jadwal' => 'Shift Reguler',
+            ]);
+
+            expect($emp2)->not->toBeNull();
+            expect($emp2->department_id)->toBe($this->department->id);
+            expect($emp2->position_id)->toBe($this->position->id);
+            expect($emp2->work_schedule_id)->toBe($this->workSchedule->id);
+        });
+
+        it('resolves manager by NIK', function () {
+            $manager = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => 'MGR001',
+                'first_name' => 'Boss',
+            ]);
+
+            $import = new EmployeeImport($this->company->id);
+
+            $emp = $import->model([
+                'nik' => 'EMP_SUB_1',
+                'nama_depan' => 'Staff',
+                'nik_manajer' => 'MGR001',
+            ]);
+
+            expect($emp)->not->toBeNull();
+            expect($emp->manager_id)->toBe($manager->id);
+        });
+
+        it('attaches office location via pending queue', function () {
+            $import = new EmployeeImport($this->company->id);
+
+            $emp = $import->model([
+                'nik' => 'EMP_OFFICE_1',
+                'nama_depan' => 'Office',
+                'kode_lokasi_kantor' => 'HO',
+            ]);
+
+            expect($emp)->not->toBeNull();
+            $emp->save();
+
+            $import->attachPendingOfficeLocations();
+
+            $savedEmp = Employee::where('employee_id', 'EMP_OFFICE_1')->first();
+            expect($savedEmp->officeLocations)->toHaveCount(1);
+            expect($savedEmp->officeLocations->first()->id)->toBe($this->officeLocation->id);
+        });
+
+        it('splits full name when nama_depan is missing', function () {
+            $import = new EmployeeImport($this->company->id);
+
+            $emp = $import->model([
+                'nik' => 'EMP_FULLNAME',
+                'nama' => 'Budi Santoso Sudirman',
+            ]);
+
+            expect($emp)->not->toBeNull();
+            expect($emp->first_name)->toBe('Budi');
+            expect($emp->last_name)->toBe('Santoso Sudirman');
+        });
+
+        it('skips duplicate NIK in the same import file', function () {
+            $import = new EmployeeImport($this->company->id);
+
+            $emp1 = $import->model([
+                'nik' => 'EMP_DUP',
+                'nama_depan' => 'First',
+            ]);
+
+            $emp2 = $import->model([
+                'nik' => 'EMP_DUP',
+                'nama_depan' => 'Second',
+            ]);
+
+            expect($emp1)->not->toBeNull();
+            expect($emp2)->toBeNull();
+            expect($import->getSkipCount())->toBe(1);
+        });
+
+        it('parses Indonesian marital status variations', function () {
+            $import = new EmployeeImport($this->company->id);
+
+            expect($import->parseMaritalStatus('Belum Kawin'))->toBe('single');
+            expect($import->parseMaritalStatus('Belum Menikah'))->toBe('single');
+            expect($import->parseMaritalStatus('Kawin'))->toBe('married');
+            expect($import->parseMaritalStatus('Menikah'))->toBe('married');
+            expect($import->parseMaritalStatus('Cerai Hidup'))->toBe('divorced');
+            expect($import->parseMaritalStatus('Cerai Mati'))->toBe('widowed');
         });
 
         it('falls back hire_date to today when empty and does not fail', function () {
@@ -138,10 +297,11 @@ describe('EmployeeImport', function () {
 
             expect($import->parseDate('1990-01-15'))->toBe('1990-01-15');
             expect($import->parseDate('15/01/1990'))->toBe('1990-01-15');
+            expect($import->parseDate('15.01.1990'))->toBe('1990-01-15');
         });
     });
 
-    describe('queued import', function () {
+    describe('status and tracking', function () {
         it('initializes import with cache status', function () {
             $import = new EmployeeImport($this->company->id, 'test_import_123');
             $import->initializeImport();
@@ -192,3 +352,4 @@ describe('EmployeeImport', function () {
         });
     });
 });
+

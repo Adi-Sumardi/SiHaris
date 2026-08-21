@@ -175,18 +175,21 @@
 
                     <div>
                         <h4 class="font-medium text-secondary-900 mb-2">Kolom Wajib:</h4>
-                        <ul class="space-y-1">
+                        <ul class="space-y-1 text-xs">
                             <li><span class="font-medium">NIK</span> - Nomor Induk Karyawan</li>
                             <li><span class="font-medium">Nama Depan</span> - Nama depan karyawan</li>
                         </ul>
                     </div>
 
                     <div>
-                        <h4 class="font-medium text-secondary-900 mb-2">Kolom Referensi:</h4>
+                        <h4 class="font-medium text-secondary-900 mb-2">Kolom Referensi & Identitas:</h4>
                         <ul class="space-y-1 text-xs">
-                            <li><span class="font-medium">Kode Departemen</span> - Mengacu ke kode departemen</li>
-                            <li><span class="font-medium">Kode Jabatan</span> - Mengacu ke kode jabatan</li>
-                            <li><span class="font-medium">Kode Jadwal</span> - Mengacu ke kode jadwal kerja</li>
+                            <li><span class="font-medium">PIN</span> - PIN absensi mesin/fingerprint/ADMS</li>
+                            <li><span class="font-medium">Kode Departemen</span> - Kode atau nama departemen</li>
+                            <li><span class="font-medium">Kode Jabatan</span> - Kode atau nama jabatan</li>
+                            <li><span class="font-medium">Kode Jadwal</span> - Kode atau nama jadwal kerja</li>
+                            <li><span class="font-medium">NIK Manajer</span> - NIK atasan langsung</li>
+                            <li><span class="font-medium">Kode Lokasi Kantor</span> - Kode atau nama lokasi kantor</li>
                         </ul>
                     </div>
 
@@ -195,7 +198,7 @@
                         <ul class="space-y-1 text-xs">
                             <li><span class="font-medium">Tanggal</span> - YYYY-MM-DD atau DD/MM/YYYY</li>
                             <li><span class="font-medium">Jenis Kelamin</span> - Laki-laki / Perempuan</li>
-                            <li><span class="font-medium">Status Karyawan</span> - Tetap / Kontrak / Magang</li>
+                            <li><span class="font-medium">Status Karyawan</span> - Tetap / Kontrak / Magang / Percobaan</li>
                             <li><span class="font-medium">Gaji</span> - Angka nominal (misal: 10000000 atau Rp 10.000.000)</li>
                         </ul>
                     </div>

@@ -4,10 +4,10 @@ namespace App\Imports;
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\OfficeLocation;
 use App\Models\Position;
 use App\Models\WorkSchedule;
 use Carbon\Carbon;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Cache;
 use Maatwebsite\Excel\Concerns\RemembersRowNumber;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
@@ -19,7 +19,7 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Events\AfterImport;
 use Maatwebsite\Excel\Events\ImportFailed;
 
-class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkReading, WithEvents, WithHeadingRow, WithValidation
+class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithEvents, WithHeadingRow, WithValidation
 {
     use RemembersRowNumber;
 
@@ -42,6 +42,18 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
     /** @var array<string, int>|null */
     protected ?array $workScheduleMap = null;
 
+    /** @var array<string, int>|null */
+    protected ?array $managerMap = null;
+
+    /** @var array<string, int>|null */
+    protected ?array $officeLocationMap = null;
+
+    /** @var array<string, bool> */
+    protected array $seenNiks = [];
+
+    /** @var array<string, int> */
+    protected array $pendingOfficeLocations = [];
+
     public function __construct(int $companyId, ?string $importId = null)
     {
         $this->companyId = $companyId;
@@ -57,6 +69,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
     {
         return [
             AfterImport::class => function (AfterImport $event) {
+                $this->attachPendingOfficeLocations();
                 $this->markAsCompleted();
             },
             ImportFailed::class => function (ImportFailed $event) {
@@ -92,7 +105,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
         });
     }
 
-    protected function addError(string $error): void
+    public function addError(string $error): void
     {
         $this->updateCache(function ($data) use ($error) {
             $data['errors'][] = $error;
@@ -118,7 +131,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
         Cache::put($this->getCacheKey(), $this->getDefaultCacheData(), now()->addHours(24));
     }
 
-    protected function markAsCompleted(): void
+    public function markAsCompleted(): void
     {
         $this->updateCache(function ($data) {
             $data['status'] = 'completed';
@@ -128,7 +141,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
         });
     }
 
-    protected function markAsFailed(string $message): void
+    public function markAsFailed(string $message): void
     {
         $this->updateCache(function ($data) use ($message) {
             $data['status'] = 'failed';
@@ -144,37 +157,159 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
         return Cache::get("employee_import_{$importId}");
     }
 
-    protected function getDepartmentId(string $code): ?int
+    public function getSuccessCount(): int
     {
+        $status = static::getImportStatus($this->importId);
+
+        return $status['success_count'] ?? 0;
+    }
+
+    public function getSkipCount(): int
+    {
+        $status = static::getImportStatus($this->importId);
+
+        return $status['skip_count'] ?? 0;
+    }
+
+    /** @return array<int, string> */
+    public function getErrors(): array
+    {
+        $status = static::getImportStatus($this->importId);
+
+        return $status['errors'] ?? [];
+    }
+
+    protected function getDepartmentId(mixed $identifier): ?int
+    {
+        $key = strtolower(trim((string) $identifier));
+        if ($key === '') {
+            return null;
+        }
+
         if ($this->departmentMap === null) {
-            $this->departmentMap = Department::where('company_id', $this->companyId)
-                ->pluck('id', 'code')
-                ->toArray();
+            $this->departmentMap = [];
+            $departments = Department::where('company_id', $this->companyId)->get(['id', 'code', 'name']);
+            foreach ($departments as $dept) {
+                if (! empty($dept->code)) {
+                    $this->departmentMap[strtolower(trim($dept->code))] = $dept->id;
+                }
+                if (! empty($dept->name)) {
+                    $this->departmentMap[strtolower(trim($dept->name))] = $dept->id;
+                }
+            }
         }
 
-        return $this->departmentMap[$code] ?? null;
+        return $this->departmentMap[$key] ?? null;
     }
 
-    protected function getPositionId(string $code): ?int
+    protected function getPositionId(mixed $identifier): ?int
     {
+        $key = strtolower(trim((string) $identifier));
+        if ($key === '') {
+            return null;
+        }
+
         if ($this->positionMap === null) {
-            $this->positionMap = Position::where('company_id', $this->companyId)
-                ->pluck('id', 'code')
-                ->toArray();
+            $this->positionMap = [];
+            $positions = Position::where('company_id', $this->companyId)->get(['id', 'code', 'name']);
+            foreach ($positions as $pos) {
+                if (! empty($pos->code)) {
+                    $this->positionMap[strtolower(trim($pos->code))] = $pos->id;
+                }
+                if (! empty($pos->name)) {
+                    $this->positionMap[strtolower(trim($pos->name))] = $pos->id;
+                }
+            }
         }
 
-        return $this->positionMap[$code] ?? null;
+        return $this->positionMap[$key] ?? null;
     }
 
-    protected function getWorkScheduleId(string $code): ?int
+    protected function getWorkScheduleId(mixed $identifier): ?int
     {
-        if ($this->workScheduleMap === null) {
-            $this->workScheduleMap = WorkSchedule::where('company_id', $this->companyId)
-                ->pluck('id', 'code')
-                ->toArray();
+        $key = strtolower(trim((string) $identifier));
+        if ($key === '') {
+            return null;
         }
 
-        return $this->workScheduleMap[$code] ?? null;
+        if ($this->workScheduleMap === null) {
+            $this->workScheduleMap = [];
+            $schedules = WorkSchedule::where('company_id', $this->companyId)->get(['id', 'code', 'name']);
+            foreach ($schedules as $sched) {
+                if (! empty($sched->code)) {
+                    $this->workScheduleMap[strtolower(trim($sched->code))] = $sched->id;
+                }
+                if (! empty($sched->name)) {
+                    $this->workScheduleMap[strtolower(trim($sched->name))] = $sched->id;
+                }
+            }
+        }
+
+        return $this->workScheduleMap[$key] ?? null;
+    }
+
+    protected function getManagerId(mixed $identifier): ?int
+    {
+        $key = strtolower(trim((string) $identifier));
+        if ($key === '') {
+            return null;
+        }
+
+        if ($this->managerMap === null) {
+            $this->managerMap = [];
+            $managers = Employee::where('company_id', $this->companyId)->get(['id', 'employee_id']);
+            foreach ($managers as $mgr) {
+                if (! empty($mgr->employee_id)) {
+                    $this->managerMap[strtolower(trim($mgr->employee_id))] = $mgr->id;
+                }
+            }
+        }
+
+        return $this->managerMap[$key] ?? null;
+    }
+
+    protected function getOfficeLocationId(mixed $identifier): ?int
+    {
+        $key = strtolower(trim((string) $identifier));
+        if ($key === '') {
+            return null;
+        }
+
+        if ($this->officeLocationMap === null) {
+            $this->officeLocationMap = [];
+            $offices = OfficeLocation::where('company_id', $this->companyId)->get(['id', 'code', 'name']);
+            foreach ($offices as $office) {
+                if (! empty($office->code)) {
+                    $this->officeLocationMap[strtolower(trim($office->code))] = $office->id;
+                }
+                if (! empty($office->name)) {
+                    $this->officeLocationMap[strtolower(trim($office->name))] = $office->id;
+                }
+            }
+        }
+
+        return $this->officeLocationMap[$key] ?? null;
+    }
+
+    public function attachPendingOfficeLocations(): void
+    {
+        if (empty($this->pendingOfficeLocations)) {
+            return;
+        }
+
+        foreach ($this->pendingOfficeLocations as $nik => $officeId) {
+            $emp = Employee::where('company_id', $this->companyId)
+                ->where('employee_id', $nik)
+                ->first();
+
+            if ($emp) {
+                $emp->officeLocations()->syncWithoutDetaching([
+                    $officeId => ['is_primary' => true],
+                ]);
+            }
+        }
+
+        $this->pendingOfficeLocations = [];
     }
 
     protected function getRowValue(array $row, array|string $keys, mixed $default = null): mixed
@@ -189,14 +324,52 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
         return $default;
     }
 
+    protected function cleanString(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_int($value)) {
+            return (string) $value;
+        }
+
+        if (is_float($value)) {
+            if ($value == floor($value)) {
+                return sprintf('%.0f', $value);
+            }
+
+            return (string) $value;
+        }
+
+        return trim((string) $value);
+    }
+
     public function model(array $row): ?Employee
     {
         $this->currentRow++;
         $rowNum = $this->getRowNumber() ?? $this->currentRow;
 
-        $nik = trim((string) $this->getRowValue($row, ['nik', 'employee_id'], ''));
-        $firstName = trim((string) $this->getRowValue($row, ['nama_depan', 'first_name'], ''));
-        $lastName = trim((string) $this->getRowValue($row, ['nama_belakang', 'last_name'], ''));
+        $nikRaw = $this->getRowValue($row, ['nik', 'employee_id']);
+        $nik = $this->cleanString($nikRaw);
+
+        $firstNameRaw = $this->getRowValue($row, ['nama_depan', 'first_name']);
+        $firstName = $this->cleanString($firstNameRaw);
+
+        $lastNameRaw = $this->getRowValue($row, ['nama_belakang', 'last_name']);
+        $lastName = $this->cleanString($lastNameRaw);
+
+        // Fallback for single full name column
+        if (empty($firstName)) {
+            $fullName = $this->cleanString($this->getRowValue($row, ['nama_lengkap', 'nama', 'full_name', 'name']));
+            if (! empty($fullName)) {
+                $nameParts = preg_split('/\s+/', $fullName, 2);
+                $firstName = $nameParts[0] ?? '';
+                if (empty($lastName) && isset($nameParts[1])) {
+                    $lastName = $nameParts[1];
+                }
+            }
+        }
 
         if (empty($nik) || empty($firstName)) {
             $this->incrementCounter('skip_count');
@@ -205,7 +378,16 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
             return null;
         }
 
-        // Check if employee_id already exists (including soft-deleted)
+        // Check for duplicate NIK within the same import file
+        if (isset($this->seenNiks[$nik])) {
+            $this->incrementCounter('skip_count');
+            $this->addError("Baris {$rowNum}: NIK '{$nik}' duplikat dalam file import, dilewati.");
+
+            return null;
+        }
+        $this->seenNiks[$nik] = true;
+
+        // Check if employee_id already exists in database (including soft-deleted)
         $existingEmployee = Employee::withTrashed()
             ->where('company_id', $this->companyId)
             ->where('employee_id', $nik)
@@ -221,36 +403,58 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
 
         // Resolve department
         $departmentId = null;
-        $deptCode = trim((string) $this->getRowValue($row, ['kode_departemen', 'department_code'], ''));
-        if (! empty($deptCode)) {
-            $departmentId = $this->getDepartmentId($deptCode);
+        $deptVal = $this->getRowValue($row, ['kode_departemen', 'department_code', 'departemen', 'department', 'divisi']);
+        if (! empty($deptVal)) {
+            $departmentId = $this->getDepartmentId($deptVal);
             if (! $departmentId) {
-                $this->addError("Baris {$rowNum}: Departemen '{$deptCode}' tidak ditemukan.");
+                $this->addError("Baris {$rowNum}: Departemen '{$deptVal}' tidak ditemukan.");
             }
         }
 
         // Resolve position
         $positionId = null;
-        $posCode = trim((string) $this->getRowValue($row, ['kode_jabatan', 'position_code'], ''));
-        if (! empty($posCode)) {
-            $positionId = $this->getPositionId($posCode);
+        $posVal = $this->getRowValue($row, ['kode_jabatan', 'position_code', 'jabatan', 'position']);
+        if (! empty($posVal)) {
+            $positionId = $this->getPositionId($posVal);
             if (! $positionId) {
-                $this->addError("Baris {$rowNum}: Jabatan '{$posCode}' tidak ditemukan.");
+                $this->addError("Baris {$rowNum}: Jabatan '{$posVal}' tidak ditemukan.");
             }
         }
 
         // Resolve work schedule
         $workScheduleId = null;
-        $schedCode = trim((string) $this->getRowValue($row, ['kode_jadwal', 'work_schedule_code'], ''));
-        if (! empty($schedCode)) {
-            $workScheduleId = $this->getWorkScheduleId($schedCode);
+        $schedVal = $this->getRowValue($row, ['kode_jadwal', 'work_schedule_code', 'jadwal', 'jadwal_kerja', 'shift', 'work_schedule']);
+        if (! empty($schedVal)) {
+            $workScheduleId = $this->getWorkScheduleId($schedVal);
             if (! $workScheduleId) {
-                $this->addError("Baris {$rowNum}: Jadwal kerja '{$schedCode}' tidak ditemukan.");
+                $this->addError("Baris {$rowNum}: Jadwal kerja '{$schedVal}' tidak ditemukan.");
+            }
+        }
+
+        // Resolve manager
+        $managerId = null;
+        $mgrVal = $this->getRowValue($row, ['nik_manajer', 'manager_nik', 'kode_manajer', 'manager_id']);
+        if (! empty($mgrVal)) {
+            $managerId = $this->getManagerId($mgrVal);
+            if (! $managerId) {
+                $this->addError("Baris {$rowNum}: NIK Manajer '{$mgrVal}' tidak ditemukan.");
+            }
+        }
+
+        // Resolve office location
+        $officeLocationId = null;
+        $officeVal = $this->getRowValue($row, ['kode_lokasi_kantor', 'kode_kantor', 'lokasi_kantor', 'office_location_code', 'office_code']);
+        if (! empty($officeVal)) {
+            $officeLocationId = $this->getOfficeLocationId($officeVal);
+            if (! $officeLocationId) {
+                $this->addError("Baris {$rowNum}: Lokasi kantor '{$officeVal}' tidak ditemukan.");
+            } else {
+                $this->pendingOfficeLocations[$nik] = $officeLocationId;
             }
         }
 
         // Ensure hire_date is NEVER null (schema requirement)
-        $hireDateRaw = $this->getRowValue($row, ['tanggal_masuk', 'hire_date']);
+        $hireDateRaw = $this->getRowValue($row, ['tanggal_masuk', 'hire_date', 'tgl_masuk', 'join_date']);
         $hireDate = $this->parseDate($hireDateRaw);
         if (! $hireDate) {
             $hireDate = now()->format('Y-m-d');
@@ -259,76 +463,79 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
 
         $this->incrementCounter('success_count');
 
-        $pin = $this->getRowValue($row, ['pin', 'pin_finger', 'pin_mesin']);
+        $pinRaw = $this->getRowValue($row, ['pin', 'pin_finger', 'pin_mesin', 'pin_absen']);
+        $pin = $this->cleanString($pinRaw);
+
         $email = $this->getRowValue($row, ['email']);
-        $phone = $this->getRowValue($row, ['telepon', 'phone']);
+        $phone = $this->cleanString($this->getRowValue($row, ['telepon', 'phone', 'no_hp', 'no_telepon', 'handphone']));
         $religion = $this->getRowValue($row, ['agama', 'religion']);
-        $bloodType = $this->getRowValue($row, ['golongan_darah', 'blood_type']);
-        $idNumber = $this->getRowValue($row, ['no_ktp', 'identity_number']);
+        $bloodType = $this->getRowValue($row, ['golongan_darah', 'blood_type', 'gol_darah']);
+        $idNumber = $this->cleanString($this->getRowValue($row, ['no_ktp', 'identity_number', 'ktp', 'nik_ktp', 'nomor_ktp']));
         $idAddress = $this->getRowValue($row, ['alamat_ktp', 'identity_address']);
-        $address = $this->getRowValue($row, ['alamat', 'address']);
+        $address = $this->getRowValue($row, ['alamat', 'address', 'alamat_domisili', 'domisili']);
         $city = $this->getRowValue($row, ['kota', 'city']);
         $province = $this->getRowValue($row, ['provinsi', 'province']);
-        $postalCode = $this->getRowValue($row, ['kode_pos', 'postal_code']);
-        $bankName = $this->getRowValue($row, ['nama_bank', 'bank_name']);
-        $bankNumber = $this->getRowValue($row, ['nomor_rekening', 'bank_account_number']);
-        $bankHolder = $this->getRowValue($row, ['nama_rekening', 'bank_account_name']);
-        $npwp = $this->getRowValue($row, ['npwp']);
-        $taxStatus = $this->getRowValue($row, ['status_pajak', 'tax_status']);
-        $bpjsKesehatan = $this->getRowValue($row, ['bpjs_kesehatan']);
-        $bpjsTk = $this->getRowValue($row, ['bpjs_ketenagakerjaan']);
-        $ecName = $this->getRowValue($row, ['nama_kontak_darurat', 'emergency_contact_name']);
-        $ecPhone = $this->getRowValue($row, ['telepon_kontak_darurat', 'emergency_contact_phone']);
-        $ecRel = $this->getRowValue($row, ['hubungan_kontak_darurat', 'emergency_contact_relationship']);
+        $postalCode = $this->cleanString($this->getRowValue($row, ['kode_pos', 'postal_code', 'zip_code']));
+        $bankName = $this->getRowValue($row, ['nama_bank', 'bank_name', 'bank']);
+        $bankNumber = $this->cleanString($this->getRowValue($row, ['nomor_rekening', 'bank_account_number', 'no_rek', 'no_rekening', 'rekening']));
+        $bankHolder = $this->getRowValue($row, ['nama_rekening', 'bank_account_name', 'atas_nama', 'pemilik_rekening']);
+        $npwp = $this->cleanString($this->getRowValue($row, ['npwp', 'no_npwp', 'nomor_npwp']));
+        $taxStatus = $this->getRowValue($row, ['status_pajak', 'tax_status', 'ptkp', 'status_ptkp']);
+        $bpjsKesehatan = $this->cleanString($this->getRowValue($row, ['bpjs_kesehatan', 'no_bpjs_kesehatan', 'nomor_bpjs_kesehatan']));
+        $bpjsTk = $this->cleanString($this->getRowValue($row, ['bpjs_ketenagakerjaan', 'bpjs_tk', 'bpjstk', 'no_bpjs_ketenagakerjaan']));
+        $ecName = $this->getRowValue($row, ['nama_kontak_darurat', 'emergency_contact_name', 'kontak_darurat_nama']);
+        $ecPhone = $this->cleanString($this->getRowValue($row, ['telepon_kontak_darurat', 'emergency_contact_phone', 'kontak_darurat_telepon', 'kontak_darurat_no']));
+        $ecRel = $this->getRowValue($row, ['hubungan_kontak_darurat', 'emergency_contact_relationship', 'kontak_darurat_hubungan']);
 
         return new Employee([
             'company_id' => $this->companyId,
             'department_id' => $departmentId,
             'position_id' => $positionId,
             'work_schedule_id' => $workScheduleId,
+            'manager_id' => $managerId,
             'employee_id' => $nik,
-            'pin' => ! empty($pin) ? trim((string) $pin) : null,
+            'pin' => ! empty($pin) ? $pin : null,
             'first_name' => $firstName,
             'last_name' => ! empty($lastName) ? $lastName : '',
             'email' => ! empty($email) ? trim((string) $email) : null,
-            'phone' => ! empty($phone) ? trim((string) $phone) : null,
-            'date_of_birth' => $this->parseDate($this->getRowValue($row, ['tanggal_lahir', 'date_of_birth'])),
-            'gender' => $this->parseGender($this->getRowValue($row, ['jenis_kelamin', 'gender'])),
-            'marital_status' => $this->parseMaritalStatus($this->getRowValue($row, ['status_pernikahan', 'marital_status'])),
+            'phone' => ! empty($phone) ? $phone : null,
+            'date_of_birth' => $this->parseDate($this->getRowValue($row, ['tanggal_lahir', 'date_of_birth', 'tgl_lahir', 'dob'])),
+            'gender' => $this->parseGender($this->getRowValue($row, ['jenis_kelamin', 'gender', 'jk'])),
+            'marital_status' => $this->parseMaritalStatus($this->getRowValue($row, ['status_pernikahan', 'marital_status', 'status_kawin', 'status_perkawinan'])),
             'religion' => ! empty($religion) ? trim((string) $religion) : null,
             'blood_type' => ! empty($bloodType) ? trim((string) $bloodType) : null,
-            'identity_number' => ! empty($idNumber) ? trim((string) $idNumber) : null,
+            'identity_number' => ! empty($idNumber) ? $idNumber : null,
             'identity_address' => ! empty($idAddress) ? trim((string) $idAddress) : null,
             'address' => ! empty($address) ? trim((string) $address) : null,
             'city' => ! empty($city) ? trim((string) $city) : null,
             'province' => ! empty($province) ? trim((string) $province) : null,
-            'postal_code' => ! empty($postalCode) ? trim((string) $postalCode) : null,
+            'postal_code' => ! empty($postalCode) ? $postalCode : null,
             'hire_date' => $hireDate,
-            'employment_status' => $this->parseEmploymentStatus($this->getRowValue($row, ['status_karyawan', 'employment_status'], 'permanent')),
-            'contract_start_date' => $this->parseDate($this->getRowValue($row, ['tanggal_mulai_kontrak', 'contract_start_date'])),
-            'contract_end_date' => $this->parseDate($this->getRowValue($row, ['tanggal_selesai_kontrak', 'contract_end_date'])),
-            'base_salary' => $this->parseSalary($this->getRowValue($row, ['gaji_pokok', 'base_salary'], 0)),
+            'employment_status' => $this->parseEmploymentStatus($this->getRowValue($row, ['status_karyawan', 'employment_status', 'status_kerja'], 'permanent')),
+            'contract_start_date' => $this->parseDate($this->getRowValue($row, ['tanggal_mulai_kontrak', 'contract_start_date', 'tgl_mulai_kontrak'])),
+            'contract_end_date' => $this->parseDate($this->getRowValue($row, ['tanggal_selesai_kontrak', 'contract_end_date', 'tgl_selesai_kontrak', 'tgl_habis_kontrak'])),
+            'base_salary' => $this->parseSalary($this->getRowValue($row, ['gaji_pokok', 'base_salary', 'gaji', 'salary'], 0)),
             'bank_name' => ! empty($bankName) ? trim((string) $bankName) : null,
-            'bank_account_number' => ! empty($bankNumber) ? trim((string) $bankNumber) : null,
+            'bank_account_number' => ! empty($bankNumber) ? $bankNumber : null,
             'bank_account_name' => ! empty($bankHolder) ? trim((string) $bankHolder) : null,
-            'npwp' => ! empty($npwp) ? trim((string) $npwp) : null,
+            'npwp' => ! empty($npwp) ? $npwp : null,
             'tax_status' => ! empty($taxStatus) ? trim((string) $taxStatus) : null,
-            'bpjs_kesehatan' => ! empty($bpjsKesehatan) ? trim((string) $bpjsKesehatan) : null,
-            'bpjs_ketenagakerjaan' => ! empty($bpjsTk) ? trim((string) $bpjsTk) : null,
+            'bpjs_kesehatan' => ! empty($bpjsKesehatan) ? $bpjsKesehatan : null,
+            'bpjs_ketenagakerjaan' => ! empty($bpjsTk) ? $bpjsTk : null,
             'emergency_contact_name' => ! empty($ecName) ? trim((string) $ecName) : null,
-            'emergency_contact_phone' => ! empty($ecPhone) ? trim((string) $ecPhone) : null,
+            'emergency_contact_phone' => ! empty($ecPhone) ? $ecPhone : null,
             'emergency_contact_relationship' => ! empty($ecRel) ? trim((string) $ecRel) : null,
-            'is_active' => $this->parseBoolean($this->getRowValue($row, ['aktif', 'is_active'], 'Ya')),
+            'is_active' => $this->parseBoolean($this->getRowValue($row, ['aktif', 'is_active', 'status_aktif'], 'Ya')),
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'nik' => ['sometimes', 'string', 'max:50'],
-            'employee_id' => ['sometimes', 'string', 'max:50'],
-            'nama_depan' => ['sometimes', 'string', 'max:255'],
-            'first_name' => ['sometimes', 'string', 'max:255'],
+            'nik' => ['nullable'],
+            'employee_id' => ['nullable'],
+            'nama_depan' => ['nullable'],
+            'first_name' => ['nullable'],
         ];
     }
 
@@ -375,7 +582,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
             return 0;
         }
 
-        // If string contains both dots and commas (e.g. 10.000.000,00 or 10,000,000.00)
+        // If string contains both dots and commas (e.g. 10.000.000,00 or 10,000,000.50)
         if (str_contains($str, '.') && str_contains($str, ',')) {
             $lastDot = strrpos($str, '.');
             $lastComma = strrpos($str, ',');
@@ -432,7 +639,7 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
             return $value->format('Y-m-d');
         }
 
-        // Handle Excel numeric serial date (using PhpOffice Date parser to avoid timezone drift)
+        // Handle Excel numeric serial date
         if (is_numeric($value)) {
             try {
                 return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value)->format('Y-m-d');
@@ -444,7 +651,20 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
         $str = trim((string) $value);
 
         // Try common date formats
-        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y/m/d'];
+        $formats = [
+            'Y-m-d',
+            'd/m/Y',
+            'd-m-Y',
+            'd.m.Y',
+            'm/d/Y',
+            'Y/m/d',
+            'j/n/Y',
+            'j-n-Y',
+            'j.n.Y',
+            'Y-m-d H:i:s',
+            'd/m/Y H:i:s',
+        ];
+
         foreach ($formats as $format) {
             $date = \DateTime::createFromFormat($format, $str);
             if ($date !== false) {
@@ -468,11 +688,11 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
 
         $value = strtolower(trim((string) $value));
 
-        if (in_array($value, ['male', 'laki-laki', 'laki', 'l', 'pria', 'm'])) {
+        if (in_array($value, ['male', 'laki-laki', 'laki - laki', 'laki', 'laki2', 'l', 'pria', 'm', 'cowok'])) {
             return 'male';
         }
 
-        if (in_array($value, ['female', 'perempuan', 'wanita', 'p', 'f'])) {
+        if (in_array($value, ['female', 'perempuan', 'wanita', 'p', 'f', 'cewek'])) {
             return 'female';
         }
 
@@ -490,18 +710,30 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
         $mapping = [
             'single' => 'single',
             'belum menikah' => 'single',
+            'belum kawin' => 'single',
             'lajang' => 'single',
             'tk' => 'single',
+            'tk/0' => 'single',
+            'tk/1' => 'single',
+            'tk/2' => 'single',
+            'tk/3' => 'single',
+            'tidak kawin' => 'single',
             'married' => 'married',
             'menikah' => 'married',
             'kawin' => 'married',
             'k' => 'married',
+            'k/0' => 'married',
+            'k/1' => 'married',
+            'k/2' => 'married',
+            'k/3' => 'married',
+            'sudah menikah' => 'married',
+            'sudah kawin' => 'married',
             'divorced' => 'divorced',
             'cerai' => 'divorced',
             'cerai hidup' => 'divorced',
+            'janda' => 'divorced',
+            'duda' => 'divorced',
             'widowed' => 'widowed',
-            'janda' => 'widowed',
-            'duda' => 'widowed',
             'cerai mati' => 'widowed',
         ];
 
@@ -510,22 +742,31 @@ class EmployeeImport implements ShouldQueue, SkipsEmptyRows, ToModel, WithChunkR
 
     public function parseEmploymentStatus(mixed $value): string
     {
+        if (empty($value)) {
+            return 'permanent';
+        }
+
         $value = strtolower(trim((string) $value));
 
         $mapping = [
             'permanent' => 'permanent',
             'tetap' => 'permanent',
+            'karyawan tetap' => 'permanent',
             'pkwtt' => 'permanent',
             'contract' => 'contract',
             'kontrak' => 'contract',
+            'karyawan kontrak' => 'contract',
             'pkwt' => 'contract',
             'probation' => 'probation',
             'percobaan' => 'probation',
             'masa percobaan' => 'probation',
             'intern' => 'intern',
             'magang' => 'intern',
+            'internship' => 'intern',
+            'pkl' => 'intern',
         ];
 
         return $mapping[$value] ?? 'permanent';
     }
 }
+

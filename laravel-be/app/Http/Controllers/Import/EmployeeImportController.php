@@ -8,8 +8,10 @@ use App\Imports\EmployeeImport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
 
 class EmployeeImportController extends Controller
 {
@@ -31,19 +33,52 @@ class EmployeeImportController extends Controller
 
         $tenant = app('tenant');
 
+        $importId = uniqid('emp_import_');
+        $import = new EmployeeImport($tenant->id, $importId);
+        $import->initializeImport();
+
         try {
-            $importId = uniqid('emp_import_');
-            $import = new EmployeeImport($tenant->id, $importId);
-            $import->initializeImport();
+            DB::transaction(function () use ($import, $request) {
+                Excel::import($import, $request->file('file'));
+            });
 
-            Excel::queueImport($import, $request->file('file'));
+            $import->attachPendingOfficeLocations();
+            $import->markAsCompleted();
+
+            $successCount = $import->getSuccessCount();
+            $skipCount = $import->getSkipCount();
+            $errors = $import->getErrors();
+
+            $message = "Berhasil mengimpor {$successCount} karyawan.";
+            if ($skipCount > 0) {
+                $message .= " {$skipCount} data dilewati.";
+            }
 
             return redirect()->route('imports.employees.index')
-                ->with('info', 'Import sedang diproses di background. Silakan tunggu beberapa saat.')
-                ->with('import_id', $importId);
+                ->with('import_id', $importId)
+                ->with(count($errors) > 0 ? 'warning' : 'success', $message)
+                ->with('import_errors', $errors);
+        } catch (ValidationException $e) {
+            $validationErrors = [];
+            foreach ($e->failures() as $failure) {
+                $row = $failure->row();
+                $attribute = $failure->attribute();
+                $errorsList = implode(', ', $failure->errors());
+                $validationErrors[] = "Baris {$row} (Kolom {$attribute}): {$errorsList}";
+            }
+
+            $import->markAsFailed('Validasi gagal pada file yang diunggah.');
+
+            return redirect()->route('imports.employees.index')
+                ->with('import_id', $importId)
+                ->with('error', 'Validasi gagal pada file yang diunggah.')
+                ->with('import_errors', $validationErrors);
         } catch (\Exception $e) {
+            $import->markAsFailed($e->getMessage());
+
             return redirect()->route('imports.employees.index')
-                ->with('error', 'Gagal memulai import: '.$e->getMessage());
+                ->with('import_id', $importId)
+                ->with('error', 'Gagal mengimpor data: '.$e->getMessage());
         }
     }
 
@@ -61,3 +96,4 @@ class EmployeeImportController extends Controller
         return response()->json($status);
     }
 }
+

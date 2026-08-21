@@ -168,5 +168,42 @@ void main() {
 
       expect(find.byType(FaceEnrollmentScreen), findsOneWidget);
     });
+
+    testWidgets('jika wajah sudah terdaftar, tombol daftar ulang tidak muncul dan ada info hubungi admin', (tester) async {
+      final userEnrolled = UserModel(
+        id: 1,
+        name: 'Adi Sumardi',
+        email: 'adi@example.com',
+        employee: EmployeeModel(
+          id: 10,
+          employeeId: 'EMP001',
+          pin: '1032',
+          fullName: 'Adi Sumardi',
+          faceEnrolled: true,
+        ),
+      );
+
+      when(() => mockBloc.state).thenReturn(ProfileLoaded(userEnrolled));
+      when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+      await tester.pumpWidget(buildWithBloc(mockBloc));
+      await tester.pump();
+
+      expect(find.text('Daftarkan Wajah Sekarang'), findsNothing);
+      expect(find.text('Daftarkan Ulang Wajah'), findsNothing);
+      expect(find.text('Perlu daftar ulang wajah? Hubungi Admin'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Perlu daftar ulang wajah? Hubungi Admin'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Perlu daftar ulang wajah? Hubungi Admin'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Mengerti'), findsOneWidget);
+    });
   });
 }

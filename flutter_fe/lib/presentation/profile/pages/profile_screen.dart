@@ -452,43 +452,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FaceEnrollmentScreen(),
+          if (!isEnrolled) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FaceEnrollmentScreen(),
+                    ),
+                  ).then((_) {
+                    if (context.mounted) {
+                      context.read<ProfileBloc>().add(GetProfile());
+                    }
+                  });
+                },
+                icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                label: const Text(
+                  'Daftarkan Wajah Sekarang',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary600,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ).then((_) {
-                  if (context.mounted) {
-                    context.read<ProfileBloc>().add(GetProfile());
-                  }
-                });
-              },
-              icon: Icon(
-                isEnrolled ? Icons.refresh_rounded : Icons.camera_alt_rounded,
-                size: 18,
-              ),
-              label: Text(
-                isEnrolled ? 'Daftarkan Ulang Wajah' : 'Daftarkan Wajah Sekarang',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isEnrolled ? AppColors.primary50 : AppColors.primary600,
-                foregroundColor: isEnrolled ? AppColors.primary700 : Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: isEnrolled
-                      ? const BorderSide(color: AppColors.primary200)
-                      : BorderSide.none,
                 ),
               ),
             ),
+          ] else ...[
+            const SizedBox(height: 14),
+            InkWell(
+              onTap: () => _showFaceReEnrollmentInfoDialog(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Perlu daftar ulang wajah? Hubungi Admin',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showFaceReEnrollmentInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_rounded, color: AppColors.primary600),
+            SizedBox(width: 10),
+            Text(
+              'Pendaftaran Wajah',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Wajah Anda sudah terdaftar dan terverifikasi untuk absensi.\n\nUntuk menjaga keamanan absensi, pendaftaran wajah hanya dapat dilakukan 1 kali. Jika ada kendala biometrik atau perubahan wajah, silakan ajukan permohonan reset ke Administrator HRD.\n\nSetelah Administrator menyetujui dan mereset data wajah Anda di sistem, tombol pendaftaran wajah akan otomatis aktif kembali.',
+          style: TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Mengerti', style: TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),

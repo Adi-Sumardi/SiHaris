@@ -120,4 +120,35 @@ class OtpAuthTest extends TestCase
                 'message' => 'Kode OTP tidak valid atau sudah kadaluarsa.',
             ]);
     }
+
+    public function test_resolves_active_employee_when_admin_has_same_phone(): void
+    {
+        // Create an admin user with the same phone but without an employee record
+        User::factory()->create([
+            'email' => 'admin@test.com',
+            'phone' => '081234567890',
+        ]);
+
+        $this->postJson('/api/v1/auth/request-otp', [
+            'login' => '081234567890',
+        ])->assertOk();
+
+        $cached = Cache::get('otp_login:081234567890');
+        $otpCode = $cached['otp'];
+
+        $response = $this->postJson('/api/v1/auth/verify-otp', [
+            'login' => '081234567890',
+            'otp' => $otpCode,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'employee' => [
+                        'id' => $this->employee->id,
+                    ],
+                ],
+            ]);
+    }
 }

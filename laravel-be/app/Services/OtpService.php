@@ -111,22 +111,62 @@ class OtpService
     protected function findUser(string $login, string $type): ?User
     {
         if ($type === 'email') {
-            return User::where('email', $login)->first()
-                ?? User::whereHas('employee', fn ($q) => $q->where('email', $login))->first();
+            // Prioritize active employee by email first
+            $employee = Employee::where('email', $login)
+                ->where('is_active', true)
+                ->whereNotNull('user_id')
+                ->first();
+
+            if ($employee && $employee->user) {
+                return $employee->user;
+            }
+
+            return User::where('email', $login)
+                ->whereHas('employee', fn ($q) => $q->where('is_active', true))
+                ->first()
+                ?? User::where('email', $login)->first();
         }
 
         // Phone normalization (strip non-digits)
-        $cleanPhone = preg_replace('/\D/', '', $login);
+        $digits = preg_replace('/\D/', '', $login);
 
-        // Try direct matching on user phone or employee phone
-        $user = User::where('phone', $login)->orWhere('phone', $cleanPhone)->first();
+        // Generate common Indonesian phone format variants
+        $variants = array_unique(array_filter([
+            $login,
+            $digits,
+            ltrim($digits, '0'), // e.g. 81292702075
+            '0'.ltrim($digits, '0'), // e.g. 081292702075
+            '62'.ltrim(preg_replace('/^62/', '', $digits), '0'), // e.g. 6281292702075
+            '+62'.ltrim(preg_replace('/^62/', '', $digits), '0'),
+        ]));
+
+        // 1. Prioritize active Employee matching phone with an associated user
+        $employee = Employee::whereIn('phone', $variants)
+            ->where('is_active', true)
+            ->whereNotNull('user_id')
+            ->first();
+
+        if ($employee && $employee->user) {
+            return $employee->user;
+        }
+
+        // 2. Try User who has an active employee
+        $user = User::whereIn('phone', $variants)
+            ->whereHas('employee', fn ($q) => $q->where('is_active', true))
+            ->first();
+
         if ($user) {
             return $user;
         }
 
-        $employee = Employee::where('phone', $login)
-            ->orWhere('phone', $cleanPhone)
-            ->first();
+        // 3. Direct matching on user phone (e.g. admin accounts)
+        $user = User::whereIn('phone', $variants)->first();
+        if ($user) {
+            return $user;
+        }
+
+        // 4. Fallback to any employee phone
+        $employee = Employee::whereIn('phone', $variants)->first();
 
         return $employee?->user;
     }

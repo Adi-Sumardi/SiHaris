@@ -156,6 +156,7 @@ class EmployeeController extends Controller
                     'company_id' => $tenant->id,
                     'name' => $fullName,
                     'email' => $validated['email'],
+                    'phone' => $validated['phone'] ?? null,
                     'password' => Hash::make($validated['password']),
                     'is_active' => true,
                 ]);
@@ -332,6 +333,10 @@ class EmployeeController extends Controller
                     $userData['email'] = $validated['email'];
                 }
 
+                if (isset($validated['phone'])) {
+                    $userData['phone'] = $validated['phone'];
+                }
+
                 if (! empty($validated['password'])) {
                     $userData['password'] = Hash::make($validated['password']);
                 }
@@ -343,6 +348,7 @@ class EmployeeController extends Controller
                     'company_id' => $tenant->id,
                     'name' => $fullName,
                     'email' => $validated['email'],
+                    'phone' => $validated['phone'] ?? null,
                     'password' => Hash::make($validated['password']),
                     'is_active' => true,
                 ]);

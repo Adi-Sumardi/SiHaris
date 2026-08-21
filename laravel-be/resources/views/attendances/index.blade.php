@@ -16,17 +16,13 @@
             <form action="{{ route('attendances.sync-adms') }}" method="POST" class="inline">
                 @csrf
                 <input type="hidden" name="date" value="{{ request('date', date('Y-m-d')) }}">
-                <button type="submit" class="btn btn-secondary flex items-center gap-2" title="Tarik log presensi terbaru dari ADMS Cloud">
-                    <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="submit" class="btn btn-primary flex items-center gap-2" title="Tarik log presensi terbaru dari ADMS Cloud">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     Sync Presensi ADMS
                 </button>
             </form>
-            <a href="{{ route('attendances.create') }}" class="btn btn-primary">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                Input Manual
-            </a>
         </div>
     </div>
 @endsection
@@ -184,11 +180,8 @@
                     <td colspan="7" class="text-center py-12">
                         <div class="flex flex-col items-center">
                             <svg class="w-12 h-12 text-secondary-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                            <p class="text-secondary-500">Belum ada data kehadiran.</p>
-                            <a href="{{ route('attendances.create') }}" class="btn btn-primary mt-4">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                Input Manual
-                            </a>
+                            <p class="text-secondary-500 font-medium">Belum ada data kehadiran untuk filter yang dipilih.</p>
+                            <p class="text-xs text-secondary-400 mt-1">Data kehadiran otomatis tercatat dari mesin fingerprint ADMS dan absensi mobile face recognition.</p>
                         </div>
                     </td>
                 </tr>

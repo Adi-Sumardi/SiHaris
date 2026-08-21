@@ -176,19 +176,26 @@
                     <div>
                         <h4 class="font-medium text-secondary-900 mb-2">Kolom Wajib:</h4>
                         <ul class="space-y-1 text-xs">
-                            <li><span class="font-medium">NIK</span> - Nomor Induk Karyawan</li>
+                            <li><span class="font-medium">ID Karyawan</span> - Nomor Induk Karyawan / NIP internal</li>
                             <li><span class="font-medium">Nama Depan</span> - Nama depan karyawan</li>
                         </ul>
                     </div>
 
                     <div>
-                        <h4 class="font-medium text-secondary-900 mb-2">Kolom Referensi & Identitas:</h4>
+                        <h4 class="font-medium text-secondary-900 mb-2">Kolom Identitas & Mesin:</h4>
                         <ul class="space-y-1 text-xs">
-                            <li><span class="font-medium">PIN</span> - PIN absensi mesin/fingerprint/ADMS</li>
+                            <li><span class="font-medium">PIN</span> - PIN absensi mesin biometrik / fingerprint / ADMS</li>
+                            <li><span class="font-medium">NIK (No KTP)</span> - 16 digit Nomor Induk Kependudukan KTP</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="font-medium text-secondary-900 mb-2">Kolom Referensi & Relasi:</h4>
+                        <ul class="space-y-1 text-xs">
                             <li><span class="font-medium">Kode Departemen</span> - Kode atau nama departemen</li>
                             <li><span class="font-medium">Kode Jabatan</span> - Kode atau nama jabatan</li>
                             <li><span class="font-medium">Kode Jadwal</span> - Kode atau nama jadwal kerja</li>
-                            <li><span class="font-medium">NIK Manajer</span> - NIK atasan langsung</li>
+                            <li><span class="font-medium">NIK Manajer</span> - ID Karyawan / NIK atasan langsung</li>
                             <li><span class="font-medium">Kode Lokasi Kantor</span> - Kode atau nama lokasi kantor</li>
                         </ul>
                     </div>

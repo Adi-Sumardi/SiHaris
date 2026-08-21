@@ -69,10 +69,11 @@ describe('EmployeeImport', function () {
             $export = new EmployeeTemplateExport;
             $headings = $export->headings();
 
-            expect($headings)->toContain('NIK')
+            expect($headings)->toContain('ID Karyawan')
                 ->toContain('PIN')
                 ->toContain('Nama Depan')
                 ->toContain('Nama Belakang')
+                ->toContain('NIK (No KTP)')
                 ->toContain('Kode Departemen')
                 ->toContain('Kode Jabatan')
                 ->toContain('Kode Jadwal')
@@ -89,12 +90,13 @@ describe('EmployeeImport', function () {
             $response->assertSessionHasErrors(['file']);
         });
 
-        it('creates employees from import data', function () {
+        it('creates employees with distinct ID Karyawan, PIN, and NIK KTP from import data', function () {
             $import = new EmployeeImport($this->company->id);
 
             $emp1 = $import->model([
-                'nik' => 'EMP001',
+                'id_karyawan' => 'EMP001',
                 'pin' => '101',
+                'nik_no_ktp' => '3175012345670001',
                 'nama_depan' => 'John',
                 'nama_belakang' => 'Doe',
                 'email' => 'john.doe@example.com',
@@ -112,6 +114,8 @@ describe('EmployeeImport', function () {
             expect($emp1)->not->toBeNull();
             expect($emp1->employee_id)->toBe('EMP001');
             expect($emp1->pin)->toBe('101');
+            expect($emp1->nik)->toBe('3175012345670001');
+            expect($emp1->identity_number)->toBe('3175012345670001');
             expect($emp1->department_id)->toBe($this->department->id);
             expect($emp1->position_id)->toBe($this->position->id);
             expect($emp1->work_schedule_id)->toBe($this->workSchedule->id);
@@ -120,23 +124,24 @@ describe('EmployeeImport', function () {
             expect($emp1->base_salary)->toBe(10000000);
         });
 
-        it('handles numeric NIK and phone from Excel correctly', function () {
+        it('handles numeric ID Karyawan, PIN, NIK KTP, and phone from Excel correctly', function () {
             $import = new EmployeeImport($this->company->id);
 
             $emp = $import->model([
-                'nik' => 1001,
+                'id_karyawan' => 1001,
                 'pin' => 123,
+                'nik_no_ktp' => 1234567890123456,
                 'nama_depan' => 'Numeric',
                 'nama_belakang' => 'Test',
                 'telepon' => 81234567890,
-                'no_ktp' => 1234567890123456,
             ]);
 
             expect($emp)->not->toBeNull();
             expect($emp->employee_id)->toBe('1001');
             expect($emp->pin)->toBe('123');
-            expect($emp->phone)->toBe('81234567890');
+            expect($emp->nik)->toBe('1234567890123456');
             expect($emp->identity_number)->toBe('1234567890123456');
+            expect($emp->phone)->toBe('81234567890');
         });
 
         it('matches department, position, schedule case-insensitively and by name', function () {

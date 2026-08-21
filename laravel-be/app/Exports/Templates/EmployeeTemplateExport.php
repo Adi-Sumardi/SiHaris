@@ -13,7 +13,7 @@ class EmployeeTemplateExport implements FromArray, ShouldAutoSize, WithHeadings,
     public function headings(): array
     {
         return [
-            'NIK',
+            'ID Karyawan',
             'PIN',
             'Nama Depan',
             'Nama Belakang',
@@ -24,7 +24,7 @@ class EmployeeTemplateExport implements FromArray, ShouldAutoSize, WithHeadings,
             'Status Pernikahan',
             'Agama',
             'Golongan Darah',
-            'No KTP',
+            'NIK (No KTP)',
             'Alamat KTP',
             'Alamat',
             'Kota',

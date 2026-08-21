@@ -22,6 +22,7 @@ class Employee extends Model
         'user_id',
         'employee_id',
         'pin',
+        'nik',
         'first_name',
         'last_name',
         'email',
@@ -72,6 +73,15 @@ class Employee extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Employee $employee) {
+            // Keep nik and identity_number (KTP) synchronized
+            if (! empty($employee->nik) && empty($employee->identity_number)) {
+                $employee->identity_number = $employee->nik;
+            } elseif (! empty($employee->identity_number) && empty($employee->nik)) {
+                $employee->nik = $employee->identity_number;
+            }
+        });
+
         static::creating(function (Employee $employee) {
             if (empty($employee->employee_id) && $employee->company_id) {
                 $employee->employee_id = static::generateEmployeeId($employee->company_id);

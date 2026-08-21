@@ -83,22 +83,18 @@
                 <div class="card-body">
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <dt class="text-sm font-medium text-secondary-500">NIP / ID Karyawan</dt>
-                            <dd class="mt-1 text-sm text-secondary-900 font-mono">{{ $employee->employee_id }}</dd>
+                            <dt class="text-sm font-medium text-secondary-500">Nama Lengkap</dt>
+                            <dd class="mt-1 text-sm text-secondary-900 font-medium">{{ $employee->full_name }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-secondary-500">PIN Mesin Fingerprint</dt>
+                            <dt class="text-sm font-medium text-secondary-500">NIK (No. KTP)</dt>
                             <dd class="mt-1 text-sm text-secondary-900 font-mono">
-                                @if($employee->pin)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">{{ $employee->pin }}</span>
+                                @if($employee->nik ?? $employee->identity_number)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary-100 text-secondary-800">{{ $employee->nik ?? $employee->identity_number }}</span>
                                 @else
                                     <span class="text-secondary-400">-</span>
                                 @endif
                             </dd>
-                        </div>
-                        <div>
-                            <dt class="text-sm font-medium text-secondary-500">Nama Lengkap</dt>
-                            <dd class="mt-1 text-sm text-secondary-900">{{ $employee->full_name }}</dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-secondary-500">Email</dt>
@@ -167,6 +163,20 @@
                 </div>
                 <div class="card-body">
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">NIP / ID Karyawan</dt>
+                            <dd class="mt-1 text-sm text-secondary-900 font-mono font-medium">{{ $employee->employee_id }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-secondary-500">PIN Mesin Fingerprint / Biometrik</dt>
+                            <dd class="mt-1 text-sm text-secondary-900 font-mono">
+                                @if($employee->pin)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">{{ $employee->pin }}</span>
+                                @else
+                                    <span class="text-secondary-400">-</span>
+                                @endif
+                            </dd>
+                        </div>
                         <div>
                             <dt class="text-sm font-medium text-secondary-500">Departemen</dt>
                             <dd class="mt-1 text-sm text-secondary-900">{{ $employee->department?->name ?? '-' }}</dd>

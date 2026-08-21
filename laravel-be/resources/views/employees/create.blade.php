@@ -68,6 +68,15 @@
                         @enderror
                     </div>
 
+                    {{-- NIK / No. KTP --}}
+                    <div>
+                        <label for="nik" class="block text-sm font-medium text-secondary-700 mb-1">NIK (No. KTP)</label>
+                        <input type="text" name="nik" id="nik" value="{{ old('nik') }}" class="input w-full @error('nik') border-danger-500 @enderror" placeholder="16 digit nomor induk kependudukan" maxlength="20">
+                        @error('nik')
+                            <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     {{-- Gender --}}
                     <div>
                         <label for="gender" class="block text-sm font-medium text-secondary-700 mb-1">Jenis Kelamin</label>

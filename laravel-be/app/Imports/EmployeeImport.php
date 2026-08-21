@@ -350,8 +350,11 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
         $this->currentRow++;
         $rowNum = $this->getRowNumber() ?? $this->currentRow;
 
-        $nikRaw = $this->getRowValue($row, ['nik', 'employee_id']);
-        $nik = $this->cleanString($nikRaw);
+        $idKaryawanRaw = $this->getRowValue($row, ['id_karyawan', 'employee_id', 'nip', 'nik_karyawan']);
+        $nikRaw = $this->getRowValue($row, ['nik']);
+
+        // Determine employee_id: prefer explicit id_karyawan/nip, fallback to nik
+        $employeeId = ! empty($idKaryawanRaw) ? $this->cleanString($idKaryawanRaw) : $this->cleanString($nikRaw);
 
         $firstNameRaw = $this->getRowValue($row, ['nama_depan', 'first_name']);
         $firstName = $this->cleanString($firstNameRaw);
@@ -371,32 +374,33 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
             }
         }
 
-        if (empty($nik) || empty($firstName)) {
+        if (empty($employeeId) || empty($firstName)) {
             $this->incrementCounter('skip_count');
-            $this->addError("Baris {$rowNum}: NIK dan Nama Depan wajib diisi.");
+            $this->addError("Baris {$rowNum}: ID Karyawan dan Nama Depan wajib diisi.");
 
             return null;
         }
 
-        // Check for duplicate NIK within the same import file
-        if (isset($this->seenNiks[$nik])) {
+        // Prevent in-file duplicate employee_id collision
+        $empIdKey = strtolower($employeeId);
+        if (isset($this->seenNiks[$empIdKey])) {
             $this->incrementCounter('skip_count');
-            $this->addError("Baris {$rowNum}: NIK '{$nik}' duplikat dalam file import, dilewati.");
+            $this->addError("Baris {$rowNum}: ID Karyawan '{$employeeId}' duplikat di dalam file import.");
 
             return null;
         }
-        $this->seenNiks[$nik] = true;
+        $this->seenNiks[$empIdKey] = true;
 
         // Check if employee_id already exists in database (including soft-deleted)
         $existingEmployee = Employee::withTrashed()
             ->where('company_id', $this->companyId)
-            ->where('employee_id', $nik)
+            ->where('employee_id', $employeeId)
             ->first();
 
         if ($existingEmployee) {
             $this->incrementCounter('skip_count');
             $statusText = $existingEmployee->trashed() ? ' (arsip/terhapus)' : '';
-            $this->addError("Baris {$rowNum}: NIK '{$nik}' sudah ada{$statusText}, dilewati.");
+            $this->addError("Baris {$rowNum}: ID Karyawan '{$employeeId}' sudah ada{$statusText}, dilewati.");
 
             return null;
         }
@@ -449,7 +453,7 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
             if (! $officeLocationId) {
                 $this->addError("Baris {$rowNum}: Lokasi kantor '{$officeVal}' tidak ditemukan.");
             } else {
-                $this->pendingOfficeLocations[$nik] = $officeLocationId;
+                $this->pendingOfficeLocations[$employeeId] = $officeLocationId;
             }
         }
 
@@ -458,7 +462,7 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
         $hireDate = $this->parseDate($hireDateRaw);
         if (! $hireDate) {
             $hireDate = now()->format('Y-m-d');
-            $this->addError("Baris {$rowNum}: Tanggal masuk kosong/tidak valid untuk NIK '{$nik}', default ke hari ini ({$hireDate}).");
+            $this->addError("Baris {$rowNum}: Tanggal masuk kosong/tidak valid untuk ID Karyawan '{$employeeId}', default ke hari ini ({$hireDate}).");
         }
 
         $this->incrementCounter('success_count');
@@ -470,7 +474,12 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
         $phone = $this->cleanString($this->getRowValue($row, ['telepon', 'phone', 'no_hp', 'no_telepon', 'handphone']));
         $religion = $this->getRowValue($row, ['agama', 'religion']);
         $bloodType = $this->getRowValue($row, ['golongan_darah', 'blood_type', 'gol_darah']);
-        $idNumber = $this->cleanString($this->getRowValue($row, ['no_ktp', 'identity_number', 'ktp', 'nik_ktp', 'nomor_ktp']));
+        
+        $idNumber = $this->cleanString($this->getRowValue($row, ['nik_no_ktp', 'nik_ktp', 'no_ktp', 'nomor_ktp', 'identity_number', 'ktp']));
+        if (empty($idNumber) && ! empty($idKaryawanRaw) && ! empty($nikRaw)) {
+            $idNumber = $this->cleanString($nikRaw);
+        }
+
         $idAddress = $this->getRowValue($row, ['alamat_ktp', 'identity_address']);
         $address = $this->getRowValue($row, ['alamat', 'address', 'alamat_domisili', 'domisili']);
         $city = $this->getRowValue($row, ['kota', 'city']);
@@ -493,8 +502,10 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
             'position_id' => $positionId,
             'work_schedule_id' => $workScheduleId,
             'manager_id' => $managerId,
-            'employee_id' => $nik,
+            'employee_id' => $employeeId,
             'pin' => ! empty($pin) ? $pin : null,
+            'nik' => ! empty($idNumber) ? $idNumber : null,
+            'identity_number' => ! empty($idNumber) ? $idNumber : null,
             'first_name' => $firstName,
             'last_name' => ! empty($lastName) ? $lastName : '',
             'email' => ! empty($email) ? trim((string) $email) : null,
@@ -504,7 +515,6 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
             'marital_status' => $this->parseMaritalStatus($this->getRowValue($row, ['status_pernikahan', 'marital_status', 'status_kawin', 'status_perkawinan'])),
             'religion' => ! empty($religion) ? trim((string) $religion) : null,
             'blood_type' => ! empty($bloodType) ? trim((string) $bloodType) : null,
-            'identity_number' => ! empty($idNumber) ? $idNumber : null,
             'identity_address' => ! empty($idAddress) ? trim((string) $idAddress) : null,
             'address' => ! empty($address) ? trim((string) $address) : null,
             'city' => ! empty($city) ? trim((string) $city) : null,

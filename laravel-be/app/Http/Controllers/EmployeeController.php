@@ -40,7 +40,7 @@ class EmployeeController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        // Search by name or employee_id
+        // Search by name, employee_id, pin, nik, or email
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -48,6 +48,8 @@ class EmployeeController extends Controller
                     ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhere('employee_id', 'like', "%{$search}%")
                     ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('identity_number', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -101,6 +103,8 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'employee_id' => ['nullable', 'string', 'max:50'],
             'pin' => ['nullable', 'string', 'max:50'],
+            'nik' => ['nullable', 'string', 'max:50'],
+            'identity_number' => ['nullable', 'string', 'max:50'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
@@ -249,13 +253,13 @@ class EmployeeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $weeklyScheduleMap = $employee->weeklySchedules->pluck('work_schedule_id', 'day_of_week');
-
         $managers = Employee::where('company_id', $tenant->id)
             ->where('id', '!=', $employee->id)
             ->active()
             ->orderBy('first_name')
             ->get();
+
+        $weeklyScheduleMap = $employee->weeklySchedules->pluck('work_schedule_id', 'day_of_week');
 
         return view('employees.edit', compact('employee', 'departments', 'positions', 'officeLocations', 'workSchedules', 'weeklyScheduleMap', 'managers'));
     }
@@ -279,6 +283,8 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'employee_id' => ['nullable', 'string', 'max:50'],
             'pin' => ['nullable', 'string', 'max:50'],
+            'nik' => ['nullable', 'string', 'max:50'],
+            'identity_number' => ['nullable', 'string', 'max:50'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => $emailRule,

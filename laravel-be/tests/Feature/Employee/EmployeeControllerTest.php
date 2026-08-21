@@ -166,12 +166,13 @@ describe('Employee Create', function () {
         ]);
     });
 
-    it('can create a new employee with pin and custom employee_id', function () {
+    it('can create a new employee with distinct nik, employee_id, and pin', function () {
         $this->actingAs($this->admin);
 
         $response = $this->post('/employees', [
             'employee_id' => 'EMP-YAPI-001',
             'pin' => '1032',
+            'nik' => '3175012345670001',
             'first_name' => 'Adi',
             'last_name' => 'Sumardi',
             'email' => 'adi.sumardi@yapi.id',
@@ -186,6 +187,8 @@ describe('Employee Create', function () {
         $this->assertDatabaseHas('employees', [
             'employee_id' => 'EMP-YAPI-001',
             'pin' => '1032',
+            'nik' => '3175012345670001',
+            'identity_number' => '3175012345670001',
             'first_name' => 'Adi',
             'last_name' => 'Sumardi',
             'company_id' => $this->company->id,

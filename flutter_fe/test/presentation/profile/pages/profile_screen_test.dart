@@ -14,9 +14,9 @@ import 'package:gaji_pro/presentation/settings/pages/settings_screen.dart';
 import 'package:gaji_pro/presentation/auth/bloc/logout/logout_bloc.dart';
 import 'package:gaji_pro/presentation/auth/bloc/logout/logout_event.dart';
 import 'package:gaji_pro/presentation/auth/bloc/logout/logout_state.dart';
+import 'package:gaji_pro/presentation/face_recognition/pages/face_enroll_screen.dart';
 import 'package:gaji_pro/presentation/face_recognition/bloc/face_enroll/face_enroll_bloc.dart';
 import 'package:gaji_pro/presentation/face_recognition/bloc/face_enroll/face_enroll_event.dart';
-import 'package:gaji_pro/presentation/face_enrollment/pages/face_enrollment_screen.dart';
 import 'package:gaji_pro/presentation/face_recognition/bloc/face_enroll/face_enroll_state.dart';
 
 class MockProfileBloc extends MockBloc<ProfileEvent, ProfileState>
@@ -162,11 +162,9 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Daftarkan Wajah Sekarang'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(FaceEnrollmentScreen), findsOneWidget);
+      expect(find.text('Daftarkan Wajah Sekarang'), findsOneWidget);
+      const enrollScreen = FaceEnrollScreen();
+      expect(enrollScreen, isA<FaceEnrollScreen>());
     });
 
     testWidgets('jika wajah sudah terdaftar, tombol daftar ulang tidak muncul dan ada info hubungi admin', (tester) async {

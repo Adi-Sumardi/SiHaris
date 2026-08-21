@@ -18,7 +18,7 @@ import '../../settings/pages/about_screen.dart';
 import '../../settings/pages/faq_screen.dart';
 import 'package:http/http.dart' as http;
 import '../../../data/datasources/face_recognition_datasource.dart';
-import '../../face_enrollment/pages/face_enrollment_screen.dart';
+import '../../face_recognition/pages/face_enroll_screen.dart';
 import 'edit_profile_screen.dart';
 
 /// Profile Screen - Dynamic from API
@@ -469,7 +469,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const FaceEnrollmentScreen(),
+                      builder: (_) => const FaceEnrollScreen(),
                     ),
                   ).then((_) {
                     if (context.mounted) {

@@ -49,12 +49,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return _buildError(context, state.message);
           }
           if (state is ProfileLoaded) {
-            return SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildHeader(context, state.user, state.company),
-                  _buildProfileContent(context, state.user, state.company),
-                ],
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<ProfileBloc>().add(RefreshProfile());
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildHeader(context, state.user, state.company),
+                    _buildProfileContent(context, state.user, state.company),
+                  ],
+                ),
               ),
             );
           }

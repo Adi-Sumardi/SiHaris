@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\FaceResetRequest;
 use App\Services\FaceRecognitionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,96 @@ class FaceRecognitionController extends Controller
             ->orderBy('last_name')
             ->paginate(15);
 
-        return view('face-recognition.index', compact('employees'));
+        $pendingRequestsCount = FaceResetRequest::where('company_id', $tenant->id)
+            ->where('status', 'pending')
+            ->count();
+
+        return view('face-recognition.index', compact('employees', 'pendingRequestsCount'));
+    }
+
+    /**
+     * Display list of face reset/re-enrollment requests.
+     */
+    public function requests(Request $request): View
+    {
+        $tenant = app('tenant');
+
+        $query = FaceResetRequest::with(['employee.department', 'employee.position', 'reviewer'])
+            ->where('company_id', $tenant->id);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $requests = $query->latest()->paginate(15)->withQueryString();
+
+        $pendingCount = FaceResetRequest::where('company_id', $tenant->id)->where('status', 'pending')->count();
+        $approvedCount = FaceResetRequest::where('company_id', $tenant->id)->where('status', 'approved')->count();
+        $rejectedCount = FaceResetRequest::where('company_id', $tenant->id)->where('status', 'rejected')->count();
+
+        return view('face-recognition.requests', compact('requests', 'pendingCount', 'approvedCount', 'rejectedCount'));
+    }
+
+    /**
+     * Approve a face reset request.
+     */
+    public function approveRequest(FaceResetRequest $faceResetRequest): RedirectResponse
+    {
+        $tenant = app('tenant');
+
+        if ($faceResetRequest->company_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $employee = $faceResetRequest->employee;
+
+        // Reset/delete existing face embeddings for this employee
+        $embeddings = $employee->faceEmbedding()->get();
+        foreach ($embeddings as $embedding) {
+            if ($embedding->enrollment_photo) {
+                Storage::disk('public')->delete($embedding->enrollment_photo);
+            }
+            $embedding->forceDelete();
+        }
+
+        $faceResetRequest->update([
+            'status' => 'approved',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('face-recognition.requests')
+            ->with('success', "Permintaan pendaftaran ulang wajah untuk {$employee->full_name} berhasil disetujui. Karyawan dapat mendaftarkan wajahnya kembali di aplikasi mobile.");
+    }
+
+    /**
+     * Reject a face reset request.
+     */
+    public function rejectRequest(Request $request, FaceResetRequest $faceResetRequest): RedirectResponse
+    {
+        $tenant = app('tenant');
+
+        if ($faceResetRequest->company_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $request->validate([
+            'admin_notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $faceResetRequest->update([
+            'status' => 'rejected',
+            'admin_notes' => $request->admin_notes,
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        $employee = $faceResetRequest->employee;
+
+        return redirect()
+            ->route('face-recognition.requests')
+            ->with('success', "Permintaan pendaftaran ulang wajah untuk {$employee->full_name} telah ditolak.");
     }
 
     /**

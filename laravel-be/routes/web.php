@@ -301,6 +301,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Face Recognition Management
     Route::get('face-recognition', [FaceRecognitionController::class, 'index'])->name('face-recognition.index');
+    Route::get('face-recognition/requests', [FaceRecognitionController::class, 'requests'])->name('face-recognition.requests');
+    Route::post('face-recognition/requests/{faceResetRequest}/approve', [FaceRecognitionController::class, 'approveRequest'])->name('face-recognition.requests.approve');
+    Route::post('face-recognition/requests/{faceResetRequest}/reject', [FaceRecognitionController::class, 'rejectRequest'])->name('face-recognition.requests.reject');
     Route::get('face-recognition/{employee}', [FaceRecognitionController::class, 'show'])->name('face-recognition.show');
     Route::post('face-recognition/{employee}', [FaceRecognitionController::class, 'store'])->name('face-recognition.store');
     Route::delete('face-recognition/{employee}', [FaceRecognitionController::class, 'destroy'])->name('face-recognition.destroy');

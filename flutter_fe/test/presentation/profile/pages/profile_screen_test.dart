@@ -203,7 +203,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Mengerti'), findsOneWidget);
+      expect(find.text('Ajukan Reset Wajah'), findsOneWidget);
+      expect(find.text('Tutup'), findsOneWidget);
     });
   });
 }

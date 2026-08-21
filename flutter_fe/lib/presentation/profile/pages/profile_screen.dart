@@ -16,6 +16,8 @@ import '../../auth/pages/change_password_screen.dart';
 import '../../settings/pages/settings_screen.dart';
 import '../../settings/pages/about_screen.dart';
 import '../../settings/pages/faq_screen.dart';
+import 'package:http/http.dart' as http;
+import '../../../data/datasources/face_recognition_datasource.dart';
 import '../../face_enrollment/pages/face_enrollment_screen.dart';
 import 'edit_profile_screen.dart';
 
@@ -552,9 +554,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Mengerti', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: const Text('Tutup', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showSubmitResetRequestModal(context);
+            },
+            icon: const Icon(Icons.send_rounded, size: 16),
+            label: const Text('Ajukan Reset Wajah'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary600,
+              foregroundColor: Colors.white,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSubmitResetRequestModal(BuildContext context) {
+    final reasonController = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalCtx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 20,
+              left: 20,
+              right: 20,
+              top: 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Ajukan Reset Pendaftaran Wajah',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(modalCtx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Sebutkan alasan permohonan reset data wajah Anda (misal: kacamata baru, kamera berganti, atau kendala scan absensi).',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Tuliskan alasan pengajuan Anda di sini...',
+                    hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            setModalState(() => isSubmitting = true);
+                            final ds = FaceRecognitionRemoteDatasource(
+                              client: http.Client(),
+                              authLocalDatasource: AuthLocalDatasource(),
+                            );
+                            final result = await ds.submitResetRequest(
+                              reason: reasonController.text.trim(),
+                            );
+                            if (modalCtx.mounted) {
+                              Navigator.pop(modalCtx);
+                            }
+                            result.fold(
+                              (error) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(error), backgroundColor: AppColors.danger),
+                                  );
+                                }
+                              },
+                              (message) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(message), backgroundColor: AppColors.success),
+                                  );
+                                }
+                              },
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Kirim Pengajuan ke Administrator', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

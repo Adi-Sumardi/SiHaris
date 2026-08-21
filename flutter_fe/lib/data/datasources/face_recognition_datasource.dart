@@ -15,6 +15,8 @@ abstract class FaceRecognitionDatasource {
   Future<Either<String, FaceEnrollResponseModel>> enroll(FaceEnrollRequestModel request);
   Future<Either<String, FaceVerifyResponseModel>> verify(FaceVerifyRequestModel request);
   Future<Either<String, bool>> deleteEnrollment();
+  Future<Either<String, String>> submitResetRequest({String? reason});
+  Future<Either<String, Map<String, dynamic>>> getResetRequestStatus();
 }
 
 class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
@@ -145,6 +147,55 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
         return const Left('Sesi Anda telah berakhir');
       } else {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
+        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+      }
+    } catch (e) {
+      return Left('Terjadi kesalahan: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<Either<String, String>> submitResetRequest({String? reason}) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await client.post(
+        Uri.parse(Variables.faceRecognitionResetRequest),
+        headers: headers,
+        body: jsonEncode({'reason': reason}),
+      );
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return Right(json['message'] as String? ??
+            'Permintaan pendaftaran ulang wajah berhasil dikirim.');
+      } else if (response.statusCode == 401) {
+        SessionService.instance.handleSessionExpired();
+        return const Left('Sesi Anda telah berakhir');
+      } else {
+        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+      }
+    } catch (e) {
+      return Left('Terjadi kesalahan: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<Either<String, Map<String, dynamic>>> getResetRequestStatus() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await client.get(
+        Uri.parse(Variables.faceRecognitionResetRequestStatus),
+        headers: headers,
+      );
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200) {
+        final data = json['data'] as Map<String, dynamic>? ?? json;
+        return Right(data);
+      } else if (response.statusCode == 401) {
+        SessionService.instance.handleSessionExpired();
+        return const Left('Sesi Anda telah berakhir');
+      } else {
         return Left(json['message'] as String? ?? 'Terjadi kesalahan');
       }
     } catch (e) {

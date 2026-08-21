@@ -393,4 +393,79 @@ class FaceRecognitionController extends Controller
             'message' => 'Face enrollment removed successfully.',
         ]);
     }
+
+    /**
+     * Ajukan permintaan pendaftaran ulang/reset wajah.
+     */
+    public function submitResetRequest(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $employee = $user->employee;
+
+        if (! $employee) {
+            return response()->json([
+                'message' => 'Employee not found for this user.',
+            ], 404);
+        }
+
+        $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        // Cek apakah sudah ada permohonan pending
+        $existingPending = \App\Models\FaceResetRequest::where('employee_id', $employee->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existingPending) {
+            return response()->json([
+                'message' => 'Permohonan pendaftaran ulang wajah Anda sebelumnya masih menunggu konfirmasi dari Administrator.',
+                'data' => $existingPending,
+            ], 422);
+        }
+
+        $resetRequest = \App\Models\FaceResetRequest::create([
+            'company_id' => $user->company_id,
+            'employee_id' => $employee->id,
+            'reason' => $request->reason,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'Permohonan pendaftaran ulang wajah berhasil dikirim ke Administrator.',
+            'data' => $resetRequest,
+        ], 201);
+    }
+
+    /**
+     * Cek status permintaan reset wajah karyawan.
+     */
+    public function getResetRequestStatus(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $employee = $user->employee;
+
+        if (! $employee) {
+            return response()->json([
+                'message' => 'Employee not found for this user.',
+            ], 404);
+        }
+
+        $pendingRequest = \App\Models\FaceResetRequest::where('employee_id', $employee->id)
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        $latestRequest = \App\Models\FaceResetRequest::where('employee_id', $employee->id)
+            ->latest()
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'has_pending_request' => $pendingRequest !== null,
+                'pending_request' => $pendingRequest,
+                'latest_request' => $latestRequest,
+            ],
+        ]);
+    }
 }

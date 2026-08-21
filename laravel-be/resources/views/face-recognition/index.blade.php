@@ -12,6 +12,19 @@
             <h1 class="text-2xl font-bold text-secondary-900">Pendaftaran Wajah</h1>
             <p class="text-secondary-500 mt-1">Kelola pendaftaran wajah karyawan untuk presensi.</p>
         </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('face-recognition.requests') }}" class="btn btn-outline relative">
+                <svg class="w-4 h-4 mr-1.5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                Permintaan Reset Wajah
+                @if(isset($pendingRequestsCount) && $pendingRequestsCount > 0)
+                    <span class="ml-1.5 px-2 py-0.5 text-xs font-bold bg-danger-500 text-white rounded-full">
+                        {{ $pendingRequestsCount }}
+                    </span>
+                @endif
+            </a>
+        </div>
     </div>
 @endsection
 

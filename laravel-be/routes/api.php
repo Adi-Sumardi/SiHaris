@@ -187,6 +187,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Face Recognition
         Route::prefix('face-recognition')->name('face-recognition.')->group(function () {
             Route::get('/status', [FaceRecognitionController::class, 'status'])->name('status');
+            Route::post('/reset-request', [FaceRecognitionController::class, 'submitResetRequest'])->name('reset-request');
+            Route::get('/reset-request/status', [FaceRecognitionController::class, 'getResetRequestStatus'])->name('reset-request.status');
             // Throttled to block brute-forcing: verify returns the raw similarity
             // score, which without a limit could be used to iteratively craft
             // descriptors that pass another employee's stored face embedding.

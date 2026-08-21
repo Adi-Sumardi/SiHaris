@@ -222,6 +222,11 @@ class Employee extends Model
         return $this->hasMany(LeaveRequest::class);
     }
 
+    public function faceResetRequests()
+    {
+        return $this->hasMany(FaceResetRequest::class);
+    }
+
     public function currentSalary()
     {
         return $this->hasOne(EmployeeSalary::class)

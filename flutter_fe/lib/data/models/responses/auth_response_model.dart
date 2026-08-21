@@ -126,6 +126,8 @@ class UserModel {
 class EmployeeModel {
   final int id;
   final String employeeId;
+  final String? pin;
+  final String? nik;
   final String fullName;
   final String? firstName;
   final String? lastName;
@@ -142,6 +144,8 @@ class EmployeeModel {
   EmployeeModel({
     required this.id,
     required this.employeeId,
+    this.pin,
+    this.nik,
     required this.fullName,
     this.firstName,
     this.lastName,
@@ -160,6 +164,8 @@ class EmployeeModel {
     return EmployeeModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
       employeeId: json['employee_id']?.toString() ?? '',
+      pin: json['pin']?.toString(),
+      nik: json['nik']?.toString(),
       fullName: json['full_name']?.toString() ?? '',
       firstName: json['first_name']?.toString(),
       lastName: json['last_name']?.toString(),
@@ -186,6 +192,8 @@ class EmployeeModel {
     return {
       'id': id,
       'employee_id': employeeId,
+      'pin': pin,
+      'nik': nik,
       'full_name': fullName,
       'first_name': firstName,
       'last_name': lastName,

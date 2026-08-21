@@ -56,6 +56,8 @@
 ## 4. Mobile App (Flutter)
 - **OTP Screen**: `lib/presentation/auth/pages/otp_verification_screen.dart` (6-digit PIN input, 60s timer).
 - **Login Screen**: `lib/presentation/auth/pages/login_screen.dart` (pilihan login OTP via WA / Email).
+- **Profile & Biometrics**: `lib/presentation/profile/pages/profile_screen.dart` (menampilkan PIN Mesin Fingerprint dengan tombol copy, NIK KTP, serta status dan tombol aksi Pendaftaran Wajah).
+- **Face Enrollment Screen**: `lib/presentation/face_enrollment/pages/face_enrollment_screen.dart` (pendaftaran biometrik wajah 3 langkah: Depan, Kiri, Kanan).
 - **Environment Base URL**: `https://siharis.yapinet.id`
 - **Release Keystore**: `flutter_fe/android/app/siharis.jks`
   - **Alias**: `siharis`

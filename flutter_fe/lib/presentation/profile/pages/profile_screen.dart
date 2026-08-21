@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/components/widgets.dart';
@@ -15,6 +16,7 @@ import '../../auth/pages/change_password_screen.dart';
 import '../../settings/pages/settings_screen.dart';
 import '../../settings/pages/about_screen.dart';
 import '../../settings/pages/faq_screen.dart';
+import '../../face_enrollment/pages/face_enrollment_screen.dart';
 import 'edit_profile_screen.dart';
 
 /// Profile Screen - Dynamic from API
@@ -240,7 +242,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : '-',
                       'ID Karyawan'),
                   _buildDivider(),
-                  _buildStatItem(employee?.department ?? '-', 'Departemen'),
+                  _buildStatItem(
+                      employee?.pin?.isNotEmpty == true
+                          ? employee!.pin!
+                          : '-',
+                      'PIN Mesin'),
                   _buildDivider(),
                   _buildStatItem(
                     employee?.faceEnrolled == true ? 'Terdaftar' : 'Belum',
@@ -304,6 +310,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (employee?.phone != null)
               _buildInfoRow(
                   Icons.phone_outlined, 'Telepon', employee!.phone!),
+            if (employee?.nik != null && employee!.nik!.isNotEmpty)
+              _buildInfoRow(
+                  Icons.credit_card_outlined, 'NIK (No. KTP)', employee.nik!,
+                  copyable: true),
           ]),
           const SizedBox(height: 20),
           _buildSectionTitle('Informasi Pekerjaan'),
@@ -314,7 +324,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Icons.apartment_outlined, 'Perusahaan', company.name),
             if (employee != null) ...[
               _buildInfoRow(
-                  Icons.badge_outlined, 'ID Karyawan', employee.employeeId),
+                  Icons.badge_outlined, 'ID Karyawan', employee.employeeId,
+                  copyable: true),
+              _buildInfoRow(
+                  Icons.fingerprint_rounded,
+                  'PIN Mesin Fingerprint',
+                  employee.pin?.isNotEmpty == true ? employee.pin! : '-',
+                  copyable: true),
               if (employee.department != null)
                 _buildInfoRow(Icons.business_outlined, 'Departemen',
                     employee.department!),
@@ -331,6 +347,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ]),
           const SizedBox(height: 20),
+          _buildSectionTitle('Keamanan & Biometrik'),
+          const SizedBox(height: 12),
+          _buildBiometricCard(context, employee),
+          const SizedBox(height: 20),
           _buildSectionTitle('Dokumen Pajak'),
           const SizedBox(height: 12),
           _buildTaxDocumentCard(context),
@@ -341,6 +361,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 24),
           _buildLogoutButton(context),
           const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBiometricCard(BuildContext context, EmployeeModel? employee) {
+    final isEnrolled = employee?.faceEnrolled == true;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isEnrolled ? AppColors.successLight : AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.face_retouching_natural_rounded,
+                  color: isEnrolled ? AppColors.success : AppColors.warningDark,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pendaftaran Wajah',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isEnrolled
+                          ? 'Wajah telah terdaftar untuk absensi'
+                          : 'Daftarkan wajah untuk absensi mobile',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isEnrolled
+                            ? AppColors.successDark
+                            : AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isEnrolled ? AppColors.successLight : AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isEnrolled ? AppColors.success : AppColors.warning,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isEnrolled ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                      size: 12,
+                      color: isEnrolled ? AppColors.success : AppColors.warningDark,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isEnrolled ? 'Terdaftar' : 'Belum',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isEnrolled ? AppColors.successDark : AppColors.warningDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FaceEnrollmentScreen(),
+                  ),
+                ).then((_) {
+                  if (context.mounted) {
+                    context.read<ProfileBloc>().add(GetProfile());
+                  }
+                });
+              },
+              icon: Icon(
+                isEnrolled ? Icons.refresh_rounded : Icons.camera_alt_rounded,
+                size: 18,
+              ),
+              label: Text(
+                isEnrolled ? 'Daftarkan Ulang Wajah' : 'Daftarkan Wajah Sekarang',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isEnrolled ? AppColors.primary50 : AppColors.primary600,
+                foregroundColor: isEnrolled ? AppColors.primary700 : Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: isEnrolled
+                      ? const BorderSide(color: AppColors.primary200)
+                      : BorderSide.none,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -370,53 +519,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value,
-      {bool isLast = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(
-                    color: AppColors.border.withValues(alpha: 0.5))),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.primary50,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: AppColors.primary600, size: 18),
+      {bool isLast = false, bool copyable = false}) {
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            border: isLast
+                ? null
+                : Border(
+                    bottom: BorderSide(
+                        color: AppColors.border.withValues(alpha: 0.5))),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary50,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
+                child: Icon(icon, color: AppColors.primary600, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              if (copyable && value != '-' && value.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.primary600),
+                  tooltip: 'Salin $label',
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: value));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('$label berhasil disalin ($value)'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

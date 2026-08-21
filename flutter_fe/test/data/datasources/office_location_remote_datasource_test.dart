@@ -25,6 +25,7 @@ void main() {
       localDatasource: mockLocalDatasource,
     );
     when(() => mockLocalDatasource.getAssignedOffices()).thenAnswer((_) async => []);
+    when(() => mockLocalDatasource.saveAssignedOffices(any())).thenAnswer((_) async {});
   });
 
   const testToken = 'test_token_123';

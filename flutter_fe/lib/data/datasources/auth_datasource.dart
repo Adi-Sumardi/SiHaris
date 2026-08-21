@@ -35,4 +35,5 @@ abstract class AuthLocalDatasourceBase {
   Future<void> removeAuthData();
   Future<Map<String, dynamic>?> getUserData();
   Future<List<OfficeLocationModel>> getAssignedOffices();
+  Future<void> saveAssignedOffices(List<OfficeLocationModel> offices);
 }

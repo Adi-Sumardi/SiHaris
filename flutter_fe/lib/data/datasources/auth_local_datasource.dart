@@ -92,7 +92,16 @@ class AuthLocalDatasource implements AuthLocalDatasourceBase {
     await _secure.removeFaceEmbedding();
   }
 
+  /// Save assigned offices to local storage
+  @override
+  Future<void> saveAssignedOffices(List<OfficeLocationModel> offices) async {
+    final prefs = await SharedPreferences.getInstance();
+    final officesJson = offices.map((o) => o.toJson()).toList();
+    await prefs.setString(_assignedOfficesKey, jsonEncode(officesJson));
+  }
+
   /// Get assigned offices from local storage
+  @override
   Future<List<OfficeLocationModel>> getAssignedOffices() async {
     final prefs = await SharedPreferences.getInstance();
     final officesJson = prefs.getString(_assignedOfficesKey);

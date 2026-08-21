@@ -40,8 +40,9 @@
 ## 3. ADMS Fingerprint & Face Attendance
 - **Machine Registration**: Tidak perlu input mesin finger manual di Web karena data diambil otomatis via API ADMS Cloud (`ADMS-FACE-APP`).
 - **Database Mapping**:
-  - `employees.employee_id`: NIP / ID Karyawan internal kepegawaian.
-  - `employees.pin`: PIN khusus biometrik mesin fingerprint / ADMS Cloud (mis. `1032`).
+  - `employees.employee_id`: NIP / ID Karyawan internal kepegawaian perusahaan (mis. `EMP001`, `KRY-202601`).
+  - `employees.pin`: PIN khusus biometrik mesin fingerprint / face recognition / ADMS Cloud (mis. `101`, `1032`).
+  - `employees.nik` & `employees.identity_number`: NIK (Nomor Induk Kependudukan) 16-digit KTP Indonesia.
   - `fingerprint_user_mappings`: Pemetaan relasi per device (`fingerprint_device_id`, `employee_id`, `device_user_pin`).
 - **Sync ADMS & Hybrid Attendance**:
   - `SyncAdmsEmployeesJob`: Sinkronisasi otomatis mencocokkan pegawai via `pin` -> `employee_id` -> `email` -> `name`, dan auto-populate `employees.pin` jika kosong.
@@ -55,8 +56,46 @@
 ## 4. Mobile App (Flutter)
 - **OTP Screen**: `lib/presentation/auth/pages/otp_verification_screen.dart` (6-digit PIN input, 60s timer).
 - **Login Screen**: `lib/presentation/auth/pages/login_screen.dart` (pilihan login OTP via WA / Email).
+- **Profile & Biometrics**: `lib/presentation/profile/pages/profile_screen.dart` (menampilkan PIN Mesin Fingerprint dengan tombol copy, NIK KTP, status biometrik, pull-to-refresh untuk sinkronisasi instan, modal pengajuan reset wajah, serta tombol pendaftaran wajah).
+- **Live Face Enrollment**: `lib/presentation/face_recognition/pages/face_enroll_screen.dart` (live front camera feed dengan Google ML Kit Face Detection, real-time facial mesh/contour, MobileFaceNet TFLite 192-dimensional embedding extraction, dan auto-sync ke server).
+- **Office Location Sync**: `lib/data/datasources/office_location_remote_datasource.dart` selalu mengambil penugasan kantor terbaru dari `GET /api/v1/office-locations/assigned` dan menyimpan cache di `AuthLocalDatasource.saveAssignedOffices()` agar pemindahan lokasi di web admin langsung terrefleksi di layar absensi tanpa harus login ulang.
 - **Environment Base URL**: `https://siharis.yapinet.id`
 - **Release Keystore**: `flutter_fe/android/app/siharis.jks`
   - **Alias**: `siharis`
   - **Password**: `siharis2026.`
   - **Package ID**: `id.yapinet.siharis`
+
+---
+
+## 5. Face Recognition & Face Reset Approval Workflow
+- **Kebijakan Pendaftaran Wajah 1x**: Pendaftaran wajah karyawan dibatasi hanya dapat dilakukan 1 kali untuk integritas dan anti-fraud absensi biometrik.
+- **Alur Permohonan Reset Wajah (Employee Request)**:
+  - Karyawan yang sudah terdaftar wajahnya dapat mengajukan permohonan reset via aplikasi mobile (`POST /api/v1/face-recognition/reset-request`) dengan menyertakan alasan.
+- **Halaman Persetujuan Administrator (Web Dashboard)**:
+  - Halaman khusus `/face-recognition/requests` untuk meninjau status permohonan (`pending`, `approved`, `rejected`).
+  - **Setujui (Approve)**: Menghapus data embedding biometrik lama karyawan di database & media storage (`EmployeeFaceEmbedding`), mengubah status `face_enrolled` menjadi `false`, sehingga karyawan dapat langsung mendaftarkan wajah baru di aplikasi HP.
+  - **Tolak (Reject)**: Menolak pengajuan dengan catatan alasan penolakan dari Administrator.
+- **Real-time Synchronization**: Layar profil aplikasi mobile dilengkapi *pull-to-refresh* (swipe refresh) agar status langsung ter-update setelah persetujuan admin tanpa perlu login ulang.
+
+---
+
+## 6. Employee Bulk Import & Database Rollback
+- **Struktur Identitas Karyawan**:
+  - **ID Karyawan** (`employee_id`): ID unik pegawai/karyawan di perusahaan.
+  - **PIN** (`pin`): PIN absensi mesin fingerprint / face / ADMS.
+  - **NIK (No KTP)** (`nik` / `identity_number`): 16 digit Nomor Induk Kependudukan.
+- **Template Download**: `EmployeeTemplateExport` (`GET /imports/employees/template`)
+  - Kolom lengkap mencakup: `ID Karyawan`, `PIN`, `Nama Depan`, `Nama Belakang`, `Email`, `Telepon`, `Jenis Kelamin`, `Tanggal Lahir`, `Status Pernikahan`, `Agama`, `Golongan Darah`, `NIK (No KTP)`, `Alamat KTP`, `Alamat`, `Kota`, `Provinsi`, `Kode Pos`, `Kode Departemen`, `Kode Jabatan`, `Kode Jadwal`, `NIK Manajer`, `Kode Lokasi Kantor`, `Tanggal Masuk`, `Status Karyawan`, `Tanggal Mulai Kontrak`, `Tanggal Selesai Kontrak`, `Gaji Pokok`, `Nama Bank`, `Nomor Rekening`, `Nama Rekening`, `NPWP`, `Status Pajak`, `BPJS Kesehatan`, `BPJS Ketenagakerjaan`, `Nama Kontak Darurat`, `Telepon Kontak Darurat`, `Hubungan Kontak Darurat`, `Aktif`.
+- **Import Handler**: `EmployeeImport` & `EmployeeImportController`
+  - Memisahkan resolusi field `ID Karyawan`, `PIN`, dan `NIK (No KTP)` secara mandiri.
+  - Pencarian relasi **Departemen**, **Jabatan**, **Jadwal Kerja**, dan **Lokasi Kantor** bersifat *case-insensitive* dan mendukung pencarian berdasarkan **Kode** maupun **Nama**.
+  - Mendukung resolusi Atasan Langsung (`manager_id`) via NIK dan penugasan lokasi kantor (`office_locations`).
+  - Sanitasi tipe data otomatis untuk cell numerik dari Excel (NIK, KTP, Telepon) tanpa gagal validasi `string`.
+  - Eksekusi berjalan dalam `DB::transaction` dengan cache tracking status real-time untuk Alpine.js.
+
+---
+
+## 7. National Holidays Generation ("Generate Nasional")
+- **Konfirmasi Modal**: `resources/views/components/confirm-dialog.blade.php` mendukung injeksi parameter dinamis dari objek `formData` ke dalam form submit POST saat tombol konfirmasi ditekan.
+- **Controller Backend**: `HolidayController::generate()` memvalidasi field `year` secara nullable dengan fallback otomatis ke tahun berjalan (`now()->year`).
+- **Data Generator**: Menghasilkan hari libur nasional Indonesia, hari raya keagamaan (Islam, Kristen via algoritma Computus/Easter, Hindu, Buddha, Imlek), serta Cuti Bersama sesuai SKB 3 Menteri.

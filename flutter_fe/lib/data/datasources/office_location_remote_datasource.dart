@@ -53,38 +53,42 @@ class OfficeLocationRemoteDatasource {
   }
 
   Future<Either<String, List<OfficeLocationModel>>> getAssignedOffices() async {
-    // First try to get from local storage (saved during login)
+    // 1. Try to fetch the latest assigned offices from API first
+    try {
+      final token = await _localDatasource.getToken();
+      if (token != null) {
+        final response = await _client.get(
+          Uri.parse(Variables.officeLocationsAssigned),
+          headers: _getHeaders(token),
+        );
+
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body) as Map<String, dynamic>;
+          final data = body['data'] as List<dynamic>? ?? [];
+          final offices = data
+              .map((e) => OfficeLocationModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+
+          if (offices.isNotEmpty) {
+            await _localDatasource.saveAssignedOffices(offices);
+          }
+          return Right(offices);
+        } else if (response.statusCode == 401) {
+          SessionService.instance.handleSessionExpired();
+          return const Left('Sesi Anda telah berakhir');
+        }
+      }
+    } catch (_) {
+      // Network error / offline, will fallback to local storage below
+    }
+
+    // 2. Fallback to local storage (saved during login/previous fetch)
     final localOffices = await _localDatasource.getAssignedOffices();
     if (localOffices.isNotEmpty) {
       return Right(localOffices);
     }
 
-    // If no local data, fetch from API
-    try {
-      final token = await _localDatasource.getToken();
-      if (token == null) return const Left('Anda belum login');
-
-      final response = await _client.get(
-        Uri.parse(Variables.officeLocationsAssigned),
-        headers: _getHeaders(token),
-      );
-
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-
-      if (response.statusCode == 200) {
-        final data = body['data'] as List<dynamic>? ?? [];
-        final offices = data
-            .map((e) => OfficeLocationModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-        return Right(offices);
-      } else if (response.statusCode == 401) {
-        SessionService.instance.handleSessionExpired();
-        return const Left('Sesi Anda telah berakhir');
-      }
-      return Left(body['message'] ?? 'Terjadi kesalahan');
-    } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
-    }
+    return const Left('Lokasi kantor tidak ditemukan');
   }
 
   Future<Either<String, OfficeLocationModel>> getOfficeLocationDetail(

@@ -58,6 +58,7 @@
 - **Login Screen**: `lib/presentation/auth/pages/login_screen.dart` (pilihan login OTP via WA / Email).
 - **Profile & Biometrics**: `lib/presentation/profile/pages/profile_screen.dart` (menampilkan PIN Mesin Fingerprint dengan tombol copy, NIK KTP, status biometrik, pull-to-refresh untuk sinkronisasi instan, modal pengajuan reset wajah, serta tombol pendaftaran wajah).
 - **Live Face Enrollment**: `lib/presentation/face_recognition/pages/face_enroll_screen.dart` (live front camera feed dengan Google ML Kit Face Detection, real-time facial mesh/contour, MobileFaceNet TFLite 192-dimensional embedding extraction, dan auto-sync ke server).
+- **Office Location Sync**: `lib/data/datasources/office_location_remote_datasource.dart` selalu mengambil penugasan kantor terbaru dari `GET /api/v1/office-locations/assigned` dan menyimpan cache di `AuthLocalDatasource.saveAssignedOffices()` agar pemindahan lokasi di web admin langsung terrefleksi di layar absensi tanpa harus login ulang.
 - **Environment Base URL**: `https://siharis.yapinet.id`
 - **Release Keystore**: `flutter_fe/android/app/siharis.jks`
   - **Alias**: `siharis`
@@ -78,7 +79,7 @@
 
 ---
 
-## 6. Employee Bulk Import & Master Data Sync
+## 6. Employee Bulk Import & Database Rollback
 - **Struktur Identitas Karyawan**:
   - **ID Karyawan** (`employee_id`): ID unik pegawai/karyawan di perusahaan.
   - **PIN** (`pin`): PIN absensi mesin fingerprint / face / ADMS.
@@ -92,3 +93,9 @@
   - Sanitasi tipe data otomatis untuk cell numerik dari Excel (NIK, KTP, Telepon) tanpa gagal validasi `string`.
   - Eksekusi berjalan dalam `DB::transaction` dengan cache tracking status real-time untuk Alpine.js.
 
+---
+
+## 7. National Holidays Generation ("Generate Nasional")
+- **Konfirmasi Modal**: `resources/views/components/confirm-dialog.blade.php` mendukung injeksi parameter dinamis dari objek `formData` ke dalam form submit POST saat tombol konfirmasi ditekan.
+- **Controller Backend**: `HolidayController::generate()` memvalidasi field `year` secara nullable dengan fallback otomatis ke tahun berjalan (`now()->year`).
+- **Data Generator**: Menghasilkan hari libur nasional Indonesia, hari raya keagamaan (Islam, Kristen via algoritma Computus/Easter, Hindu, Buddha, Imlek), serta Cuti Bersama sesuai SKB 3 Menteri.

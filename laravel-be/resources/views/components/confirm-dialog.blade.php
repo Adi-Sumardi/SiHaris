@@ -16,6 +16,7 @@
         type: '{{ $type }}',
         formAction: null,
         method: 'DELETE',
+        formData: {},
 
         show(options = {}) {
             this.title = options.title || '{{ $title }}';
@@ -24,6 +25,7 @@
             this.type = options.type || '{{ $type }}';
             this.formAction = options.formAction || null;
             this.method = options.method || 'DELETE';
+            this.formData = options.formData || {};
             this.open = true;
         },
 
@@ -35,6 +37,23 @@
             if (this.formAction) {
                 this.$refs.confirmForm.action = this.formAction;
                 this.$refs.methodInput.value = this.method;
+
+                // Clear previous dynamic inputs
+                const existingDynamic = this.$refs.confirmForm.querySelectorAll('.dynamic-form-data');
+                existingDynamic.forEach(el => el.remove());
+
+                // Append formData fields as hidden inputs
+                if (this.formData && typeof this.formData === 'object') {
+                    for (const [key, value] of Object.entries(this.formData)) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = value;
+                        input.className = 'dynamic-form-data';
+                        this.$refs.confirmForm.appendChild(input);
+                    }
+                }
+
                 this.$refs.confirmForm.submit();
             } else {
                 this.close();

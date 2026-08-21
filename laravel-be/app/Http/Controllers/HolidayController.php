@@ -189,11 +189,11 @@ class HolidayController extends Controller
     public function generate(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'year' => ['required', 'integer', 'min:2020', 'max:2100'],
+            'year' => ['nullable', 'integer', 'min:2020', 'max:2100'],
         ]);
 
         $companyId = auth()->user()->company_id;
-        $year = $validated['year'];
+        $year = (int) ($validated['year'] ?? $request->input('year') ?? now()->year);
 
         $holidays = $this->nationalHolidaysFor($year);
 

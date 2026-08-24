@@ -10,11 +10,13 @@ import '../../../core/config/device_camera_config.dart';
 import '../../../core/ml/recognizer.dart';
 import '../../../core/ml/recognition_embedding.dart';
 import '../../../core/constants/colors.dart';
+import '../widgets/face_detector_painter.dart';
 
 class CameraView extends StatefulWidget {
   const CameraView({
     super.key,
     required this.customPaint,
+    this.faceDetected = false,
     required this.onImage,
     this.onCameraFeedReady,
     this.onDetectorViewModeChanged,
@@ -24,6 +26,7 @@ class CameraView extends StatefulWidget {
   });
 
   final CustomPaint? customPaint;
+  final bool faceDetected;
   final Function(InputImage inputImage) onImage;
   final VoidCallback? onCameraFeedReady;
   final VoidCallback? onDetectorViewModeChanged;
@@ -146,6 +149,12 @@ class _CameraViewState extends State<CameraView> {
                           fit: StackFit.expand,
                           children: [
                             CameraPreview(_controller!, child: widget.customPaint),
+                            FaceGuideOverlay(
+                              faceDetected: widget.faceDetected,
+                              instruction: widget.faceDetected
+                                  ? 'Wajah terdeteksi — tekan tombol kamera'
+                                  : 'Posisikan wajah dalam lingkaran',
+                            ),
                           ],
                         ),
                       ),

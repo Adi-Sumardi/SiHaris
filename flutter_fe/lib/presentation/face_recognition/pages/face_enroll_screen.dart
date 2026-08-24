@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 
+import '../../../core/config/device_face_detector_config.dart';
 import '../../../core/ml/recognizer.dart';
 import '../../../core/ml/recognition_embedding.dart';
 import '../../../core/constants/colors.dart';
@@ -27,15 +29,8 @@ class FaceEnrollScreen extends StatefulWidget {
 }
 
 class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
-  final FaceDetector _faceDetector = FaceDetector(
-    options: FaceDetectorOptions(
-      performanceMode: FaceDetectorMode.accurate,
-      minFaceSize: 0.15,
-      enableContours: false,
-      enableLandmarks: false,
-      enableTracking: true,
-    ),
-  );
+  FaceDetector? _faceDetector;
+  DeviceFaceDetectorConfig? _detectorConfig;
 
   bool _canProcess = true;
   bool _isBusy = false;
@@ -46,6 +41,7 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
   CameraImage? frame;
   late Recognizer recognizer;
   bool register = false;
+  bool _faceDetected = false;
 
   List<Face>? _latestFaces;
   InputImage? _latestInputImage;
@@ -57,12 +53,66 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
   void initState() {
     super.initState();
     recognizer = Recognizer();
+    _initFaceDetector();
+  }
+
+  /// Build the FaceDetector using device-specific tuning so mid-range
+  /// chipsets (Snapdragon 6xx, MediaTek, Samsung Bengal, ColorOS 13,
+  /// MIUI 13, ...) that struggle with the strict default settings can
+  /// still detect a face. Mirrors the config already used by
+  /// FaceVerifyScreen for the attendance flow.
+  Future<void> _initFaceDetector() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+
+      if (Platform.isAndroid) {
+        final info = await deviceInfo.androidInfo;
+        _detectorConfig = DeviceFaceDetectorConfig.fromDeviceInfo(
+          brand: info.brand,
+          model: info.model,
+          board: info.board,
+          hardware: info.hardware,
+          sdkVersion: info.version.sdkInt,
+        );
+      } else {
+        final info = await deviceInfo.iosInfo;
+        _detectorConfig = DeviceFaceDetectorConfig.fromDeviceInfo(
+          brand: 'Apple',
+          model: info.model,
+          board: '',
+          hardware: '',
+          sdkVersion: 0,
+        );
+      }
+
+      if (kDebugMode) {
+        log(_detectorConfig!.toDebugString());
+      }
+    } catch (e) {
+      log('⚠️ Failed to resolve device face detector config: $e');
+      _detectorConfig = null;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _faceDetector = FaceDetector(
+        options: _detectorConfig?.options ??
+            FaceDetectorOptions(
+              performanceMode: FaceDetectorMode.accurate,
+              minFaceSize: 0.1,
+              enableContours: false,
+              enableLandmarks: false,
+              enableTracking: true,
+            ),
+      );
+    });
   }
 
   @override
   void dispose() {
     _canProcess = false;
-    _faceDetector.close();
+    _faceDetector?.close();
     super.dispose();
   }
 
@@ -380,6 +430,7 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
     return DetectorView(
       title: 'Face Detector',
       customPaint: _customPaint,
+      faceDetected: _faceDetected,
       onImage: _processImage,
       initialCameraLensDirection: _cameraLensDirection,
       onCameraLensDirectionChanged: (value) => _cameraLensDirection = value,
@@ -391,12 +442,14 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
     try {
       if (!_canProcess) return;
       if (_isBusy) return;
+      final detector = _faceDetector;
+      if (detector == null) return; // still resolving device-specific config
 
       _isBusy = true;
       _frameCount++;
 
       final stopwatch = Stopwatch()..start();
-      final faces = await _faceDetector.processImage(inputImage);
+      final faces = await detector.processImage(inputImage);
       stopwatch.stop();
 
       // Log detection result periodically
@@ -421,12 +474,15 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
           register = false;
         }
         _customPaint = null;
+        _faceDetected = false;
+        _latestFaces = null;
         _isBusy = false;
         if (mounted) setState(() {});
         return;
       }
 
       _faceDetectedCount++;
+      _faceDetected = true;
       _latestFaces = faces;
       _latestInputImage = inputImage;
 

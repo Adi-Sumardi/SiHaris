@@ -12,6 +12,7 @@ class DetectorView extends StatefulWidget {
     required this.title,
     this.customPaint,
     this.text,
+    this.faceDetected = false,
     this.initialDetectionMode = DetectorViewMode.liveFeed,
     required this.onImage,
     this.onCameraFeedReady,
@@ -24,6 +25,7 @@ class DetectorView extends StatefulWidget {
   final String title;
   final CustomPaint? customPaint;
   final String? text;
+  final bool faceDetected;
   final DetectorViewMode initialDetectionMode;
   final Function(InputImage inputImage) onImage;
   final Function()? onCameraFeedReady;
@@ -49,6 +51,7 @@ class _DetectorViewState extends State<DetectorView> {
   Widget build(BuildContext context) {
     return CameraView(
       customPaint: widget.customPaint,
+      faceDetected: widget.faceDetected,
       onImage: widget.onImage,
       onCameraFeedReady: widget.onCameraFeedReady,
       onDetectorViewModeChanged: _onDetectorViewModeChanged,

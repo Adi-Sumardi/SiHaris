@@ -64,6 +64,31 @@
   - **Alias**: `siharis`
   - **Password**: `siharis2026.`
   - **Package ID**: `id.yapinet.siharis`
+- **Download APK**: `https://siharis.yapinet.id/download/android`
+
+### ⚠️ Aturan Versioning Mobile App
+> **WAJIB**: Setiap kali ada perubahan kode pada `flutter_fe/` yang akan di-build ulang dan di-release ke production, **versi di `flutter_fe/pubspec.yaml` HARUS dinaikkan** agar APK yang tersedia di server tidak rancu dengan versi sebelumnya.
+
+**Format versi**: `MAJOR.MINOR.PATCH+BUILD`
+- **MAJOR**: Breaking change besar / redesign total
+- **MINOR**: Fitur baru (`1.1.0`, `1.2.0`, dst.)
+- **PATCH**: Bug fix / hotfix (`1.0.1`, `1.0.2`, dst.)
+- **BUILD**: Auto-increment setiap build (tidak perlu diubah manual)
+
+**Cara update versi**:
+```yaml
+# flutter_fe/pubspec.yaml
+version: 1.0.2+8  # <-- naikkan PATCH atau MINOR sesuai jenis perubahan
+```
+
+### 📱 Riwayat Versi Mobile App
+
+| Versi | Build | Tanggal | Perubahan |
+|-------|-------|---------|----------|
+| 1.0.0 | +1 | 2026-08 | Initial release |
+| 1.0.1 | +6 | 2026-08-24 | Fix pengumuman real-time, notifikasi push, face enroll photo base64 |
+| 1.0.1 | +7 | 2026-08-24 | Optimasi FaceDetector, instant capture shutter, perbaikan status biometrik |
+| **1.0.2** | **+8** | **2026-08-24** | **Fix tombol kamera tidak bisa diklik (CameraPreview IgnorePointer)** |
 
 ---
 
@@ -170,10 +195,4 @@
   - Input Live Search karyawan (debounced 300ms).
   - Export Excel & PDF memfilter karyawan sesuai query pencarian.
   - Layout PDF berorientasi **A4 Landscape**.
-
-
-
-
-
-
 

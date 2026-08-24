@@ -34,6 +34,19 @@ class AttendanceReportController extends Controller
             $query->where('employee_id', $request->employee_id);
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
         $attendances = $query->orderByDesc('date')->get();
 
         $summary = $this->getSummary($attendances);
@@ -67,6 +80,19 @@ class AttendanceReportController extends Controller
             });
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
         $attendances = $query->orderBy('clock_in')->get();
 
         // Get all active employees for comparison
@@ -96,13 +122,32 @@ class AttendanceReportController extends Controller
         $startDate = $request->get('start_date', $companyNow->copy()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->get('end_date', $companyNow->copy()->endOfMonth()->format('Y-m-d'));
 
-        $lateAttendances = Attendance::with(['employee.department'])
+        $query = Attendance::with(['employee.department'])
             ->where('company_id', $companyId)
             ->whereBetween('date', [$startDate, $endDate])
             ->whereIn('clock_in_status', ['late', 'very_late'])
-            ->where('late_minutes', '>', 0)
-            ->orderByDesc('late_minutes')
-            ->get();
+            ->where('late_minutes', '>', 0);
+
+        if ($request->filled('department_id')) {
+            $query->whereHas('employee', function ($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
+        $lateAttendances = $query->orderByDesc('late_minutes')->get();
 
         // Group by employee
         $employeeLateStats = $lateAttendances->groupBy('employee_id')->map(function ($attendances) {
@@ -145,11 +190,29 @@ class AttendanceReportController extends Controller
             });
         }
 
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
         $attendances = $query->orderByDesc('date')->get();
 
         if ($format === 'pdf') {
             $company = auth()->user()->company;
-            $pdf = Pdf::loadView('reports.attendance.pdf', compact('attendances', 'company', 'startDate', 'endDate'));
+            $pdf = Pdf::loadView('reports.attendance.pdf', compact('attendances', 'company', 'startDate', 'endDate'))
+                ->setPaper('a4', 'landscape');
 
             return $pdf->download('laporan-kehadiran-'.$startDate.'-'.$endDate.'.pdf');
         }

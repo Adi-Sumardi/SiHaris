@@ -1,163 +1,261 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="utf-8">
-    <title>Laporan Cuti</title>
+    <title>Laporan Cuti Karyawan</title>
     <style>
+        @page {
+            size: a4 landscape;
+            margin: 12mm 15mm 15mm 15mm;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #333;
+            font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif;
+            font-size: 9px;
+            line-height: 1.3;
+            color: #1e293b;
         }
         .header {
-            text-align: center;
-            margin-bottom: 20px;
+            border-bottom: 2px solid #0284c7;
             padding-bottom: 10px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 12px;
         }
-        .company-name {
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            border: none;
+            padding: 0;
+            vertical-align: middle;
+        }
+        .company-title {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #0369a1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .company-sub {
+            font-size: 8.5px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .report-title-box {
+            text-align: right;
         }
         .report-title {
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
         }
-        .report-period {
-            font-size: 10px;
-            color: #666;
+        .report-meta {
+            font-size: 8px;
+            color: #64748b;
+            margin-top: 2px;
         }
-        .meta-info {
-            margin-bottom: 15px;
-            font-size: 9px;
-            color: #666;
+        .summary-bar {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-bottom: 12px;
         }
-        table {
+        .summary-bar table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 6px 8px;
+        .summary-bar td {
+            border: none;
+            padding: 0 8px;
+            font-size: 8.5px;
+            color: #0369a1;
+        }
+        .summary-bar td strong {
+            color: #0c4a6e;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        table.data-table th, table.data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 6px;
             text-align: left;
+            vertical-align: middle;
         }
-        th {
-            background-color: #f5f5f5;
+        table.data-table th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            font-size: 8px;
             font-weight: bold;
-            font-size: 9px;
             text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
-        td {
-            font-size: 9px;
+        table.data-table tr:nth-child(even) {
+            background-color: #f8fafc;
         }
         .text-center {
-            text-align: center;
+            text-align: center !important;
         }
         .text-right {
-            text-align: right;
+            text-align: right !important;
         }
-        .status-pending {
-            color: #d97706;
+        .badge {
+            display: inline-block;
+            padding: 1.5px 5px;
+            border-radius: 3px;
+            font-size: 7.5px;
             font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
         }
-        .status-approved {
-            color: #059669;
-            font-weight: bold;
+        .badge-success {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
         }
-        .status-rejected {
-            color: #dc2626;
-            font-weight: bold;
+        .badge-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
         }
-        .status-cancelled {
-            color: #6b7280;
+        .badge-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .badge-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
         }
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            text-align: center;
-            font-size: 8px;
-            color: #999;
-            padding: 10px;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+            font-size: 7.5px;
+            color: #94a3b8;
+        }
+        .footer table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .footer td {
+            border: none;
+            padding: 0;
         }
     </style>
 </head>
 <body>
+    {{-- Header --}}
     <div class="header">
-        <div class="company-name">{{ $company->name ?? 'Perusahaan' }}</div>
-        <div class="report-title">LAPORAN CUTI KARYAWAN</div>
-        <div class="report-period">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}</div>
+        <table class="header-table">
+            <tr>
+                <td style="width: 55%;">
+                    <div class="company-title">{{ $company->name ?? 'SiHaris HRMS' }}</div>
+                    <div class="company-sub">
+                        {{ $company->address ?? 'Sistem Informasi Manajemen SDM & Kepegawaian' }}
+                        @if(!empty($company->email)) | {{ $company->email }} @endif
+                    </div>
+                </td>
+                <td style="width: 45%;" class="report-title-box">
+                    <div class="report-title">LAPORAN PENGAJUAN & PENGGUNAAN CUTI</div>
+                    <div class="report-meta">
+                        Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }} | Dicetak: {{ now()->translatedFormat('d F Y, H:i') }} WIB
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <div class="meta-info">
-        Dicetak pada: {{ now()->format('d M Y H:i') }}
+    {{-- Summary Bar --}}
+    <div class="summary-bar">
+        <table>
+            <tr>
+                <td>Total Pengajuan: <strong>{{ $leaveRequests->count() }}</strong></td>
+                <td>Disetujui: <strong>{{ $leaveRequests->where('status', 'approved')->count() }}</strong></td>
+                <td>Menunggu: <strong>{{ $leaveRequests->where('status', 'pending')->count() }}</strong></td>
+                <td>Ditolak: <strong>{{ $leaveRequests->where('status', 'rejected')->count() }}</strong></td>
+                <td>Total Hari Cuti: <strong>{{ $leaveRequests->where('status', 'approved')->sum('total_days') }} Hari</strong></td>
+            </tr>
+        </table>
     </div>
 
-    <table>
+    {{-- Table Data --}}
+    <table class="data-table">
         <thead>
             <tr>
-                <th class="text-center" style="width: 30px;">No</th>
-                <th>Nama Karyawan</th>
-                <th>Departemen</th>
-                <th>Jenis Cuti</th>
-                <th class="text-center">Tanggal Mulai</th>
-                <th class="text-center">Tanggal Selesai</th>
-                <th class="text-center">Hari</th>
-                <th class="text-center">Status</th>
-                <th>Keterangan</th>
+                <th class="text-center" style="width: 25px;">No</th>
+                <th style="width: 70px;">ID Karyawan</th>
+                <th style="width: 140px;">Nama Karyawan</th>
+                <th style="width: 110px;">Departemen</th>
+                <th style="width: 100px;">Jenis Cuti</th>
+                <th class="text-center" style="width: 65px;">Mulai</th>
+                <th class="text-center" style="width: 65px;">Selesai</th>
+                <th class="text-center" style="width: 45px;">Hari</th>
+                <th class="text-center" style="width: 65px;">Status</th>
+                <th>Keterangan / Alasan</th>
             </tr>
         </thead>
         <tbody>
             @forelse($leaveRequests as $index => $leave)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $leave->employee->full_name ?? '-' }}</td>
-                    <td>{{ $leave->employee->department?->name ?? '-' }}</td>
-                    <td>{{ $leave->leaveType->name ?? '-' }}</td>
-                    <td class="text-center">{{ $leave->start_date->format('d/m/Y') }}</td>
-                    <td class="text-center">{{ $leave->end_date->format('d/m/Y') }}</td>
-                    <td class="text-center">{{ $leave->total_days }}</td>
+                    <td style="font-family: monospace; font-size: 8px;">{{ $leave->employee?->employee_id ?? '-' }}</td>
+                    <td><strong>{{ $leave->employee?->full_name ?? '-' }}</strong></td>
+                    <td>{{ $leave->employee?->department?->name ?? '-' }}</td>
+                    <td>{{ $leave->leaveType?->name ?? '-' }}</td>
+                    <td class="text-center" style="font-size: 8px;">{{ $leave->start_date->format('d/m/Y') }}</td>
+                    <td class="text-center" style="font-size: 8px;">{{ $leave->end_date->format('d/m/Y') }}</td>
+                    <td class="text-center font-bold">{{ $leave->total_days }}</td>
                     <td class="text-center">
                         @switch($leave->status)
-                            @case('pending')
-                                <span class="status-pending">Menunggu</span>
-                                @break
                             @case('approved')
-                                <span class="status-approved">Disetujui</span>
+                                <span class="badge badge-success">Disetujui</span>
+                                @break
+                            @case('pending')
+                                <span class="badge badge-warning">Menunggu</span>
                                 @break
                             @case('rejected')
-                                <span class="status-rejected">Ditolak</span>
+                                <span class="badge badge-danger">Ditolak</span>
                                 @break
                             @case('cancelled')
-                                <span class="status-cancelled">Dibatalkan</span>
+                                <span class="badge badge-secondary">Dibatalkan</span>
                                 @break
                             @default
-                                {{ ucfirst($leave->status) }}
+                                <span class="badge badge-secondary">{{ ucfirst($leave->status) }}</span>
                         @endswitch
                     </td>
-                    <td>{{ Str::limit($leave->reason, 50) ?? '-' }}</td>
+                    <td style="color: #475569; font-size: 8px;">{{ Str::limit($leave->reason ?? '-', 60) }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center">Tidak ada data pengajuan cuti</td>
+                    <td colspan="10" class="text-center" style="padding: 20px; color: #94a3b8;">
+                        Tidak ada data pengajuan cuti yang sesuai dengan filter.
+                    </td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
+    {{-- Footer --}}
     <div class="footer">
-        Halaman {PAGE_NUM} dari {PAGE_COUNT} | Laporan Cuti {{ $company->name ?? '' }} | Dicetak: {{ now()->format('d/m/Y H:i') }}
+        <table>
+            <tr>
+                <td style="text-align: left;">Dokumen resmi SiHaris HRMS - {{ $company->name ?? 'Perusahaan' }}</td>
+                <td style="text-align: right;">Halaman <script type="text/php">echo $pdf->get_page_number() . ' dari ' . $pdf->get_page_count();</script></td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>

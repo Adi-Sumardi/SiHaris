@@ -93,6 +93,36 @@ describe('AttendanceReportController', function () {
 
             $response->assertStatus(200);
         });
+        it('can filter by search keyword', function () {
+            $emp1 = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Budi',
+                'last_name' => 'Santoso',
+            ]);
+            $emp2 = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Siti',
+                'last_name' => 'Rahma',
+            ]);
+
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $emp1->id,
+                'date' => now(),
+            ]);
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $emp2->id,
+                'date' => now(),
+            ]);
+
+            $response = $this->get(route('reports.attendance', ['search' => 'Budi']));
+
+            $response->assertStatus(200);
+            $attendances = $response->viewData('attendances');
+            expect($attendances)->toHaveCount(1);
+            expect($attendances->first()->employee_id)->toBe($emp1->id);
+        });
     });
 
     describe('daily', function () {
@@ -195,6 +225,36 @@ describe('AttendanceReportController', function () {
             $response = $this->get(route('reports.attendance.export', ['format' => 'pdf']));
 
             $response->assertStatus(200);
+        });
+
+        it('applies search filter when exporting', function () {
+            $emp1 = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Budi',
+            ]);
+            $emp2 = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Siti',
+            ]);
+
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $emp1->id,
+                'date' => now(),
+            ]);
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $emp2->id,
+                'date' => now(),
+            ]);
+
+            $response = $this->get(route('reports.attendance.export', [
+                'format' => 'excel',
+                'search' => 'Budi',
+            ]));
+
+            $response->assertStatus(200);
+            $response->assertDownload();
         });
     });
 });

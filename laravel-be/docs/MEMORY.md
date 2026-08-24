@@ -150,6 +150,27 @@
   - Form Tambah & Edit Karyawan (`employees/create.blade.php`, `employees/edit.blade.php`) dan halaman detail (`employees/show.blade.php`) telah disesuaikan.
   - Template Excel Karyawan (`EmployeeTemplateExport`) dan Import (`EmployeeImport`) serta panduan pada halaman `/imports/employees` telah diperbarui dengan kolom `Status Kepegawaian` (`YPI Al Azhar` / `YAPI`).
 
+---
+
+## 13. Reports System Live Search & Landscape PDF Export
+- **Laporan Karyawan (`/reports/employees`)**:
+  - Input Live Search (debounced 300ms) untuk nama, ID, NIK, PIN, dan email.
+  - Filter `Kepegawaian` (`YPI Al Azhar` / `YAPI`).
+  - Export PDF & Excel dinamis mengikuti kata kunci pencarian dan filter aktif.
+  - Layout PDF didesain ulang dengan orientasi **A4 Landscape**, header perusahaan formal, styling tabel modern dan rapi.
+- **Laporan Kehadiran (`/reports/attendance`)**:
+  - Dropdown statis karyawan dihilangkan dan diganti dengan input Live Search karyawan.
+  - Perbaikan bug export: filter pencarian, karyawan tertentu, departemen, dan rentang tanggal kini terfilter secara presisi pada hasil export Excel maupun PDF.
+  - Layout PDF berorientasi **A4 Landscape**.
+- **Laporan Cuti (`/reports/leave`)**:
+  - Input Live Search karyawan (debounced 300ms).
+  - Export Excel & PDF menerapkan semua filter aktif (`search`, `department_id`, `leave_type_id`, `status`, `start_date`, `end_date`).
+  - Layout PDF berorientasi **A4 Landscape**.
+- **Laporan Penggajian (`/reports/payroll`)**:
+  - Input Live Search karyawan (debounced 300ms).
+  - Export Excel & PDF memfilter karyawan sesuai query pencarian.
+  - Layout PDF berorientasi **A4 Landscape**.
+
 
 
 

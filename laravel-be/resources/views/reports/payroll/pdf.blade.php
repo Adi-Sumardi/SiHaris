@@ -1,170 +1,243 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="utf-8">
-    <title>Laporan Penggajian</title>
+    <title>Laporan Penggajian Karyawan</title>
     <style>
+        @page {
+            size: a4 landscape;
+            margin: 12mm 15mm 15mm 15mm;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #333;
+            font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif;
+            font-size: 9px;
+            line-height: 1.3;
+            color: #1e293b;
         }
         .header {
-            text-align: center;
-            margin-bottom: 20px;
+            border-bottom: 2px solid #0284c7;
             padding-bottom: 10px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 12px;
         }
-        .company-name {
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            border: none;
+            padding: 0;
+            vertical-align: middle;
+        }
+        .company-title {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #0369a1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .company-sub {
+            font-size: 8.5px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .report-title-box {
+            text-align: right;
         }
         .report-title {
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
         }
-        .report-period {
-            font-size: 10px;
-            color: #666;
+        .report-meta {
+            font-size: 8px;
+            color: #64748b;
+            margin-top: 2px;
         }
-        .meta-info {
-            margin-bottom: 15px;
-            font-size: 9px;
-            color: #666;
+        .summary-bar {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-bottom: 12px;
         }
-        table {
+        .summary-bar table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 6px 8px;
+        .summary-bar td {
+            border: none;
+            padding: 0 8px;
+            font-size: 8.5px;
+            color: #0369a1;
+        }
+        .summary-bar td strong {
+            color: #0c4a6e;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        table.data-table th, table.data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 6px;
             text-align: left;
+            vertical-align: middle;
         }
-        th {
-            background-color: #f5f5f5;
+        table.data-table th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            font-size: 8px;
             font-weight: bold;
-            font-size: 8px;
             text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
-        td {
-            font-size: 8px;
+        table.data-table tr:nth-child(even) {
+            background-color: #f8fafc;
         }
         .text-center {
-            text-align: center;
+            text-align: center !important;
         }
         .text-right {
-            text-align: right;
+            text-align: right !important;
+        }
+        .summary-row {
+            background-color: #f1f5f9 !important;
+            font-weight: bold;
+            color: #0f172a;
         }
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            text-align: center;
-            font-size: 8px;
-            color: #999;
-            padding: 10px;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+            font-size: 7.5px;
+            color: #94a3b8;
         }
-        .summary-row {
-            background-color: #f9f9f9;
-            font-weight: bold;
+        .footer table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .footer td {
+            border: none;
+            padding: 0;
         }
     </style>
 </head>
 <body>
+    @php
+        $months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        $monthName = !empty($month) && isset($months[$month - 1]) ? $months[$month - 1] : 'Semua Bulan';
+    @endphp
+
+    {{-- Header --}}
     <div class="header">
-        <div class="company-name">{{ $company->name ?? 'Perusahaan' }}</div>
-        <div class="report-title">LAPORAN PENGGAJIAN</div>
-        @php
-            $months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        @endphp
-        <div class="report-period">Periode: {{ $months[$month - 1] }} {{ $year }}</div>
+        <table class="header-table">
+            <tr>
+                <td style="width: 55%;">
+                    <div class="company-title">{{ $company->name ?? 'SiHaris HRMS' }}</div>
+                    <div class="company-sub">
+                        {{ $company->address ?? 'Sistem Informasi Manajemen SDM & Kepegawaian' }}
+                        @if(!empty($company->email)) | {{ $company->email }} @endif
+                    </div>
+                </td>
+                <td style="width: 45%;" class="report-title-box">
+                    <div class="report-title">LAPORAN REKAP PENGGAJIAN</div>
+                    <div class="report-meta">
+                        Periode: {{ $monthName }} {{ $year }} | Dicetak: {{ now()->translatedFormat('d F Y, H:i') }} WIB
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <div class="meta-info">
-        Dicetak pada: {{ now()->format('d M Y H:i') }}
-        @if($payroll)
-            | Status: {{ ucfirst($payroll->status) }}
-        @endif
+    {{-- Summary Bar --}}
+    @php
+        $sumGross = $payrollItems->sum('gross_salary');
+        $sumDeductions = $payrollItems->sum('total_deductions');
+        $sumTax = $payrollItems->sum('tax_amount');
+        $sumNet = $payrollItems->sum('net_salary');
+    @endphp
+    <div class="summary-bar">
+        <table>
+            <tr>
+                <td>Total Karyawan: <strong>{{ $payrollItems->count() }} orang</strong></td>
+                <td>Gaji Kotor: <strong>Rp {{ number_format($sumGross, 0, ',', '.') }}</strong></td>
+                <td>Potongan: <strong>Rp {{ number_format($sumDeductions, 0, ',', '.') }}</strong></td>
+                <td>PPh 21: <strong>Rp {{ number_format($sumTax, 0, ',', '.') }}</strong></td>
+                <td>Gaji Bersih: <strong>Rp {{ number_format($sumNet, 0, ',', '.') }}</strong></td>
+            </tr>
+        </table>
     </div>
 
-    <table>
+    {{-- Table Data --}}
+    <table class="data-table">
         <thead>
             <tr>
                 <th class="text-center" style="width: 25px;">No</th>
-                <th>Nama Karyawan</th>
-                <th>Departemen</th>
-                <th class="text-right">Gaji Pokok</th>
-                <th class="text-right">Tunjangan</th>
-                <th class="text-right">Gaji Kotor</th>
-                <th class="text-right">Potongan</th>
-                <th class="text-right">PPh 21</th>
-                <th class="text-right">Gaji Bersih</th>
+                <th style="width: 70px;">ID Karyawan</th>
+                <th style="width: 140px;">Nama Karyawan</th>
+                <th style="width: 110px;">Departemen</th>
+                <th style="width: 100px;">Jabatan</th>
+                <th class="text-right" style="width: 80px;">Gaji Pokok</th>
+                <th class="text-right" style="width: 80px;">Gaji Kotor</th>
+                <th class="text-right" style="width: 80px;">Potongan</th>
+                <th class="text-right" style="width: 70px;">PPh 21</th>
+                <th class="text-right" style="width: 85px;">Gaji Bersih</th>
             </tr>
         </thead>
         <tbody>
-            @php
-                $totalBase = 0;
-                $totalAllowances = 0;
-                $totalGross = 0;
-                $totalDeductions = 0;
-                $totalPph21 = 0;
-                $totalNet = 0;
-            @endphp
             @forelse($payrollItems as $index => $item)
-                @php
-                    $totalBase += $item->base_salary;
-                    $totalAllowances += $item->total_allowances;
-                    $totalGross += $item->gross_salary;
-                    $totalDeductions += $item->total_deductions;
-                    $totalPph21 += $item->pph21;
-                    $totalNet += $item->net_salary;
-                @endphp
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $item->employee->full_name ?? '-' }}</td>
-                    <td>{{ $item->employee->department?->name ?? '-' }}</td>
-                    <td class="text-right">{{ number_format($item->base_salary, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->total_allowances, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->gross_salary, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->total_deductions, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->pph21, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($item->net_salary, 0, ',', '.') }}</td>
+                    <td style="font-family: monospace; font-size: 8px;">{{ $item->employee?->employee_id ?? '-' }}</td>
+                    <td><strong>{{ $item->employee?->full_name ?? '-' }}</strong></td>
+                    <td>{{ $item->employee?->department?->name ?? '-' }}</td>
+                    <td>{{ $item->employee?->position?->name ?? '-' }}</td>
+                    <td class="text-right" style="font-size: 8px;">Rp {{ number_format($item->basic_salary, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px;">Rp {{ number_format($item->gross_salary, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px; color: #dc2626;">Rp {{ number_format($item->total_deductions, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px; color: #d97706;">Rp {{ number_format($item->tax_amount, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px; font-weight: bold; color: #166534;">Rp {{ number_format($item->net_salary, 0, ',', '.') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center">Tidak ada data penggajian</td>
+                    <td colspan="10" class="text-center" style="padding: 20px; color: #94a3b8;">
+                        Tidak ada data penggajian untuk periode yang dipilih.
+                    </td>
                 </tr>
             @endforelse
         </tbody>
         @if($payrollItems->count() > 0)
             <tfoot>
                 <tr class="summary-row">
-                    <td colspan="3" class="text-right">TOTAL</td>
-                    <td class="text-right">{{ number_format($totalBase, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($totalAllowances, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($totalGross, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($totalDeductions, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($totalPph21, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($totalNet, 0, ',', '.') }}</td>
+                    <td colspan="5" class="text-right">TOTAL</td>
+                    <td class="text-right" style="font-size: 8px;">Rp {{ number_format($payrollItems->sum('basic_salary'), 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px;">Rp {{ number_format($sumGross, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px; color: #dc2626;">Rp {{ number_format($sumDeductions, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px; color: #d97706;">Rp {{ number_format($sumTax, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size: 8px; font-weight: bold; color: #166534;">Rp {{ number_format($sumNet, 0, ',', '.') }}</td>
                 </tr>
             </tfoot>
         @endif
     </table>
 
+    {{-- Footer --}}
     <div class="footer">
-        Halaman {PAGE_NUM} dari {PAGE_COUNT} | Laporan Penggajian {{ $company->name ?? '' }} | Dicetak: {{ now()->format('d/m/Y H:i') }}
+        <table>
+            <tr>
+                <td style="text-align: left;">Dokumen resmi SiHaris HRMS - {{ $company->name ?? 'Perusahaan' }}</td>
+                <td style="text-align: right;">Halaman <script type="text/php">echo $pdf->get_page_number() . ' dari ' . $pdf->get_page_count();</script></td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>

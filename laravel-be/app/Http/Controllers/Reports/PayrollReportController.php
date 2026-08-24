@@ -27,6 +27,18 @@ class PayrollReportController extends Controller
             $query->where('period_month', $month);
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('items.employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
         $payrolls = $query->orderByDesc('period_year')
             ->orderByDesc('period_month')
             ->get();
@@ -134,14 +146,28 @@ class PayrollReportController extends Controller
 
         $payrollItems = collect();
         if ($payroll) {
-            $payrollItems = PayrollItem::with(['employee.department', 'employee.position'])
-                ->where('payroll_id', $payroll->id)
-                ->get();
+            $payrollItemsQuery = PayrollItem::with(['employee.department', 'employee.position'])
+                ->where('payroll_id', $payroll->id);
+
+            if ($request->filled('search')) {
+                $search = trim($request->search);
+                $payrollItemsQuery->whereHas('employee', function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('employee_id', 'like', "%{$search}%")
+                        ->orWhere('nik', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+                });
+            }
+
+            $payrollItems = $payrollItemsQuery->get();
         }
 
         if ($format === 'pdf') {
             $company = auth()->user()->company;
-            $pdf = Pdf::loadView('reports.payroll.pdf', compact('payrollItems', 'company', 'year', 'month', 'payroll'));
+            $pdf = Pdf::loadView('reports.payroll.pdf', compact('payrollItems', 'company', 'year', 'month', 'payroll'))
+                ->setPaper('a4', 'landscape');
 
             return $pdf->download('laporan-penggajian-'.$year.'-'.$month.'.pdf');
         }

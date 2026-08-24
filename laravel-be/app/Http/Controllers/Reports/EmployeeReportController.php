@@ -27,17 +27,24 @@ class EmployeeReportController extends Controller
             $query->where('employment_status', $request->employment_status);
         }
 
+        if ($request->filled('employment_type')) {
+            $query->where('employment_type', $request->employment_type);
+        }
+
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active === '1');
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhere('employee_id', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
             });
         }
 
@@ -71,15 +78,33 @@ class EmployeeReportController extends Controller
             $query->where('employment_status', $request->employment_status);
         }
 
+        if ($request->filled('employment_type')) {
+            $query->where('employment_type', $request->employment_type);
+        }
+
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active === '1');
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
         }
 
         $employees = $query->orderBy('first_name')->get();
 
         if ($format === 'pdf') {
             $company = auth()->user()->company;
-            $pdf = Pdf::loadView('reports.employees.pdf', compact('employees', 'company'));
+            $pdf = Pdf::loadView('reports.employees.pdf', compact('employees', 'company'))
+                ->setPaper('a4', 'landscape');
             return $pdf->download('laporan-karyawan-' . now()->format('Y-m-d') . '.pdf');
         }
 
@@ -137,6 +162,7 @@ class EmployeeReportController extends Controller
                 'Email',
                 'Departemen',
                 'Jabatan',
+                'Status Kepegawaian',
                 'Status Kerja',
                 'Tanggal Bergabung',
                 'Status',
@@ -151,6 +177,7 @@ class EmployeeReportController extends Controller
                     $employee->email,
                     $employee->department?->name ?? '-',
                     $employee->position?->name ?? '-',
+                    $employee->employment_type ?? '-',
                     ucfirst($employee->employment_status),
                     $employee->hire_date?->format('d/m/Y') ?? '-',
                     $employee->is_active ? 'Aktif' : 'Tidak Aktif',

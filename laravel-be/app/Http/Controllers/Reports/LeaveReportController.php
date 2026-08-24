@@ -42,6 +42,18 @@ class LeaveReportController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
         $leaveRequests = $query->orderByDesc('start_date')->get();
 
         $summary = $this->getSummary($companyId, $startDate, $endDate);
@@ -73,6 +85,18 @@ class LeaveReportController extends Controller
 
         if ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
         }
 
         $employees = $query->orderBy('first_name')->get();
@@ -166,11 +190,34 @@ class LeaveReportController extends Controller
             $query->where('leave_type_id', $request->leave_type_id);
         }
 
+        if ($request->filled('department_id')) {
+            $query->whereHas('employee', function ($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
         $leaveRequests = $query->orderByDesc('start_date')->get();
 
         if ($format === 'pdf') {
             $company = auth()->user()->company;
-            $pdf = Pdf::loadView('reports.leave.pdf', compact('leaveRequests', 'company', 'startDate', 'endDate'));
+            $pdf = Pdf::loadView('reports.leave.pdf', compact('leaveRequests', 'company', 'startDate', 'endDate'))
+                ->setPaper('a4', 'landscape');
 
             return $pdf->download('laporan-cuti-'.$startDate.'-'.$endDate.'.pdf');
         }

@@ -1,205 +1,270 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="utf-8">
-    <title>Laporan Kehadiran</title>
+    <title>Laporan Kehadiran Karyawan</title>
     <style>
+        @page {
+            size: a4 landscape;
+            margin: 12mm 15mm 15mm 15mm;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #333;
+            font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif;
+            font-size: 9px;
+            line-height: 1.3;
+            color: #1e293b;
         }
         .header {
-            text-align: center;
-            margin-bottom: 20px;
+            border-bottom: 2px solid #0284c7;
             padding-bottom: 10px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 12px;
         }
-        .company-name {
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            border: none;
+            padding: 0;
+            vertical-align: middle;
+        }
+        .company-title {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #0369a1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .company-sub {
+            font-size: 8.5px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .report-title-box {
+            text-align: right;
         }
         .report-title {
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
         }
-        .report-period {
-            font-size: 10px;
-            color: #666;
+        .report-meta {
+            font-size: 8px;
+            color: #64748b;
+            margin-top: 2px;
         }
-        .meta-info {
-            margin-bottom: 15px;
-            font-size: 9px;
-            color: #666;
+        .summary-bar {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-bottom: 12px;
         }
-        table {
+        .summary-bar table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 6px 8px;
+        .summary-bar td {
+            border: none;
+            padding: 0 8px;
+            font-size: 8.5px;
+            color: #0369a1;
+        }
+        .summary-bar td strong {
+            color: #0c4a6e;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        table.data-table th, table.data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 6px;
             text-align: left;
+            vertical-align: middle;
         }
-        th {
-            background-color: #f5f5f5;
+        table.data-table th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            font-size: 8px;
             font-weight: bold;
-            font-size: 9px;
             text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
-        td {
-            font-size: 9px;
+        table.data-table tr:nth-child(even) {
+            background-color: #f8fafc;
         }
         .text-center {
-            text-align: center;
+            text-align: center !important;
         }
         .text-right {
-            text-align: right;
+            text-align: right !important;
         }
-        .status-on-time {
-            color: #059669;
+        .badge {
+            display: inline-block;
+            padding: 1.5px 5px;
+            border-radius: 3px;
+            font-size: 7.5px;
             font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
         }
-        .status-late {
-            color: #d97706;
-            font-weight: bold;
+        .badge-success {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
         }
-        .status-very-late {
-            color: #dc2626;
-            font-weight: bold;
+        .badge-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
         }
-        .status-absent {
-            color: #6b7280;
+        .badge-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .badge-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
         }
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            text-align: center;
-            font-size: 8px;
-            color: #999;
-            padding: 10px;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+            font-size: 7.5px;
+            color: #94a3b8;
         }
-        .page-break {
-            page-break-after: always;
-        }
-        .summary-box {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 15px;
-        }
-        .summary-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .summary-grid {
-            display: table;
+        .footer table {
             width: 100%;
+            border-collapse: collapse;
         }
-        .summary-item {
-            display: table-cell;
-            width: 16.66%;
-            text-align: center;
-            padding: 5px;
-        }
-        .summary-value {
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
-        }
-        .summary-label {
-            font-size: 8px;
-            color: #666;
-            margin-top: 2px;
+        .footer td {
+            border: none;
+            padding: 0;
         }
     </style>
 </head>
 <body>
+    {{-- Header --}}
     <div class="header">
-        <div class="company-name">{{ $company->name ?? 'Perusahaan' }}</div>
-        <div class="report-title">LAPORAN KEHADIRAN KARYAWAN</div>
-        <div class="report-period">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}</div>
+        <table class="header-table">
+            <tr>
+                <td style="width: 55%;">
+                    <div class="company-title">{{ $company->name ?? 'SiHaris HRMS' }}</div>
+                    <div class="company-sub">
+                        {{ $company->address ?? 'Sistem Informasi Manajemen SDM & Kepegawaian' }}
+                        @if(!empty($company->email)) | {{ $company->email }} @endif
+                    </div>
+                </td>
+                <td style="width: 45%;" class="report-title-box">
+                    <div class="report-title">LAPORAN KEHADIRAN KARYAWAN</div>
+                    <div class="report-meta">
+                        Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }} | Dicetak: {{ now()->translatedFormat('d F Y, H:i') }} WIB
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <div class="meta-info">
-        Dicetak pada: {{ now()->format('d M Y H:i') }}
+    {{-- Summary Bar --}}
+    <div class="summary-bar">
+        <table>
+            <tr>
+                <td>Total Record: <strong>{{ $attendances->count() }}</strong></td>
+                <td>Tepat Waktu: <strong>{{ $attendances->where('clock_in_status', 'on_time')->count() }}</strong></td>
+                <td>Terlambat: <strong>{{ $attendances->whereIn('clock_in_status', ['late', 'very_late'])->count() }}</strong></td>
+                <td>Total Terlambat: <strong>{{ floor($attendances->sum('late_minutes') / 60) }}j {{ $attendances->sum('late_minutes') % 60 }}m</strong></td>
+                <td>Total Lembur: <strong>{{ floor($attendances->sum('overtime_minutes') / 60) }}j {{ $attendances->sum('overtime_minutes') % 60 }}m</strong></td>
+            </tr>
+        </table>
     </div>
 
-    <table>
+    {{-- Table Data --}}
+    <table class="data-table">
         <thead>
             <tr>
-                <th class="text-center" style="width: 30px;">No</th>
-                <th style="width: 70px;">Tanggal</th>
-                <th>Nama Karyawan</th>
-                <th>Departemen</th>
-                <th class="text-center" style="width: 50px;">Masuk</th>
-                <th class="text-center" style="width: 50px;">Pulang</th>
+                <th class="text-center" style="width: 25px;">No</th>
+                <th class="text-center" style="width: 65px;">Tanggal</th>
+                <th style="width: 70px;">ID Karyawan</th>
+                <th style="width: 140px;">Nama Karyawan</th>
+                <th style="width: 110px;">Departemen</th>
+                <th class="text-center" style="width: 55px;">Masuk</th>
+                <th class="text-center" style="width: 55px;">Pulang</th>
                 <th class="text-center" style="width: 80px;">Status</th>
-                <th class="text-right" style="width: 60px;">Terlambat</th>
-                <th class="text-right" style="width: 50px;">Lembur</th>
+                <th class="text-right" style="width: 65px;">Terlambat</th>
+                <th class="text-right" style="width: 60px;">Lembur</th>
             </tr>
         </thead>
         <tbody>
             @forelse($attendances as $index => $attendance)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $attendance->date->format('d/m/Y') }}</td>
-                    <td>{{ $attendance->employee->full_name ?? '-' }}</td>
-                    <td>{{ $attendance->employee->department?->name ?? '-' }}</td>
-                    <td class="text-center">{{ $attendance->formatted_clock_in ?? '-' }}</td>
-                    <td class="text-center">{{ $attendance->formatted_clock_out ?? '-' }}</td>
+                    <td class="text-center" style="font-size: 8px;">{{ $attendance->date->format('d/m/Y') }}</td>
+                    <td style="font-family: monospace; font-size: 8px;">{{ $attendance->employee?->employee_id ?? '-' }}</td>
+                    <td><strong>{{ $attendance->employee?->full_name ?? '-' }}</strong></td>
+                    <td>{{ $attendance->employee?->department?->name ?? '-' }}</td>
+                    <td class="text-center" style="font-family: monospace; font-size: 8px;">{{ $attendance->formatted_clock_in ?? '-' }}</td>
+                    <td class="text-center" style="font-family: monospace; font-size: 8px;">{{ $attendance->formatted_clock_out ?? '-' }}</td>
                     <td class="text-center">
                         @switch($attendance->clock_in_status)
                             @case('on_time')
-                                <span class="status-on-time">Tepat Waktu</span>
+                                <span class="badge badge-success">Tepat Waktu</span>
                                 @break
                             @case('late')
-                                <span class="status-late">Terlambat</span>
+                                <span class="badge badge-warning">Terlambat</span>
                                 @break
                             @case('very_late')
-                                <span class="status-very-late">Sangat Terlambat</span>
+                                <span class="badge badge-danger">Sgt Terlambat</span>
                                 @break
                             @default
-                                <span class="status-absent">{{ ucfirst($attendance->status) }}</span>
+                                <span class="badge badge-secondary">{{ ucfirst($attendance->status ?? '-') }}</span>
                         @endswitch
                     </td>
-                    <td class="text-right">
+                    <td class="text-right" style="font-size: 8px;">
                         @if($attendance->late_minutes > 0)
-                            {{ $attendance->late_minutes }}m
+                            <strong style="color: #d97706;">{{ $attendance->late_minutes }} m</strong>
                         @else
-                            -
+                            <span style="color: #94a3b8;">-</span>
                         @endif
                     </td>
-                    <td class="text-right">
+                    <td class="text-right" style="font-size: 8px;">
                         @if($attendance->overtime_minutes > 0)
-                            {{ $attendance->overtime_minutes }}m
+                            <strong style="color: #0284c7;">{{ $attendance->overtime_minutes }} m</strong>
                         @else
-                            -
+                            <span style="color: #94a3b8;">-</span>
                         @endif
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center">Tidak ada data kehadiran</td>
+                    <td colspan="10" class="text-center" style="padding: 20px; color: #94a3b8;">
+                        Tidak ada data kehadiran yang sesuai dengan filter.
+                    </td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
+    {{-- Footer --}}
     <div class="footer">
-        Halaman {PAGE_NUM} dari {PAGE_COUNT} | Laporan Kehadiran {{ $company->name ?? '' }} | Dicetak: {{ now()->format('d/m/Y H:i') }}
+        <table>
+            <tr>
+                <td style="text-align: left;">Dokumen resmi SiHaris HRMS - {{ $company->name ?? 'Perusahaan' }}</td>
+                <td style="text-align: right;">Halaman <script type="text/php">echo $pdf->get_page_number() . ' dari ' . $pdf->get_page_count();</script></td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>

@@ -160,43 +160,57 @@ class Announcement extends Model
             // All employees
             $q->where('target_audience', self::TARGET_ALL);
 
-            // By department
+            // Creator can always view
+            $q->orWhere('created_by', $user->id);
+
+            // Admins & Superadmins can view all company announcements
+            if ($user->is_superadmin || (method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['admin', 'superadmin', 'hr-manager']))) {
+                $q->orWhereNotNull('id');
+            }
+
+            // By department, position, or specific employee
             if ($user->employee) {
                 $deptId = $user->employee->department_id;
                 $posId = $user->employee->position_id;
                 $empId = $user->employee->id;
 
-                $q->orWhere(function ($q2) use ($deptId) {
-                    $q2->where('target_audience', self::TARGET_DEPARTMENT)
-                        ->whereRaw('(target_ids LIKE ? OR target_ids LIKE ? OR target_ids LIKE ? OR target_ids LIKE ?)', [
-                            "[{$deptId}]",
-                            "[{$deptId},%",
-                            "%,{$deptId},%",
-                            "%,{$deptId}]",
-                        ]);
-                });
+                if ($deptId) {
+                    $q->orWhere(function ($q2) use ($deptId) {
+                        $q2->where('target_audience', self::TARGET_DEPARTMENT)
+                            ->where(function ($q3) use ($deptId) {
+                                $q3->whereJsonContains('target_ids', (string) $deptId)
+                                    ->orWhereJsonContains('target_ids', (int) $deptId)
+                                    ->orWhereRaw('target_ids LIKE ?', ["%\"{$deptId}\"%"])
+                                    ->orWhereRaw('target_ids LIKE ?', ["%{$deptId}%"]);
+                            });
+                    });
+                }
 
                 // By position
-                $q->orWhere(function ($q2) use ($posId) {
-                    $q2->where('target_audience', self::TARGET_POSITION)
-                        ->whereRaw('(target_ids LIKE ? OR target_ids LIKE ? OR target_ids LIKE ? OR target_ids LIKE ?)', [
-                            "[{$posId}]",
-                            "[{$posId},%",
-                            "%,{$posId},%",
-                            "%,{$posId}]",
-                        ]);
-                });
+                if ($posId) {
+                    $q->orWhere(function ($q2) use ($posId) {
+                        $q2->where('target_audience', self::TARGET_POSITION)
+                            ->where(function ($q3) use ($posId) {
+                                $q3->whereJsonContains('target_ids', (string) $posId)
+                                    ->orWhereJsonContains('target_ids', (int) $posId)
+                                    ->orWhereRaw('target_ids LIKE ?', ["%\"{$posId}\"%"])
+                                    ->orWhereRaw('target_ids LIKE ?', ["%{$posId}%"]);
+                            });
+                    });
+                }
 
                 // Specific employees
-                $q->orWhere(function ($q2) use ($empId) {
-                    $q2->where('target_audience', self::TARGET_SPECIFIC)
-                        ->whereRaw('(target_ids LIKE ? OR target_ids LIKE ? OR target_ids LIKE ? OR target_ids LIKE ?)', [
-                            "[{$empId}]",
-                            "[{$empId},%",
-                            "%,{$empId},%",
-                            "%,{$empId}]",
-                        ]);
-                });
+                if ($empId) {
+                    $q->orWhere(function ($q2) use ($empId) {
+                        $q2->where('target_audience', self::TARGET_SPECIFIC)
+                            ->where(function ($q3) use ($empId) {
+                                $q3->whereJsonContains('target_ids', (string) $empId)
+                                    ->orWhereJsonContains('target_ids', (int) $empId)
+                                    ->orWhereRaw('target_ids LIKE ?', ["%\"{$empId}\"%"])
+                                    ->orWhereRaw('target_ids LIKE ?', ["%{$empId}%"]);
+                            });
+                    });
+                }
             }
         });
     }

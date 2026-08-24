@@ -374,6 +374,19 @@ class AttendanceController extends Controller
             $query->where('company_id', $tenant->id)
                 ->forMonth($year, $month);
 
+            if ($request->filled('search')) {
+                $search = trim($request->search);
+                $query->whereHas('employee', function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('employee_id', 'like', "%{$search}%")
+                        ->orWhere('nik', 'like', "%{$search}%")
+                        ->orWhere('pin', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+                });
+            }
+
             if ($request->filled('employee_id')) {
                 $query->where('employee_id', $request->employee_id);
             }
@@ -483,8 +496,25 @@ class AttendanceController extends Controller
             $query->forMonth($companyNow->year, $companyNow->month);
         }
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
         if ($request->filled('employee_id')) {
             $query->where('employee_id', $request->employee_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         $attendances = $query->orderBy('date', 'asc')

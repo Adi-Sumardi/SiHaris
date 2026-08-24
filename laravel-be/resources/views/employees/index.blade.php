@@ -128,40 +128,42 @@
             </button>
         </div>
 
-        {{-- Bulk Action Bar (Ocean Blue Theme) --}}
+        {{-- Bulk Action Bar (Clean Solid Blue Theme) --}}
         <div
             x-show="selectedIds.length > 0"
             x-cloak
             x-transition
-            class="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 text-white rounded-xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-lg border border-primary-500/40"
+            class="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-4 flex flex-wrap items-center justify-between gap-4 shadow-sm"
         >
             <div class="flex items-center gap-3">
-                <span class="inline-flex items-center justify-center bg-white text-primary-700 font-bold text-xs px-3 py-1 rounded-full shadow-sm">
+                <span class="inline-flex items-center justify-center bg-primary-600 text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-sm">
                     <span x-text="selectedIds.length"></span>&nbsp;Karyawan Dipilih
                 </span>
-                <span class="text-sm text-primary-100 hidden sm:inline">Ubah status kepegawaian untuk semua karyawan yang dicentang:</span>
+                <span class="text-sm font-medium text-primary-900 hidden sm:inline">Ubah status kepegawaian untuk semua karyawan yang dicentang:</span>
             </div>
 
-            <div class="flex items-center gap-2.5">
-                <select
-                    x-model="bulkType"
-                    class="text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-white px-3 py-1.5 focus:bg-white focus:text-secondary-900 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer transition-colors"
-                >
-                    <option value="YPI" class="text-secondary-900 bg-white">Set ke: YPI (Yayasan Pesantren Islam)</option>
-                    <option value="YAPI" class="text-secondary-900 bg-white">Set ke: YAPI (Yayasan Asrama Pelajar Islam)</option>
-                    <option value="" class="text-secondary-900 bg-white">Set ke: Kosongkan (-)</option>
-                </select>
+            <div class="flex items-center gap-3">
+                <div class="w-60 sm:w-72">
+                    <select
+                        x-model="bulkType"
+                        class="input w-full bg-white border-primary-300 text-secondary-800 text-xs font-medium focus:border-primary-500 focus:ring-1 focus:ring-primary-500 shadow-sm"
+                    >
+                        <option value="YPI">Set ke: YPI (Yayasan Pesantren Islam)</option>
+                        <option value="YAPI">Set ke: YAPI (Yayasan Asrama Pelajar Islam)</option>
+                        <option value="">Set ke: Kosongkan (-)</option>
+                    </select>
+                </div>
 
                 <button
                     type="button"
                     @click="applyBulkEmploymentType()"
                     :disabled="bulkSaving"
-                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-primary-700 hover:bg-primary-50 shadow-sm transition-colors disabled:opacity-50"
+                    class="btn btn-primary btn-sm flex items-center gap-1.5 whitespace-nowrap shadow-sm"
                 >
-                    <svg x-show="!bulkSaving" class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg x-show="!bulkSaving" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
-                    <svg x-show="bulkSaving" class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" style="display: none;">
+                    <svg x-show="bulkSaving" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
@@ -171,7 +173,7 @@
                 <button
                     type="button"
                     @click="selectedIds = []"
-                    class="text-xs text-primary-200 hover:text-white px-2 py-1 transition-colors"
+                    class="btn btn-ghost btn-sm text-secondary-600 hover:text-secondary-900"
                 >
                     Batal
                 </button>

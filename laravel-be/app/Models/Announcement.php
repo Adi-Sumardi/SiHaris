@@ -113,6 +113,67 @@ class Announcement extends Model
             'is_published' => true,
             'published_at' => now(),
         ]);
+
+        $this->notifyTargetUsers();
+    }
+
+    public function getTargetUsers(): \Illuminate\Database\Eloquent\Collection
+    {
+        $companyId = $this->company_id;
+        $targetAudience = $this->target_audience;
+        $targetIds = is_array($this->target_ids) ? $this->target_ids : [];
+
+        $usersQuery = User::where('company_id', $companyId)->where('is_active', true);
+
+        if ($targetAudience === self::TARGET_ALL) {
+            return $usersQuery->get();
+        }
+
+        if ($targetAudience === self::TARGET_DEPARTMENT) {
+            return $usersQuery->whereHas('employee', function ($q) use ($targetIds) {
+                $q->whereIn('department_id', $targetIds);
+            })->get();
+        }
+
+        if ($targetAudience === self::TARGET_POSITION) {
+            return $usersQuery->whereHas('employee', function ($q) use ($targetIds) {
+                $q->whereIn('position_id', $targetIds);
+            })->get();
+        }
+
+        if ($targetAudience === self::TARGET_SPECIFIC) {
+            return $usersQuery->whereHas('employee', function ($q) use ($targetIds) {
+                $q->whereIn('id', $targetIds);
+            })->get();
+        }
+
+        return $usersQuery->get();
+    }
+
+    public function notifyTargetUsers(): void
+    {
+        try {
+            $targetUsers = $this->getTargetUsers();
+            $pushService = app(\App\Services\PushNotificationService::class);
+
+            foreach ($targetUsers as $user) {
+                $alreadyNotified = \App\Models\Notification::where('user_id', $user->id)
+                    ->where('type', 'announcement')
+                    ->where('data->announcement_id', (string) $this->id)
+                    ->exists();
+
+                if (! $alreadyNotified) {
+                    $pushService->notifyAnnouncement(
+                        $user,
+                        $this->title,
+                        \Illuminate\Support\Str::limit(strip_tags($this->content), 150),
+                        $this->id
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to notify users for announcement: ' . $e->getMessage());
+        }
     }
 
     public function unpublish(): void

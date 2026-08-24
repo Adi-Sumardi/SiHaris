@@ -26,7 +26,21 @@ class PayrollItemController extends Controller
                 $q->where('company_id', $companyId);
             });
 
-        // Filter by employee
+        // Filter by search
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
+        // Filter by employee_id (fallback support)
         if ($request->filled('employee_id')) {
             $query->where('employee_id', $request->employee_id);
         }
@@ -47,10 +61,6 @@ class PayrollItemController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $employees = Employee::where('company_id', $companyId)
-            ->orderBy('first_name')
-            ->get();
-
         $years = PayrollItem::whereHas('payroll', function ($q) use ($companyId) {
             $q->where('company_id', $companyId);
         })
@@ -60,7 +70,7 @@ class PayrollItemController extends Controller
             ->orderByDesc('period_year')
             ->pluck('period_year');
 
-        return view('payroll-items.index', compact('payrollItems', 'employees', 'years'));
+        return view('payroll-items.index', compact('payrollItems', 'years'));
     }
 
     public function show(PayrollItem $payrollItem): View

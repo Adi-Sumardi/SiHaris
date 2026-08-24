@@ -47,20 +47,6 @@ class PositionImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVal
             return null;
         }
 
-        // Check if code already exists (including soft-deleted)
-        $existingPosition = Position::withTrashed()
-            ->where('company_id', $this->companyId)
-            ->where('code', $code)
-            ->first();
-
-        if ($existingPosition) {
-            $this->skipCount++;
-            $statusText = $existingPosition->trashed() ? ' (arsip/terhapus)' : '';
-            $this->errors[] = "Baris {$rowNum}: Kode '{$code}' sudah ada{$statusText}, dilewati.";
-
-            return null;
-        }
-
         // Resolve department
         $departmentId = null;
         if (! empty($deptCode)) {
@@ -73,6 +59,21 @@ class PositionImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithVal
             } else {
                 $this->errors[] = "Baris {$rowNum}: Departemen '{$deptCode}' tidak ditemukan (jabatan dibuat tanpa departemen).";
             }
+        }
+
+        // Check if code already exists in the same department (including soft-deleted)
+        $existingPosition = Position::withTrashed()
+            ->where('company_id', $this->companyId)
+            ->where('department_id', $departmentId)
+            ->where('code', $code)
+            ->first();
+
+        if ($existingPosition) {
+            $this->skipCount++;
+            $statusText = $existingPosition->trashed() ? ' (arsip/terhapus)' : '';
+            $this->errors[] = "Baris {$rowNum}: Kode '{$code}' sudah ada di departemen ini{$statusText}, dilewati.";
+
+            return null;
         }
 
         $level = ! empty($row['level']) && is_numeric($row['level']) ? max(1, (int) $row['level']) : 1;

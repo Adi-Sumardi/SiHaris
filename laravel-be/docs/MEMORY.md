@@ -99,3 +99,15 @@
 - **Konfirmasi Modal**: `resources/views/components/confirm-dialog.blade.php` mendukung injeksi parameter dinamis dari objek `formData` ke dalam form submit POST saat tombol konfirmasi ditekan.
 - **Controller Backend**: `HolidayController::generate()` memvalidasi field `year` secara nullable dengan fallback otomatis ke tahun berjalan (`now()->year`).
 - **Data Generator**: Menghasilkan hari libur nasional Indonesia, hari raya keagamaan (Islam, Kristen via algoritma Computus/Easter, Hindu, Buddha, Imlek), serta Cuti Bersama sesuai SKB 3 Menteri.
+
+---
+
+## 8. Position Code Uniqueness per Department (Keunikan Kode Jabatan per Departemen)
+- **Aturan Unik Jabatan**: Kode jabatan (`code`) bersifat unik per **Departemen** dalam suatu perusahaan (`company_id + department_id + code`), bukan unik global seluruh perusahaan.
+  - Memungkinkan perusahaan menggunakan kode jabatan yang sama (misal: `MGR`, `STF`, `SPV`) untuk beberapa departemen yang berbeda.
+  - Database schema: Unique index `['company_id', 'department_id', 'code']` (`positions_company_dept_code_unique`).
+- **Form Request (`PositionRequest`)**: Validasi `Rule::unique('positions', 'code')->where('company_id', $tenant->id)->where('department_id', $this->department_id)->whereNull('deleted_at')->ignore($positionId)`.
+- **Import Data**:
+  - `PositionImport`: Pengecekan kode existing difilter berdasarkan `company_id` dan `department_id`.
+  - `EmployeeImport`: Resolusi `getPositionId` mendukung preferensi pencarian berbasis `department_id` karyawan untuk membedakan jabatan dengan kode/nama identik di departemen lain.
+

@@ -202,7 +202,7 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
         return $this->departmentMap[$key] ?? null;
     }
 
-    protected function getPositionId(mixed $identifier): ?int
+    protected function getPositionId(mixed $identifier, ?int $departmentId = null): ?int
     {
         $key = strtolower(trim((string) $identifier));
         if ($key === '') {
@@ -211,15 +211,31 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
 
         if ($this->positionMap === null) {
             $this->positionMap = [];
-            $positions = Position::where('company_id', $this->companyId)->get(['id', 'code', 'name']);
+            $positions = Position::where('company_id', $this->companyId)->get(['id', 'department_id', 'code', 'name']);
             foreach ($positions as $pos) {
                 if (! empty($pos->code)) {
-                    $this->positionMap[strtolower(trim($pos->code))] = $pos->id;
+                    $codeKey = strtolower(trim($pos->code));
+                    if ($pos->department_id) {
+                        $this->positionMap[$pos->department_id . '_' . $codeKey] = $pos->id;
+                    }
+                    if (! isset($this->positionMap[$codeKey])) {
+                        $this->positionMap[$codeKey] = $pos->id;
+                    }
                 }
                 if (! empty($pos->name)) {
-                    $this->positionMap[strtolower(trim($pos->name))] = $pos->id;
+                    $nameKey = strtolower(trim($pos->name));
+                    if ($pos->department_id) {
+                        $this->positionMap[$pos->department_id . '_' . $nameKey] = $pos->id;
+                    }
+                    if (! isset($this->positionMap[$nameKey])) {
+                        $this->positionMap[$nameKey] = $pos->id;
+                    }
                 }
             }
+        }
+
+        if ($departmentId !== null && isset($this->positionMap[$departmentId . '_' . $key])) {
+            return $this->positionMap[$departmentId . '_' . $key];
         }
 
         return $this->positionMap[$key] ?? null;
@@ -419,7 +435,7 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
         $positionId = null;
         $posVal = $this->getRowValue($row, ['kode_jabatan', 'position_code', 'jabatan', 'position']);
         if (! empty($posVal)) {
-            $positionId = $this->getPositionId($posVal);
+            $positionId = $this->getPositionId($posVal, $departmentId);
             if (! $positionId) {
                 $this->addError("Baris {$rowNum}: Jabatan '{$posVal}' tidak ditemukan.");
             }

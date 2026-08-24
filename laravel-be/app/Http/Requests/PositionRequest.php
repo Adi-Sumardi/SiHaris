@@ -25,6 +25,8 @@ class PositionRequest extends FormRequest
                 'max:50',
                 Rule::unique('positions', 'code')
                     ->where('company_id', $tenant->id)
+                    ->where('department_id', $this->department_id)
+                    ->whereNull('deleted_at')
                     ->ignore($positionId),
             ],
             'department_id' => [
@@ -44,7 +46,7 @@ class PositionRequest extends FormRequest
         return [
             'name.required' => 'Nama jabatan wajib diisi.',
             'name.max' => 'Nama jabatan maksimal 255 karakter.',
-            'code.unique' => 'Kode jabatan sudah digunakan.',
+            'code.unique' => 'Kode jabatan sudah digunakan pada departemen ini.',
             'code.max' => 'Kode jabatan maksimal 50 karakter.',
             'department_id.required' => 'Departemen wajib dipilih.',
             'department_id.exists' => 'Departemen tidak valid.',

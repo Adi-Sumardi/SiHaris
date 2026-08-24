@@ -178,6 +178,41 @@ describe('EmployeeImport', function () {
             expect($emp2->work_schedule_id)->toBe($this->workSchedule->id);
         });
 
+        it('resolves position scoped by department when same position code exists in multiple departments', function () {
+            $hrDept = Department::factory()->create([
+                'company_id' => $this->company->id,
+                'name' => 'HR Department',
+                'code' => 'HR',
+            ]);
+
+            $itStaff = Position::factory()->create([
+                'company_id' => $this->company->id,
+                'department_id' => $this->department->id,
+                'name' => 'Staff',
+                'code' => 'STF',
+            ]);
+
+            $hrStaff = Position::factory()->create([
+                'company_id' => $this->company->id,
+                'department_id' => $hrDept->id,
+                'name' => 'Staff',
+                'code' => 'STF',
+            ]);
+
+            $import = new EmployeeImport($this->company->id);
+
+            $emp = $import->model([
+                'id_karyawan' => 'EMP_HR_1',
+                'nama_depan' => 'Jane',
+                'kode_departemen' => 'HR',
+                'kode_jabatan' => 'STF',
+            ]);
+
+            expect($emp)->not->toBeNull();
+            expect($emp->department_id)->toBe($hrDept->id);
+            expect($emp->position_id)->toBe($hrStaff->id);
+        });
+
         it('resolves manager by NIK', function () {
             $manager = Employee::factory()->create([
                 'company_id' => $this->company->id,

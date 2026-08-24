@@ -92,6 +92,7 @@ describe('PositionImport', function () {
         it('skips soft-deleted positions without unique constraint error', function () {
             $pos = Position::factory()->create([
                 'company_id' => $this->company->id,
+                'department_id' => $this->itDepartment->id,
                 'code' => 'OLD_POS',
             ]);
             $pos->delete();
@@ -100,11 +101,42 @@ describe('PositionImport', function () {
             $result = $import->model([
                 'nama' => 'New Pos',
                 'kode' => 'OLD_POS',
+                'kode_departemen' => 'IT',
                 'aktif' => 'Ya',
             ]);
 
             expect($result)->toBeNull();
             expect($import->getSkipCount())->toBe(1);
+        });
+
+        it('allows importing same position code in different departments', function () {
+            $hrDepartment = Department::factory()->create([
+                'company_id' => $this->company->id,
+                'name' => 'HR Department',
+                'code' => 'HR',
+            ]);
+
+            Position::factory()->create([
+                'company_id' => $this->company->id,
+                'department_id' => $this->itDepartment->id,
+                'code' => 'MGR',
+                'name' => 'IT Manager',
+            ]);
+
+            $import = new \App\Imports\PositionImport($this->company->id);
+            $result = $import->model([
+                'nama' => 'HR Manager',
+                'kode' => 'MGR',
+                'kode_departemen' => 'HR',
+                'level' => 3,
+                'gaji_pokok' => 12000000,
+                'aktif' => 'Ya',
+            ]);
+
+            expect($result)->not->toBeNull();
+            expect($result->department_id)->toBe($hrDepartment->id);
+            expect($result->code)->toBe('MGR');
+            expect($import->getSuccessCount())->toBe(1);
         });
     });
 });

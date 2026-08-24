@@ -128,7 +128,7 @@ describe('PositionController', function () {
             $response->assertSessionHasErrors(['name', 'department_id']);
         });
 
-        it('validates unique code within company', function () {
+        it('validates unique code within department', function () {
             Position::factory()->create([
                 'company_id' => $this->company->id,
                 'department_id' => $this->department->id,
@@ -142,6 +142,32 @@ describe('PositionController', function () {
             ]);
 
             $response->assertSessionHasErrors(['code']);
+        });
+
+        it('allows same code in different departments', function () {
+            $otherDepartment = Department::factory()->create([
+                'company_id' => $this->company->id,
+            ]);
+
+            Position::factory()->create([
+                'company_id' => $this->company->id,
+                'department_id' => $this->department->id,
+                'code' => 'MGR',
+            ]);
+
+            $response = $this->post(route('positions.store'), [
+                'name' => 'Other Dept Manager',
+                'code' => 'MGR',
+                'department_id' => $otherDepartment->id,
+            ]);
+
+            $response->assertRedirect(route('positions.index'));
+            $this->assertDatabaseHas('positions', [
+                'company_id' => $this->company->id,
+                'department_id' => $otherDepartment->id,
+                'code' => 'MGR',
+                'name' => 'Other Dept Manager',
+            ]);
         });
     });
 

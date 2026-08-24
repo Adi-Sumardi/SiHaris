@@ -56,7 +56,7 @@
                         @error('code')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1 text-sm text-secondary-500">Kode unik untuk identifikasi jabatan.</p>
+                        <p class="mt-1 text-sm text-secondary-500">Kode unik untuk identifikasi jabatan dalam departemen.</p>
                     </div>
 
                     {{-- Department --}}

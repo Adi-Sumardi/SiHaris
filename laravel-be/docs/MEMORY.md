@@ -89,7 +89,8 @@ version: 1.0.2+8  # <-- naikkan PATCH atau MINOR sesuai jenis perubahan
 | 1.0.1 | +6 | 2026-08-24 | Fix pengumuman real-time, notifikasi push, face enroll photo base64 |
 | 1.0.1 | +7 | 2026-08-24 | Optimasi FaceDetector, instant capture shutter, perbaikan status biometrik |
 | 1.0.2 | +8 | 2026-08-24 | Fix tombol kamera (IgnorePointer — partial fix) |
-| **1.0.2** | **+9** | **2026-08-24** | **Fix tombol kamera definitif: pindah tombol ke luar CameraPreview (Column layout)** |
+| 1.0.2 | +9 | 2026-08-24 | Fix tombol kamera definitif: pindah tombol ke luar CameraPreview (Column layout) |
+| **1.0.3** | **+10** | **2026-08-24** | **Fix preview kamera gepeng/distorsi: AspectRatio dari controller** |
 
 ---
 

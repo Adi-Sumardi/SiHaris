@@ -131,21 +131,29 @@ class _CameraViewState extends State<CameraView> {
           // ── Top bar (back + title) ──────────────────────────────
           _topBar(),
 
-          // ── Camera preview — expanded, fills remaining space ────
+          // ── Camera preview — maintain native aspect ratio ────────
+          // Expanded + Center + AspectRatio: camera fills available height
+          // but keeps its native ratio (4:3 or 16:9) — no squish/stretch.
           Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _changingCameraLens
-                    ? const Center(child: Text('Mengganti kamera...', style: TextStyle(color: Colors.white)))
-                    : CameraPreview(_controller!, child: widget.customPaint),
-              ],
+            child: ColoredBox(
+              color: Colors.black,
+              child: Center(
+                child: _changingCameraLens
+                    ? const Text('Mengganti kamera...', style: TextStyle(color: Colors.white))
+                    : AspectRatio(
+                        aspectRatio: 1 / _controller!.value.aspectRatio,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CameraPreview(_controller!, child: widget.customPaint),
+                          ],
+                        ),
+                      ),
+              ),
             ),
           ),
 
           // ── Shutter controls — physically OUTSIDE the camera view ──
-          // Placing the button here means CameraPreview's native platform
-          // touch handling cannot intercept taps on this widget.
           _shutterBar(),
         ],
       ),

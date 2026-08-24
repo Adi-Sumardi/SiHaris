@@ -126,10 +126,14 @@ class _CameraViewState extends State<CameraView> {
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          Center(
-            child: _changingCameraLens
-                ? const Center(child: Text('Mengganti kamera...'))
-                : CameraPreview(_controller!, child: widget.customPaint),
+          // IgnorePointer prevents CameraPreview's internal GestureDetector
+          // from absorbing all touch events and blocking the shutter button.
+          IgnorePointer(
+            child: Center(
+              child: _changingCameraLens
+                  ? const Center(child: Text('Mengganti kamera...'))
+                  : CameraPreview(_controller!, child: widget.customPaint),
+            ),
           ),
           _backButton(),
           _titleBar(),

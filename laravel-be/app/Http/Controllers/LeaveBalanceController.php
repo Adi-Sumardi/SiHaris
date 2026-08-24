@@ -23,14 +23,16 @@ class LeaveBalanceController extends Controller
             ->where('leave_balances.year', $year);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->join('employees', 'leave_balances.employee_id', '=', 'employees.id')
-                ->where(function ($q) use ($search) {
-                    $q->where('employees.first_name', 'like', "%{$search}%")
-                        ->orWhere('employees.last_name', 'like', "%{$search}%")
-                        ->orWhere('employees.employee_id', 'like', "%{$search}%");
-                })
-                ->select('leave_balances.*');
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
         }
 
         if ($request->filled('leave_type_id')) {

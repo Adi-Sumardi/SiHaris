@@ -34,6 +34,23 @@ class LeaveRequestController extends Controller
             }
         }
 
+        // Filter by search
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('request_number', 'like', "%{$search}%")
+                    ->orWhereHas('employee', function ($eq) use ($search) {
+                        $eq->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('employee_id', 'like', "%{$search}%")
+                            ->orWhere('nik', 'like', "%{$search}%")
+                            ->orWhere('pin', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+                    });
+            });
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }

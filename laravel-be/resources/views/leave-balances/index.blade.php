@@ -26,132 +26,156 @@
 @endsection
 
 @section('content')
-    {{-- Filters --}}
-    <div class="card mb-4">
-        <div class="card-body-sm">
-            <form action="{{ route('leave-balances.index') }}" method="GET" class="flex flex-wrap items-end gap-3">
-                <div class="flex-1 min-w-[180px]">
-                    <label class="block text-xs font-medium text-secondary-500 mb-1">Cari</label>
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari karyawan..." class="input w-full">
-                </div>
-                <div class="w-28">
-                    <label class="block text-xs font-medium text-secondary-500 mb-1">Tahun</label>
-                    <select name="year" class="input w-full">
-                        @for($y = now()->year + 1; $y >= now()->year - 3; $y--)
-                            <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endfor
-                    </select>
-                </div>
-                <div class="w-36">
-                    <label class="block text-xs font-medium text-secondary-500 mb-1">Jenis Cuti</label>
-                    <select name="leave_type_id" class="input w-full">
-                        <option value="">Semua</option>
-                        @foreach($leaveTypes as $leaveType)
-                            <option value="{{ $leaveType->id }}" {{ request('leave_type_id') == $leaveType->id ? 'selected' : '' }}>
-                                {{ $leaveType->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex items-center gap-2">
-                    @if(request()->hasAny(['search', 'leave_type_id']))
-                        <a href="{{ route('leave-balances.index', ['year' => $year]) }}" class="btn btn-ghost btn-sm">Reset</a>
-                    @endif
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        Filter
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- Table --}}
-    <div class="card">
-        <x-table>
-            <x-slot name="header">
-                <th>Karyawan</th>
-                <th>Jenis Cuti</th>
-                <th class="text-center">Tahun</th>
-                <th class="text-center">Jatah</th>
-                <th class="text-center">Carry</th>
-                <th class="text-center">Adj</th>
-                <th class="text-center">Pakai</th>
-                <th class="text-center">Pending</th>
-                <th class="text-center">Sisa</th>
-                <th class="text-right">Aksi</th>
-            </x-slot>
-
-            @forelse($leaveBalances as $balance)
-                <tr>
-                    <td>
-                        <span class="font-medium text-secondary-900">{{ $balance->employee->full_name }}</span>
-                        <p class="text-xs text-secondary-400">{{ $balance->employee->employee_id }}</p>
-                    </td>
-                    <td class="text-secondary-700">{{ $balance->leaveType->name }}</td>
-                    <td class="text-center font-medium text-secondary-900">{{ $balance->year }}</td>
-                    <td class="text-center font-medium text-secondary-900">{{ number_format($balance->entitled_days, 1) }}</td>
-                    <td class="text-center text-secondary-600">{{ number_format($balance->carried_forward_days, 1) }}</td>
-                    <td class="text-center">
-                        @if($balance->adjustment_days != 0)
-                            <span class="{{ $balance->adjustment_days > 0 ? 'text-success-600' : 'text-danger-600' }}">
-                                {{ $balance->adjustment_days > 0 ? '+' : '' }}{{ number_format($balance->adjustment_days, 1) }}
-                            </span>
-                        @else
-                            <span class="text-secondary-400">-</span>
-                        @endif
-                    </td>
-                    <td class="text-center text-danger-600 font-medium">{{ number_format($balance->used_days, 1) }}</td>
-                    <td class="text-center">
-                        @if($balance->pending_days > 0)
-                            <span class="text-warning-600 font-medium">{{ number_format($balance->pending_days, 1) }}</span>
-                        @else
-                            <span class="text-secondary-400">-</span>
-                        @endif
-                    </td>
-                    <td class="text-center">
-                        <span class="font-bold {{ $balance->remaining_days > 0 ? 'text-success-600' : 'text-danger-600' }}">
-                            {{ number_format($balance->remaining_days, 1) }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="flex items-center justify-end gap-1">
-                            <a href="{{ route('leave-balances.edit', $balance) }}" class="p-1.5 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors" title="Edit">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            </a>
-                            @if($balance->used_days == 0 && $balance->pending_days == 0)
-                                <form action="{{ route('leave-balances.destroy', $balance) }}" method="POST" class="inline"
-                                      onsubmit="return confirm('Yakin ingin menghapus saldo cuti ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="p-1.5 text-secondary-400 hover:text-danger-600 hover:bg-danger-50 rounded-md transition-colors" title="Hapus">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    </button>
-                                </form>
-                            @endif
+    <div x-data="leaveBalanceLiveFilter()">
+        {{-- Filters with Live Search --}}
+        <div class="card mb-4">
+            <div class="card-body-sm">
+                <form id="leave-balances-filter-form" action="{{ route('leave-balances.index') }}" method="GET" class="flex flex-wrap items-end gap-3" @submit.prevent="fetchData()">
+                    <div class="flex-1 min-w-[200px]">
+                        <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan (Live)</label>
+                        <input
+                            type="text"
+                            name="search"
+                            id="search"
+                            value="{{ request('search') }}"
+                            placeholder="Nama, ID, NIK, PIN, atau email..."
+                            class="input w-full"
+                            autocomplete="off"
+                            @input="onSearchInput($event)"
+                        >
+                    </div>
+                    <div class="w-28">
+                        <label for="year" class="block text-xs font-medium text-secondary-500 mb-1">Tahun</label>
+                        <select name="year" id="year" class="input w-full" @change="fetchData()">
+                            @for($y = now()->year + 1; $y >= now()->year - 3; $y--)
+                                <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div class="w-36">
+                        <label for="leave_type_id" class="block text-xs font-medium text-secondary-500 mb-1">Jenis Cuti</label>
+                        <select name="leave_type_id" id="leave_type_id" class="input w-full" @change="fetchData()">
+                            <option value="">Semua</option>
+                            @foreach($leaveTypes as $leaveType)
+                                <option value="{{ $leaveType->id }}" {{ request('leave_type_id') == $leaveType->id ? 'selected' : '' }}>
+                                    {{ $leaveType->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="resetFilters()" class="btn btn-ghost btn-sm" id="reset-btn" style="{{ request()->hasAny(['search', 'leave_type_id']) ? '' : 'display: none;' }}">
+                            Reset
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-sm flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <span>Cari</span>
+                        </button>
+                        <div class="h-8 flex items-center px-1" x-show="loading" style="display: none;">
+                            <svg class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
                         </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="10" class="text-center py-12">
-                        <div class="flex flex-col items-center">
-                            <svg class="w-12 h-12 text-secondary-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            <p class="text-secondary-500 mb-4">Belum ada data saldo cuti untuk tahun {{ $year }}</p>
-                            <button type="button" onclick="document.getElementById('bulkModal').classList.remove('hidden')" class="btn btn-primary btn-sm">
-                                Generate Saldo Cuti
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            @endforelse
-        </x-table>
-
-        @if($leaveBalances->hasPages())
-            <div class="card-footer">
-                {{ $leaveBalances->links() }}
+                    </div>
+                </form>
             </div>
-        @endif
+        </div>
+
+        {{-- Table --}}
+        <div class="card" id="leave-balances-card">
+            <x-table>
+                <x-slot name="header">
+                    <th>Karyawan</th>
+                    <th>Jenis Cuti</th>
+                    <th class="text-center">Tahun</th>
+                    <th class="text-center">Jatah</th>
+                    <th class="text-center">Carry</th>
+                    <th class="text-center">Adj</th>
+                    <th class="text-center">Pakai</th>
+                    <th class="text-center">Pending</th>
+                    <th class="text-center">Sisa</th>
+                    <th class="text-right">Aksi</th>
+                </x-slot>
+
+                @forelse($leaveBalances as $balance)
+                    <tr class="hover:bg-secondary-50/60 transition-colors">
+                        <td>
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-primary-700 text-xs font-medium">{{ strtoupper(substr($balance->employee->full_name ?? 'K', 0, 1)) }}</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="font-medium text-secondary-900 block truncate">{{ $balance->employee->full_name }}</span>
+                                    <p class="text-xs text-secondary-400 font-mono">{{ $balance->employee->employee_id }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-secondary-700">{{ $balance->leaveType->name }}</td>
+                        <td class="text-center font-medium text-secondary-900">{{ $balance->year }}</td>
+                        <td class="text-center font-medium text-secondary-900">{{ number_format($balance->entitled_days, 1) }}</td>
+                        <td class="text-center text-secondary-600">{{ number_format($balance->carried_forward_days, 1) }}</td>
+                        <td class="text-center">
+                            @if($balance->adjustment_days != 0)
+                                <span class="{{ $balance->adjustment_days > 0 ? 'text-success-600' : 'text-danger-600' }}">
+                                    {{ $balance->adjustment_days > 0 ? '+' : '' }}{{ number_format($balance->adjustment_days, 1) }}
+                                </span>
+                            @else
+                                <span class="text-secondary-400">-</span>
+                            @endif
+                        </td>
+                        <td class="text-center text-danger-600 font-medium">{{ number_format($balance->used_days, 1) }}</td>
+                        <td class="text-center">
+                            @if($balance->pending_days > 0)
+                                <span class="text-warning-600 font-medium">{{ number_format($balance->pending_days, 1) }}</span>
+                            @else
+                                <span class="text-secondary-400">-</span>
+                            @endif
+                        </td>
+                        <td class="text-center">
+                            <span class="font-bold {{ $balance->remaining_days > 0 ? 'text-success-600' : 'text-danger-600' }}">
+                                {{ number_format($balance->remaining_days, 1) }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center justify-end gap-1">
+                                <a href="{{ route('leave-balances.edit', $balance) }}" class="p-1.5 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </a>
+                                @if($balance->used_days == 0 && $balance->pending_days == 0)
+                                    <form action="{{ route('leave-balances.destroy', $balance) }}" method="POST" class="inline"
+                                          onsubmit="return confirm('Yakin ingin menghapus saldo cuti ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1.5 text-secondary-400 hover:text-danger-600 hover:bg-danger-50 rounded-md transition-colors" title="Hapus">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="10" class="text-center py-12">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-12 h-12 text-secondary-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <p class="text-secondary-500 mb-4">Belum ada data saldo cuti yang sesuai dengan filter.</p>
+                                <button type="button" onclick="document.getElementById('bulkModal').classList.remove('hidden')" class="btn btn-primary btn-sm">
+                                    Generate Saldo Cuti
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </x-table>
+
+            @if($leaveBalances->hasPages())
+                <div class="card-footer">
+                    {{ $leaveBalances->links() }}
+                </div>
+            @endif
+        </div>
     </div>
 
     {{-- Bulk Generate Modal --}}
@@ -192,4 +216,85 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function leaveBalanceLiveFilter() {
+            return {
+                loading: false,
+                debounceTimer: null,
+
+                updateResetVisibility() {
+                    const searchVal = document.getElementById('search')?.value || '';
+                    const leaveTypeIdVal = document.getElementById('leave_type_id')?.value || '';
+                    const resetBtn = document.getElementById('reset-btn');
+                    if (resetBtn) {
+                        resetBtn.style.display = (searchVal || leaveTypeIdVal) ? '' : 'none';
+                    }
+                },
+
+                onSearchInput(event) {
+                    this.updateResetVisibility();
+                    clearTimeout(this.debounceTimer);
+                    this.debounceTimer = setTimeout(() => {
+                        this.fetchData();
+                    }, 300);
+                },
+
+                resetFilters() {
+                    const searchInput = document.getElementById('search');
+                    const leaveTypeIdInput = document.getElementById('leave_type_id');
+
+                    if (searchInput) searchInput.value = '';
+                    if (leaveTypeIdInput) leaveTypeIdInput.value = '';
+
+                    this.updateResetVisibility();
+                    this.fetchData(true);
+                },
+
+                fetchData(isReset = false) {
+                    const form = document.getElementById('leave-balances-filter-form');
+                    if (!form) return;
+
+                    const url = new URL(form.action, window.location.origin);
+                    if (!isReset) {
+                        const formData = new FormData(form);
+                        for (const [key, value] of formData.entries()) {
+                            if (value && value.trim() !== '') {
+                                url.searchParams.set(key, value.trim());
+                            }
+                        }
+                    }
+
+                    this.loading = true;
+
+                    fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.text();
+                    })
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newCard = doc.getElementById('leave-balances-card');
+                        const currentCard = document.getElementById('leave-balances-card');
+                        if (newCard && currentCard) {
+                            currentCard.innerHTML = newCard.innerHTML;
+                        }
+                        window.history.replaceState({}, '', url.toString());
+                        this.updateResetVisibility();
+                    })
+                    .catch(err => {
+                        console.error('Live search error:', err);
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+                }
+            };
+        }
+    </script>
 @endsection

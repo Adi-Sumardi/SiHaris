@@ -409,4 +409,68 @@ describe('Employee Delete', function () {
         expect(Employee::count())->toBe(1);
     });
 
+    it('can update employment type via patch', function () {
+        $this->actingAs($this->admin);
+
+        $employee = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'employment_type' => null,
+        ]);
+
+        $response = $this->patchJson(route('employees.update-employment-type', $employee), [
+            'employment_type' => 'YPI',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'employment_type' => 'YPI',
+        ]);
+
+        expect($employee->fresh()->employment_type)->toBe('YPI');
+
+        // Update to YAPI
+        $responseYapi = $this->patchJson(route('employees.update-employment-type', $employee), [
+            'employment_type' => 'YAPI',
+        ]);
+
+        $responseYapi->assertOk();
+        expect($employee->fresh()->employment_type)->toBe('YAPI');
+
+        // Clear to null
+        $responseNull = $this->patchJson(route('employees.update-employment-type', $employee), [
+            'employment_type' => '',
+        ]);
+
+        $responseNull->assertOk();
+        expect($employee->fresh()->employment_type)->toBeNull();
+    });
+
+    it('can filter employees by employment type', function () {
+        $this->actingAs($this->admin);
+
+        $empYpi = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'first_name' => 'Ahmad',
+            'employment_type' => 'YPI',
+        ]);
+
+        $empYapi = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'first_name' => 'Budi',
+            'employment_type' => 'YAPI',
+        ]);
+
+        $response = $this->get('/employees?employment_type=YPI');
+        $response->assertOk();
+        $response->assertSee('Ahmad');
+        $response->assertDontSee('Budi');
+    });
+
 });

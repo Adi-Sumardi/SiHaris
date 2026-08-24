@@ -401,18 +401,15 @@
                         @enderror
                     </div>
                     
-                    {{-- Manager --}}
+                    {{-- Status Kepegawaian (YPI / YAPI) --}}
                     <div>
-                        <label for="manager_id" class="block text-sm font-medium text-secondary-700 mb-1">Atasan / Manager</label>
-                        <select name="manager_id" id="manager_id" class="input w-full @error('manager_id') border-danger-500 @enderror">
-                            <option value="">Pilih Atasan</option>
-                            @foreach($managers as $manager)
-                                <option value="{{ $manager->id }}" {{ old('manager_id', $employee->manager_id) == $manager->id ? 'selected' : '' }}>
-                                    {{ $manager->full_name }} ({{ $manager->employee_id }})
-                                </option>
-                            @endforeach
+                        <label for="employment_type" class="block text-sm font-medium text-secondary-700 mb-1">Status Kepegawaian</label>
+                        <select name="employment_type" id="employment_type" class="input w-full @error('employment_type') border-danger-500 @enderror">
+                            <option value="">Pilih Status Kepegawaian</option>
+                            <option value="YPI" {{ old('employment_type', $employee->employment_type) === 'YPI' ? 'selected' : '' }}>YPI</option>
+                            <option value="YAPI" {{ old('employment_type', $employee->employment_type) === 'YAPI' ? 'selected' : '' }}>YAPI</option>
                         </select>
-                        @error('manager_id')
+                        @error('employment_type')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                         @enderror
                     </div>

@@ -221,14 +221,12 @@
                             <dd class="mt-1 text-sm text-secondary-900">{{ $employee->position?->name ?? '-' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-secondary-500">Atasan / Manager</dt>
+                            <dt class="text-sm font-medium text-secondary-500">Status Kepegawaian</dt>
                             <dd class="mt-1 text-sm text-secondary-900">
-                                @if($employee->manager)
-                                    <a href="{{ route('employees.show', $employee->manager) }}" class="text-primary-600 hover:text-primary-700 font-medium">
-                                        {{ $employee->manager->full_name }}
-                                    </a>
+                                @if($employee->employment_type)
+                                    <x-badge type="primary">{{ $employee->employment_type }}</x-badge>
                                 @else
-                                    <span class="text-secondary-400">Tidak ada</span>
+                                    <span class="text-secondary-400">-</span>
                                 @endif
                             </dd>
                         </div>

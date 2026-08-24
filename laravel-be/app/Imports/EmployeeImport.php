@@ -451,14 +451,27 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
             }
         }
 
-        // Resolve manager
+        // Resolve employment type (Status Kepegawaian: YPI / YAPI)
+        $empTypeRaw = $this->getRowValue($row, ['status_kepegawaian', 'employment_type', 'kepegawaian', 'tipe_kepegawaian', 'status_pegawai']);
+        $employmentType = null;
+        if (! empty($empTypeRaw)) {
+            $upperType = strtoupper(trim((string) $empTypeRaw));
+            if (in_array($upperType, ['YPI', 'YAPI'])) {
+                $employmentType = $upperType;
+            } elseif (str_contains($upperType, 'YPI')) {
+                $employmentType = 'YPI';
+            } elseif (str_contains($upperType, 'YAPI')) {
+                $employmentType = 'YAPI';
+            } else {
+                $employmentType = $upperType;
+            }
+        }
+
+        // Resolve manager (optional fallback)
         $managerId = null;
         $mgrVal = $this->getRowValue($row, ['nik_manajer', 'manager_nik', 'kode_manajer', 'manager_id']);
         if (! empty($mgrVal)) {
             $managerId = $this->getManagerId($mgrVal);
-            if (! $managerId) {
-                $this->addError("Baris {$rowNum}: NIK Manajer '{$mgrVal}' tidak ditemukan.");
-            }
         }
 
         // Resolve office location
@@ -538,6 +551,7 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
             'postal_code' => ! empty($postalCode) ? $postalCode : null,
             'hire_date' => $hireDate,
             'employment_status' => $this->parseEmploymentStatus($this->getRowValue($row, ['status_karyawan', 'employment_status', 'status_kerja'], 'permanent')),
+            'employment_type' => $employmentType,
             'contract_start_date' => $this->parseDate($this->getRowValue($row, ['tanggal_mulai_kontrak', 'contract_start_date', 'tgl_mulai_kontrak'])),
             'contract_end_date' => $this->parseDate($this->getRowValue($row, ['tanggal_selesai_kontrak', 'contract_end_date', 'tgl_selesai_kontrak', 'tgl_habis_kontrak'])),
             'base_salary' => $this->parseSalary($this->getRowValue($row, ['gaji_pokok', 'base_salary', 'gaji', 'salary'], 0)),

@@ -42,6 +42,7 @@ class Employee extends Model
         'hire_date',
         'resignation_date',
         'employment_status',
+        'employment_type',
         'contract_start_date',
         'contract_end_date',
         'base_salary',

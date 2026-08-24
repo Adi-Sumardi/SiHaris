@@ -77,7 +77,7 @@ describe('EmployeeImport', function () {
                 ->toContain('Kode Departemen')
                 ->toContain('Kode Jabatan')
                 ->toContain('Kode Jadwal')
-                ->toContain('NIK Manajer')
+                ->toContain('Status Kepegawaian')
                 ->toContain('Kode Lokasi Kantor')
                 ->toContain('Aktif');
         });

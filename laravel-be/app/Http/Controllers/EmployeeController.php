@@ -35,6 +35,11 @@ class EmployeeController extends Controller
             $query->where('employment_status', $request->employment_status);
         }
 
+        // Filter by employment type (YPI / YAPI)
+        if ($request->filled('employment_type')) {
+            $query->where('employment_type', $request->employment_type);
+        }
+
         // Filter by active status
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
@@ -115,6 +120,7 @@ class EmployeeController extends Controller
             'manager_id' => ['nullable', Rule::exists('employees', 'id')->where('company_id', $tenant->id)],
             'hire_date' => ['required', 'date'],
             'employment_status' => ['required', 'in:permanent,contract,probation,intern'],
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI'])],
             'work_schedule_id' => ['nullable', Rule::exists('work_schedules', 'id')->where('company_id', $tenant->id)],
             'schedule_mode' => ['nullable', 'in:default,weekly'],
             'weekly_schedules' => ['nullable', 'array'],
@@ -310,6 +316,7 @@ class EmployeeController extends Controller
             'hire_date' => ['required', 'date'],
             'resignation_date' => ['nullable', 'date'],
             'employment_status' => ['required', 'in:permanent,contract,probation,intern'],
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI'])],
             'work_schedule_id' => ['nullable', Rule::exists('work_schedules', 'id')->where('company_id', $tenant->id)],
             'schedule_mode' => ['nullable', 'in:default,weekly'],
             'weekly_schedules' => ['nullable', 'array'],
@@ -533,5 +540,30 @@ class EmployeeController extends Controller
                 ]);
             }
         }
+    }
+
+    public function updateEmploymentType(Request $request, Employee $employee): \Illuminate\Http\JsonResponse
+    {
+        $tenant = app('tenant');
+
+        if ($employee->company_id !== $tenant->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI', ''])],
+        ]);
+
+        $type = ! empty($validated['employment_type']) ? $validated['employment_type'] : null;
+
+        $employee->update([
+            'employment_type' => $type,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status kepegawaian berhasil diperbarui.',
+            'employment_type' => $employee->employment_type,
+        ]);
     }
 }

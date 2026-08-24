@@ -137,6 +137,20 @@
 - **Menu Karyawan**: `/employees` (`EmployeeController::index`)
 - **Filter Live Search**: Input pencarian real-time (debounce 300ms) untuk nama depan/belakang/lengkap, NIK, ID Karyawan, PIN, dan email secara asinkron tanpa reload halaman.
 
+---
+
+## 12. Employee Employment Type (Status Kepegawaian YPI / YAPI)
+- **Penggantian Kolom**: Kolom NIK Manajer digantikan dengan **Status Kepegawaian** (`employment_type`) dengan opsi `YPI` dan `YAPI`.
+- **Database Schema**: Kolom `employment_type` (string 50, nullable) pada tabel `employees` dengan index `['company_id', 'employment_type']`.
+- **Inline Quick Update pada Daftar Karyawan**:
+  - Pada halaman `/employees`, setiap baris tabel memiliki dropdown interaktif untuk langsung memilih status kepegawaian (`YPI` / `YAPI` / `- Pilih -`).
+  - Perubahan langsung tersimpan otomatis via AJAX endpoint `PATCH /employees/{employee}/employment-type` tanpa reload halaman.
+- **Filter & Export/Import**:
+  - Filter `Kepegawaian` tersedia di header filter `/employees`.
+  - Form Tambah & Edit Karyawan (`employees/create.blade.php`, `employees/edit.blade.php`) dan halaman detail (`employees/show.blade.php`) telah disesuaikan.
+  - Template Excel Karyawan (`EmployeeTemplateExport`) dan Import (`EmployeeImport`) telah diperbarui membaca kolom `Status Kepegawaian`.
+
+
 
 
 

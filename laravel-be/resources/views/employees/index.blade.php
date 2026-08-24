@@ -46,7 +46,7 @@
                 </div>
 
                 {{-- Department --}}
-                <div class="w-40">
+                <div class="w-36">
                     <label for="department_id" class="block text-xs font-medium text-secondary-500 mb-1">Departemen</label>
                     <select name="department_id" id="department_id" class="input w-full" @change="fetchData()">
                         <option value="">Semua</option>
@@ -55,6 +55,16 @@
                                 {{ $department->name }}
                             </option>
                         @endforeach
+                    </select>
+                </div>
+
+                {{-- Employment Type (Status Kepegawaian: YPI / YAPI) --}}
+                <div class="w-28">
+                    <label for="employment_type" class="block text-xs font-medium text-secondary-500 mb-1">Kepegawaian</label>
+                    <select name="employment_type" id="employment_type" class="input w-full" @change="fetchData()">
+                        <option value="">Semua</option>
+                        <option value="YPI" {{ request('employment_type') === 'YPI' ? 'selected' : '' }}>YPI</option>
+                        <option value="YAPI" {{ request('employment_type') === 'YAPI' ? 'selected' : '' }}>YAPI</option>
                     </select>
                 </div>
 
@@ -81,7 +91,7 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button type="button" @click="resetFilters()" class="btn btn-ghost btn-sm" id="reset-btn" style="{{ request()->hasAny(['search', 'department_id', 'employment_status', 'is_active']) ? '' : 'display: none;' }}">
+                    <button type="button" @click="resetFilters()" class="btn btn-ghost btn-sm" id="reset-btn" style="{{ request()->hasAny(['search', 'department_id', 'employment_type', 'employment_status', 'is_active']) ? '' : 'display: none;' }}">
                         Reset
                     </button>
                     <button type="submit" class="btn btn-primary btn-sm flex items-center gap-1.5">
@@ -107,6 +117,7 @@
                 <th>ID Karyawan</th>
                 <th>Departemen</th>
                 <th>Jabatan</th>
+                <th>Kepegawaian</th>
                 <th>Status Kerja</th>
                 <th>Status</th>
                 <th class="text-right">Aksi</th>
@@ -137,6 +148,54 @@
                     </td>
                     <td class="text-secondary-600">{{ $employee->department?->name ?? '-' }}</td>
                     <td class="text-secondary-600">{{ $employee->position?->name ?? '-' }}</td>
+                    <td>
+                        {{-- Inline Interactive Quick Select for Status Kepegawaian (YPI / YAPI) --}}
+                        <div class="inline-flex items-center" x-data="{ saving: false, saved: false }">
+                            <select
+                                class="text-xs font-semibold rounded-lg border border-secondary-200 bg-white px-2 py-1 text-secondary-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer transition-colors"
+                                :class="{ 'border-success-500 text-success-700 bg-success-50 ring-1 ring-success-400': saved }"
+                                @change="
+                                    saving = true;
+                                    saved = false;
+                                    fetch('{{ route('employees.update-employment-type', $employee) }}', {
+                                        method: 'PATCH',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({ employment_type: $event.target.value })
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            saved = true;
+                                            setTimeout(() => saved = false, 2500);
+                                        }
+                                    })
+                                    .catch(err => {
+                                        alert('Gagal memperbarui status kepegawaian');
+                                    })
+                                    .finally(() => saving = false);
+                                "
+                            >
+                                <option value="" {{ empty($employee->employment_type) ? 'selected' : '' }}>- Pilih -</option>
+                                <option value="YPI" {{ $employee->employment_type === 'YPI' ? 'selected' : '' }}>YPI</option>
+                                <option value="YAPI" {{ $employee->employment_type === 'YAPI' ? 'selected' : '' }}>YAPI</option>
+                            </select>
+                            <span x-show="saving" class="ml-1.5 inline-flex" style="display: none;" title="Menyimpan...">
+                                <svg class="animate-spin w-3.5 h-3.5 text-primary-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                            </span>
+                            <span x-show="saved" class="ml-1.5 inline-flex text-success-600" style="display: none;" title="Tersimpan">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                        </div>
+                    </td>
                     <td>
                         @switch($employee->employment_status)
                             @case('permanent')
@@ -189,7 +248,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center py-12">
+                    <td colspan="8" class="text-center py-12">
                         <div class="flex flex-col items-center">
                             <svg class="w-12 h-12 text-secondary-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                             <p class="text-secondary-500">Belum ada data karyawan untuk filter yang dipilih.</p>
@@ -219,11 +278,12 @@
                 updateResetVisibility() {
                     const searchVal = document.getElementById('search')?.value || '';
                     const deptVal = document.getElementById('department_id')?.value || '';
+                    const empTypeVal = document.getElementById('employment_type')?.value || '';
                     const empStatusVal = document.getElementById('employment_status')?.value || '';
                     const activeVal = document.getElementById('is_active')?.value || '';
                     const resetBtn = document.getElementById('reset-btn');
                     if (resetBtn) {
-                        resetBtn.style.display = (searchVal || deptVal || empStatusVal || activeVal) ? '' : 'none';
+                        resetBtn.style.display = (searchVal || deptVal || empTypeVal || empStatusVal || activeVal) ? '' : 'none';
                     }
                 },
 
@@ -238,11 +298,13 @@
                 resetFilters() {
                     const searchInput = document.getElementById('search');
                     const deptInput = document.getElementById('department_id');
+                    const empTypeInput = document.getElementById('employment_type');
                     const empStatusInput = document.getElementById('employment_status');
                     const activeInput = document.getElementById('is_active');
 
                     if (searchInput) searchInput.value = '';
                     if (deptInput) deptInput.value = '';
+                    if (empTypeInput) empTypeInput.value = '';
                     if (empStatusInput) empStatusInput.value = '';
                     if (activeInput) activeInput.value = '';
 

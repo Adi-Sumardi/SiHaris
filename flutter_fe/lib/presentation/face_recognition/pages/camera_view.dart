@@ -114,113 +114,123 @@ class _CameraViewState extends State<CameraView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: _liveFeedBody());
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: _liveFeedBody(),
+    );
   }
 
   Widget _liveFeedBody() {
-    if (_cameras.isEmpty) return Container();
-    if (_controller == null) return Container();
-    if (_controller?.value.isInitialized == false) return Container();
-    return ColoredBox(
-      color: Colors.black,
-      child: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          // IgnorePointer prevents CameraPreview's internal GestureDetector
-          // from absorbing all touch events and blocking the shutter button.
-          IgnorePointer(
-            child: Center(
-              child: _changingCameraLens
-                  ? const Center(child: Text('Mengganti kamera...'))
-                  : CameraPreview(_controller!, child: widget.customPaint),
+    if (_cameras.isEmpty) return const Center(child: CircularProgressIndicator());
+    if (_controller == null) return const Center(child: CircularProgressIndicator());
+    if (_controller?.value.isInitialized == false) return const Center(child: CircularProgressIndicator());
+
+    return SafeArea(
+      child: Column(
+        children: [
+          // ── Top bar (back + title) ──────────────────────────────
+          _topBar(),
+
+          // ── Camera preview — expanded, fills remaining space ────
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _changingCameraLens
+                    ? const Center(child: Text('Mengganti kamera...', style: TextStyle(color: Colors.white)))
+                    : CameraPreview(_controller!, child: widget.customPaint),
+              ],
             ),
           ),
-          _backButton(),
-          _titleBar(),
-          _takePictureButton(),
+
+          // ── Shutter controls — physically OUTSIDE the camera view ──
+          // Placing the button here means CameraPreview's native platform
+          // touch handling cannot intercept taps on this widget.
+          _shutterBar(),
         ],
       ),
     );
   }
 
-  Widget _backButton() => Positioned(
-    top: 40,
-    left: 8,
-    child: SizedBox(
-      height: 50.0,
-      width: 50.0,
-      child: FloatingActionButton(
-        heroTag: Object(),
-        onPressed: () => Navigator.of(context).pop(),
-        backgroundColor: Colors.black54,
-        child: const Icon(Icons.arrow_back_ios_outlined, size: 20),
-      ),
-    ),
-  );
-
-  Widget _titleBar() => Positioned(
-    top: 50,
-    left: 0,
-    right: 0,
-    child: const Center(
-      child: Text(
-        'Daftarkan Wajah',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+  Widget _topBar() => Container(
+    color: Colors.black,
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: FloatingActionButton(
+            heroTag: Object(),
+            mini: true,
+            onPressed: () => Navigator.of(context).pop(),
+            backgroundColor: Colors.white12,
+            elevation: 0,
+            child: const Icon(Icons.arrow_back_ios_outlined, size: 18, color: Colors.white),
+          ),
         ),
-      ),
+        const Expanded(
+          child: Center(
+            child: Text(
+              'Daftarkan Wajah',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 44), // balance the back button
+      ],
     ),
   );
 
-  Widget _takePictureButton() => Positioned(
-    bottom: 40,
-    left: 0,
-    right: 0,
+  Widget _shutterBar() => Container(
+    color: Colors.black,
+    padding: const EdgeInsets.symmetric(vertical: 24),
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
-          'Posisikan wajah dalam frame',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+          'Posisikan wajah dalam frame lalu tekan tombol kamera',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(40),
-            onTap: () {
-              if (frame != null) {
-                widget.onTakePicture(frame!);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Kamera sedang memuat, silakan coba lagi...'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              }
-            },
-            child: Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.camera_alt_rounded,
-                size: 32,
-                color: Colors.white,
-              ),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            if (frame != null) {
+              widget.onTakePicture(frame!);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Kamera sedang memuat, silakan coba lagi...'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            }
+          },
+          child: Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.camera_alt_rounded,
+              size: 34,
+              color: Colors.white,
             ),
           ),
         ),

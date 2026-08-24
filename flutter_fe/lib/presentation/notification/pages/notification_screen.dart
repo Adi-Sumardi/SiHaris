@@ -7,6 +7,7 @@ import '../../../data/models/responses/announcement_model.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_bloc.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_event.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_state.dart';
+import '../../announcement/pages/announcement_detail_screen.dart';
 
 /// Notification Screen with 8-point grid system
 /// Spacing: 4, 8, 12, 16, 24 px
@@ -349,10 +350,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   void _handleNotificationTap(AnnouncementModel announcement) {
-    Navigator.pushNamed(
+    Navigator.push(
       context,
-      '/announcement-detail',
-      arguments: announcement.id,
-    );
+      MaterialPageRoute(
+        builder: (_) => AnnouncementDetailScreen(
+          announcementId: announcement.id,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) {
+        context.read<AnnouncementListBloc>().add(const RefreshAnnouncements());
+      }
+    });
   }
 }

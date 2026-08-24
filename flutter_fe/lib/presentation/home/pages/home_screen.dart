@@ -15,6 +15,9 @@ import '../../notification/pages/notification_screen.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_bloc.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_event.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_state.dart';
+import '../../announcement/bloc/announcement_unread_count/announcement_unread_count_bloc.dart';
+import '../../announcement/bloc/announcement_unread_count/announcement_unread_count_event.dart';
+import '../../announcement/bloc/announcement_unread_count/announcement_unread_count_state.dart';
 import '../../announcement/pages/announcement_detail_screen.dart';
 import '../../announcement/pages/announcement_screen.dart';
 import '../../../data/models/responses/announcement_model.dart';
@@ -57,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<DashboardBloc>().add(LoadDashboard());
       context.read<QuickStatsBloc>().add(LoadQuickStats());
       context.read<AnnouncementListBloc>().add(const LoadAnnouncements());
+      context.read<AnnouncementUnreadCountBloc>().add(const LoadUnreadCount());
     });
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -73,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
           context.read<DashboardBloc>().add(RefreshDashboard());
           context.read<QuickStatsBloc>().add(RefreshQuickStats());
           context.read<AnnouncementListBloc>().add(const RefreshAnnouncements());
+          context.read<AnnouncementUnreadCountBloc>().add(const RefreshUnreadCount());
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -171,8 +176,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                      );
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationScreen(),
+                        ),
+                      ).then((_) {
+                        if (context.mounted) {
+                          context
+                              .read<AnnouncementUnreadCountBloc>()
+                              .add(const RefreshUnreadCount());
+                          context
+                              .read<AnnouncementListBloc>()
+                              .add(const RefreshAnnouncements());
+                        }
+                      });
                     },
                     child: Container(
                       width: 44,
@@ -193,21 +209,31 @@ class _HomeScreenState extends State<HomeScreen> {
                               size: 22,
                             ),
                           ),
-                          Positioned(
-                            right: 10,
-                            top: 10,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: AppColors.danger,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.primary700,
-                                  width: 1.5,
+                          BlocBuilder<AnnouncementUnreadCountBloc,
+                              AnnouncementUnreadCountState>(
+                            builder: (context, state) {
+                              final hasUnread =
+                                  state is AnnouncementUnreadCountLoaded &&
+                                      state.count > 0;
+                              if (!hasUnread) return const SizedBox.shrink();
+
+                              return Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.danger,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.primary700,
+                                      width: 1.5,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -1144,6 +1170,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Hari ini, 08:02',
                 Icons.login_rounded,
                 AppColors.success,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AttendanceHistoryScreen(),
+                  ),
+                ),
               ),
               const Divider(
                 height: 1,
@@ -1156,6 +1188,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Kemarin, 14:30',
                 Icons.event_available_outlined,
                 AppColors.accent500,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LeaveListScreen(),
+                  ),
+                ),
               ),
               const Divider(
                 height: 1,
@@ -1168,6 +1206,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Kemarin, 17:15',
                 Icons.logout_rounded,
                 AppColors.info,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AttendanceHistoryScreen(),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1180,52 +1224,57 @@ class _HomeScreenState extends State<HomeScreen> {
     String title,
     String time,
     IconData icon,
-    Color color,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // Icon container - 40px
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Icon container - 40px
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20),
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textTertiary,
+                  const SizedBox(height: 4),
+                  Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.secondary300,
-            size: 24,
-          ),
-        ],
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.secondary300,
+              size: 24,
+            ),
+          ],
+        ),
       ),
     );
   }

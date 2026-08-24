@@ -29,6 +29,9 @@ import 'package:gaji_pro/presentation/dashboard/bloc/quick_stats_state.dart';
 import 'package:gaji_pro/presentation/announcement/bloc/announcement_list/announcement_list_bloc.dart';
 import 'package:gaji_pro/presentation/announcement/bloc/announcement_list/announcement_list_event.dart';
 import 'package:gaji_pro/presentation/announcement/bloc/announcement_list/announcement_list_state.dart';
+import 'package:gaji_pro/presentation/announcement/bloc/announcement_unread_count/announcement_unread_count_bloc.dart';
+import 'package:gaji_pro/presentation/announcement/bloc/announcement_unread_count/announcement_unread_count_event.dart';
+import 'package:gaji_pro/presentation/announcement/bloc/announcement_unread_count/announcement_unread_count_state.dart';
 
 class MockLeaveListBloc extends MockBloc<LeaveListEvent, LeaveListState>
     implements LeaveListBloc {}
@@ -91,6 +94,16 @@ class FakeAnnouncementListEvent extends Fake implements AnnouncementListEvent {}
 
 class FakeAnnouncementListState extends Fake implements AnnouncementListState {}
 
+class MockAnnouncementUnreadCountBloc
+    extends MockBloc<AnnouncementUnreadCountEvent, AnnouncementUnreadCountState>
+    implements AnnouncementUnreadCountBloc {}
+
+class FakeAnnouncementUnreadCountEvent extends Fake
+    implements AnnouncementUnreadCountEvent {}
+
+class FakeAnnouncementUnreadCountState extends Fake
+    implements AnnouncementUnreadCountState {}
+
 /// Helper: provide all global BLoCs needed by MainScreen tabs
 Widget wrapWithProviders(Widget child) {
   final leaveListBloc = MockLeaveListBloc();
@@ -105,6 +118,7 @@ Widget wrapWithProviders(Widget child) {
   final dashboardBloc = MockDashboardBloc();
   final quickStatsBloc = MockQuickStatsBloc();
   final announcementListBloc = MockAnnouncementListBloc();
+  final announcementUnreadCountBloc = MockAnnouncementUnreadCountBloc();
 
   when(() => leaveListBloc.state).thenReturn(LeaveListInitial());
   when(() => leaveListBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -140,6 +154,10 @@ Widget wrapWithProviders(Widget child) {
   when(() => quickStatsBloc.stream).thenAnswer((_) => const Stream.empty());
   when(() => announcementListBloc.state).thenReturn(AnnouncementListInitial());
   when(() => announcementListBloc.stream).thenAnswer((_) => const Stream.empty());
+  when(() => announcementUnreadCountBloc.state)
+      .thenReturn(const AnnouncementUnreadCountLoaded(0));
+  when(() => announcementUnreadCountBloc.stream)
+      .thenAnswer((_) => const Stream.empty());
 
   return MultiBlocProvider(
     providers: [
@@ -155,6 +173,9 @@ Widget wrapWithProviders(Widget child) {
       BlocProvider<DashboardBloc>.value(value: dashboardBloc),
       BlocProvider<QuickStatsBloc>.value(value: quickStatsBloc),
       BlocProvider<AnnouncementListBloc>.value(value: announcementListBloc),
+      BlocProvider<AnnouncementUnreadCountBloc>.value(
+        value: announcementUnreadCountBloc,
+      ),
     ],
     child: MaterialApp(home: child),
   );
@@ -172,6 +193,8 @@ void main() {
     registerFallbackValue(FakeQuickStatsState());
     registerFallbackValue(FakeAnnouncementListEvent());
     registerFallbackValue(FakeAnnouncementListState());
+    registerFallbackValue(FakeAnnouncementUnreadCountEvent());
+    registerFallbackValue(FakeAnnouncementUnreadCountState());
   });
 
   group(

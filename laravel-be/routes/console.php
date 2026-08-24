@@ -8,9 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Runs every hour; each company only actually sends when its own configured
-// local hour/day is reached (see SendAttendanceRecapCommand::isDueNow()).
-Schedule::command('attendance:send-recap')->hourly();
+// Note: Attendance recap scheduler is disabled because attendance recap is handled directly by ADMS YAPI.
+// Schedule::command('attendance:send-recap')->hourly();
 
 // Automatically pull attendance logs from ADMS Cloud for all active companies
 Schedule::call(function () {

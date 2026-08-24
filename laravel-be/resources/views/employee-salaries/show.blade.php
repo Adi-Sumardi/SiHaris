@@ -5,19 +5,22 @@
 @section('breadcrumb')
     <a href="{{ route('employee-salaries.index') }}" class="text-slate-500 hover:text-primary-600">Gaji Karyawan</a>
     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-    <span class="text-slate-700 font-medium">{{ $employeeSalary->employee->full_name }}</span>
+    <span class="text-slate-700 font-medium">{{ $employeeSalary->employee?->full_name ?? 'Karyawan' }}</span>
 @endsection
 
 @section('header')
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
-                <span class="text-primary-700 font-bold text-xl">{{ substr($employeeSalary->employee->first_name, 0, 1) }}{{ substr($employeeSalary->employee->last_name, 0, 1) }}</span>
+                <span class="text-primary-700 font-bold text-xl">{{ substr($employeeSalary->employee?->first_name ?? '-', 0, 1) }}{{ substr($employeeSalary->employee?->last_name ?? '', 0, 1) }}</span>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-secondary-900">{{ $employeeSalary->employee->full_name }}</h1>
+                <h1 class="text-2xl font-bold text-secondary-900">{{ $employeeSalary->employee?->full_name ?? 'Karyawan Terhapus' }}</h1>
                 <div class="flex items-center gap-2 mt-1">
-                    <span class="text-secondary-500">{{ $employeeSalary->employee->employee_id }}</span>
+                    <span class="text-secondary-500">{{ $employeeSalary->employee?->employee_id ?? '-' }}</span>
+                    @if($employeeSalary->employee?->trashed())
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-500">Terhapus</span>
+                    @endif
                     <span class="text-secondary-300">|</span>
                     @if($employeeSalary->is_active)
                         <x-badge type="success">Aktif</x-badge>

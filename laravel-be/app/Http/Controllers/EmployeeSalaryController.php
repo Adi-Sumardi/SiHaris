@@ -165,6 +165,10 @@ class EmployeeSalaryController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        if ($employeeSalary->employee && ! $employees->contains('id', $employeeSalary->employee_id)) {
+            $employees->prepend($employeeSalary->employee);
+        }
+
         $salaryComponents = SalaryComponent::where('company_id', app('tenant')->id)
             ->where('is_active', true)
             ->orderBy('sort_order')

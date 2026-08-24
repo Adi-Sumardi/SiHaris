@@ -94,6 +94,21 @@ describe('EmployeeSalary Index', function () {
             return $salaries->every(fn ($s) => $s->is_active === true);
         });
     });
+
+    test('renders list gracefully even when employee is soft deleted', function () {
+        $employee = Employee::factory()->create(['company_id' => $this->company->id]);
+        EmployeeSalary::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $employee->id,
+        ]);
+
+        $employee->delete();
+
+        $response = $this->get(route('employee-salaries.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee($employee->first_name);
+    });
 });
 
 describe('EmployeeSalary Create', function () {

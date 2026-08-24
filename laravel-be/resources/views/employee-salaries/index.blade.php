@@ -72,11 +72,16 @@
                     <td>
                         <div class="flex items-center gap-2.5">
                             <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                                <span class="text-primary-700 text-xs font-medium">{{ substr($salary->employee->first_name, 0, 1) }}</span>
+                                <span class="text-primary-700 text-xs font-medium">{{ substr($salary->employee?->first_name ?? '-', 0, 1) }}</span>
                             </div>
                             <div class="min-w-0">
-                                <span class="font-medium text-secondary-900 block truncate">{{ $salary->employee->full_name }}</span>
-                                <p class="text-xs text-secondary-400">{{ $salary->employee->employee_id }}</p>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-secondary-900 block truncate">{{ $salary->employee?->full_name ?? 'Karyawan Terhapus' }}</span>
+                                    @if($salary->employee?->trashed())
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500">Terhapus</span>
+                                    @endif
+                                </div>
+                                <p class="text-xs text-secondary-400">{{ $salary->employee?->employee_id ?? '-' }}</p>
                             </div>
                         </div>
                     </td>
@@ -112,7 +117,7 @@
                                 type="button"
                                 @click="$dispatch('confirm-dialog', {
                                     title: 'Hapus Gaji Karyawan',
-                                    message: 'Apakah Anda yakin ingin menghapus pengaturan gaji {{ $salary->employee->full_name }}?',
+                                    message: 'Apakah Anda yakin ingin menghapus pengaturan gaji {{ addslashes($salary->employee?->full_name ?? 'Karyawan') }}?',
                                     confirmText: 'Ya, Hapus',
                                     type: 'danger',
                                     formAction: '{{ route('employee-salaries.destroy', $salary) }}'

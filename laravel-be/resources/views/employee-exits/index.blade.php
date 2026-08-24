@@ -66,7 +66,7 @@
                 <form id="employee-exits-filter-form" action="{{ route('employee-exits.index') }}" method="GET" class="flex flex-wrap items-end gap-3" @submit.prevent="fetchData()">
                     {{-- Search Live --}}
                     <div class="flex-1 min-w-[200px]">
-                        <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan (Live)</label>
+                        <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan</label>
                         <input
                             type="text"
                             name="search"

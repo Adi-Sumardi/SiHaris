@@ -29,7 +29,7 @@
                 <form id="leave-requests-filter-form" action="{{ route('leave-requests.index') }}" method="GET" class="flex flex-wrap items-end gap-3" @submit.prevent="fetchData()">
                     {{-- Live Search --}}
                     <div class="flex-1 min-w-[200px]">
-                        <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan / No. Pengajuan (Live)</label>
+                        <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan / No. Pengajuan</label>
                         <input
                             type="text"
                             name="search"

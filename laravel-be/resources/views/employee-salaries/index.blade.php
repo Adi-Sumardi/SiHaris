@@ -33,7 +33,7 @@
                 <form id="employee-salaries-filter-form" action="{{ route('employee-salaries.index') }}" method="GET" class="flex flex-wrap items-end gap-3" @submit.prevent="fetchData()">
                     {{-- Search --}}
                     <div class="flex-1 min-w-[200px]">
-                        <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan (Live)</label>
+                        <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan</label>
                         <input
                             type="text"
                             name="search"

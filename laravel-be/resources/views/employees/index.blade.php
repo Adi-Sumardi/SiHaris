@@ -128,40 +128,40 @@
             </button>
         </div>
 
-        {{-- Bulk Action Floating Bar --}}
+        {{-- Bulk Action Bar (Ocean Blue Theme) --}}
         <div
             x-show="selectedIds.length > 0"
             x-cloak
             x-transition
-            class="bg-secondary-900 text-white rounded-xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-xl border border-secondary-800"
+            class="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 text-white rounded-xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-lg border border-primary-500/40"
         >
             <div class="flex items-center gap-3">
-                <span class="inline-flex items-center justify-center bg-primary-500 text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm">
+                <span class="inline-flex items-center justify-center bg-white text-primary-700 font-bold text-xs px-3 py-1 rounded-full shadow-sm">
                     <span x-text="selectedIds.length"></span>&nbsp;Karyawan Dipilih
                 </span>
-                <span class="text-sm text-secondary-300 hidden sm:inline">Pilih status kepegawaian untuk diterapkan ke semua yang dipilih:</span>
+                <span class="text-sm text-primary-100 hidden sm:inline">Ubah status kepegawaian untuk semua karyawan yang dicentang:</span>
             </div>
 
             <div class="flex items-center gap-2.5">
                 <select
                     x-model="bulkType"
-                    class="text-xs font-semibold rounded-lg bg-secondary-800 border border-secondary-700 text-white px-3 py-1.5 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400 cursor-pointer"
+                    class="text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-white px-3 py-1.5 focus:bg-white focus:text-secondary-900 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer transition-colors"
                 >
-                    <option value="YPI">Set ke: YPI (Yayasan Pesantren Islam)</option>
-                    <option value="YAPI">Set ke: YAPI (Yayasan Asrama Pelajar Islam)</option>
-                    <option value="">Set ke: Kosongkan (-)</option>
+                    <option value="YPI" class="text-secondary-900 bg-white">Set ke: YPI (Yayasan Pesantren Islam)</option>
+                    <option value="YAPI" class="text-secondary-900 bg-white">Set ke: YAPI (Yayasan Asrama Pelajar Islam)</option>
+                    <option value="" class="text-secondary-900 bg-white">Set ke: Kosongkan (-)</option>
                 </select>
 
                 <button
                     type="button"
                     @click="applyBulkEmploymentType()"
                     :disabled="bulkSaving"
-                    class="btn btn-primary btn-sm flex items-center gap-1.5"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-primary-700 hover:bg-primary-50 shadow-sm transition-colors disabled:opacity-50"
                 >
-                    <svg x-show="!bulkSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg x-show="!bulkSaving" class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
-                    <svg x-show="bulkSaving" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
+                    <svg x-show="bulkSaving" class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" style="display: none;">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
@@ -171,7 +171,7 @@
                 <button
                     type="button"
                     @click="selectedIds = []"
-                    class="text-xs text-secondary-400 hover:text-white px-2 py-1 transition-colors"
+                    class="text-xs text-primary-200 hover:text-white px-2 py-1 transition-colors"
                 >
                     Batal
                 </button>
@@ -235,52 +235,15 @@
                         <td class="text-secondary-600">{{ $employee->department?->name ?? '-' }}</td>
                         <td class="text-secondary-600">{{ $employee->position?->name ?? '-' }}</td>
                         <td>
-                            {{-- Inline Interactive Quick Select for Status Kepegawaian (YPI / YAPI) --}}
-                            <div class="inline-flex items-center" x-data="{ saving: false, saved: false }">
-                                <select
-                                    class="text-xs font-semibold rounded-lg border border-secondary-200 bg-white px-2 py-1 text-secondary-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer transition-colors"
-                                    :class="{ 'border-success-500 text-success-700 bg-success-50 ring-1 ring-success-400': saved }"
-                                    @change="
-                                        saving = true;
-                                        saved = false;
-                                        fetch('{{ route('employees.update-employment-type', $employee) }}', {
-                                            method: 'PATCH',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                                'Accept': 'application/json'
-                                            },
-                                            body: JSON.stringify({ employment_type: $event.target.value })
-                                        })
-                                        .then(res => res.json())
-                                        .then(data => {
-                                            if (data.success) {
-                                                saved = true;
-                                                setTimeout(() => saved = false, 2500);
-                                            }
-                                        })
-                                        .catch(err => {
-                                            alert('Gagal memperbarui status kepegawaian');
-                                        })
-                                        .finally(() => saving = false);
-                                    "
-                                >
-                                    <option value="" {{ empty($employee->employment_type) ? 'selected' : '' }}>- Pilih -</option>
-                                    <option value="YPI" {{ $employee->employment_type === 'YPI' ? 'selected' : '' }}>YPI</option>
-                                    <option value="YAPI" {{ $employee->employment_type === 'YAPI' ? 'selected' : '' }}>YAPI</option>
-                                </select>
-                                <span x-show="saving" class="ml-1.5 inline-flex" style="display: none;" title="Menyimpan...">
-                                    <svg class="animate-spin w-3.5 h-3.5 text-primary-600" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                    </svg>
-                                </span>
-                                <span x-show="saved" class="ml-1.5 inline-flex text-success-600" style="display: none;" title="Tersimpan">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </span>
-                            </div>
+                            @if($employee->employment_type === 'YPI')
+                                <x-badge type="primary">YPI</x-badge>
+                            @elseif($employee->employment_type === 'YAPI')
+                                <x-badge type="info">YAPI</x-badge>
+                            @elseif($employee->employment_type)
+                                <x-badge type="secondary">{{ $employee->employment_type }}</x-badge>
+                            @else
+                                <span class="text-secondary-400 text-xs">-</span>
+                            @endif
                         </td>
                         <td>
                             @switch($employee->employment_status)

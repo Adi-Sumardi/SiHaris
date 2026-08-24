@@ -566,4 +566,32 @@ class EmployeeController extends Controller
             'employment_type' => $employee->employment_type,
         ]);
     }
+
+    public function bulkUpdateEmploymentType(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $tenant = app('tenant');
+
+        $validated = $request->validate([
+            'employee_ids' => ['required', 'array', 'min:1'],
+            'employee_ids.*' => ['required', Rule::exists('employees', 'id')->where('company_id', $tenant->id)],
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI', ''])],
+        ]);
+
+        $type = ! empty($validated['employment_type']) ? $validated['employment_type'] : null;
+
+        $updatedCount = Employee::where('company_id', $tenant->id)
+            ->whereIn('id', $validated['employee_ids'])
+            ->update([
+                'employment_type' => $type,
+            ]);
+
+        $label = $type ?: 'Belum Diatur';
+
+        return response()->json([
+            'success' => true,
+            'count' => $updatedCount,
+            'employment_type' => $type,
+            'message' => "Berhasil memperbarui status kepegawaian {$updatedCount} karyawan menjadi {$label}.",
+        ]);
+    }
 }

@@ -473,4 +473,33 @@ describe('Employee Delete', function () {
         $response->assertDontSee('Budi');
     });
 
+    it('can bulk update employment type for multiple employees', function () {
+        $this->actingAs($this->admin);
+
+        $employees = Employee::factory()->count(3)->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'employment_type' => null,
+        ]);
+
+        $empIds = $employees->pluck('id')->toArray();
+
+        $response = $this->postJson(route('employees.bulk-employment-type'), [
+            'employee_ids' => $empIds,
+            'employment_type' => 'YPI',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'count' => 3,
+            'employment_type' => 'YPI',
+        ]);
+
+        foreach ($empIds as $id) {
+            expect(Employee::find($id)->employment_type)->toBe('YPI');
+        }
+    });
+
 });

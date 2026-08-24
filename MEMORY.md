@@ -142,13 +142,14 @@
 ## 12. Employee Employment Type (Status Kepegawaian YPI / YAPI)
 - **Penggantian Kolom**: Kolom NIK Manajer digantikan dengan **Status Kepegawaian** (`employment_type`) dengan opsi `YPI` dan `YAPI`.
 - **Database Schema**: Kolom `employment_type` (string 50, nullable) pada tabel `employees` dengan index `['company_id', 'employment_type']`.
-- **Inline Quick Update pada Daftar Karyawan**:
-  - Pada halaman `/employees`, setiap baris tabel memiliki dropdown interaktif untuk langsung memilih status kepegawaian (`YPI` / `YAPI` / `- Pilih -`).
-  - Perubahan langsung tersimpan otomatis via AJAX endpoint `PATCH /employees/{employee}/employment-type` tanpa reload halaman.
+- **Inline Quick Update & Bulk Select pada Daftar Karyawan**:
+  - Pada halaman `/employees`, setiap baris tabel memiliki dropdown interaktif untuk langsung memilih status kepegawaian (`YPI` / `YAPI` / `- Pilih -`) secara perorangan (AJAX `PATCH /employees/{employee}/employment-type`).
+  - **Fitur Multi-Select / Bulk Update Masal**: Dilengkapi checkbox Select All di header tabel dan checkbox di setiap baris karyawan. Saat memilih banyak karyawan, muncul floating bar untuk mengubah status kepegawaian seluruh karyawan yang dipilih sekaligus via `POST /employees/bulk-employment-type`.
 - **Filter & Export/Import**:
   - Filter `Kepegawaian` tersedia di header filter `/employees`.
   - Form Tambah & Edit Karyawan (`employees/create.blade.php`, `employees/edit.blade.php`) dan halaman detail (`employees/show.blade.php`) telah disesuaikan.
-  - Template Excel Karyawan (`EmployeeTemplateExport`) dan Import (`EmployeeImport`) telah diperbarui membaca kolom `Status Kepegawaian`.
+  - Template Excel Karyawan (`EmployeeTemplateExport`) dan Import (`EmployeeImport`) serta panduan pada halaman `/imports/employees` telah diperbarui dengan kolom `Status Kepegawaian` (`YPI` / `YAPI`).
+
 
 
 

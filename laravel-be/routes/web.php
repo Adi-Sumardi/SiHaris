@@ -240,6 +240,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('employees', EmployeeController::class);
     Route::patch('employees/{employee}/employment-type', [EmployeeController::class, 'updateEmploymentType'])
         ->name('employees.update-employment-type');
+    Route::post('employees/bulk-employment-type', [EmployeeController::class, 'bulkUpdateEmploymentType'])
+        ->name('employees.bulk-employment-type');
 
     // Employee Password Reset (Admin)
     Route::get('employees/{employee}/reset-password', [EmployeeController::class, 'showResetPasswordForm'])

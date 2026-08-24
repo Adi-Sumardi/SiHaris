@@ -26,6 +26,9 @@ import 'package:gaji_pro/presentation/dashboard/bloc/dashboard_state.dart';
 import 'package:gaji_pro/presentation/dashboard/bloc/quick_stats_bloc.dart';
 import 'package:gaji_pro/presentation/dashboard/bloc/quick_stats_event.dart';
 import 'package:gaji_pro/presentation/dashboard/bloc/quick_stats_state.dart';
+import 'package:gaji_pro/presentation/announcement/bloc/announcement_list/announcement_list_bloc.dart';
+import 'package:gaji_pro/presentation/announcement/bloc/announcement_list/announcement_list_event.dart';
+import 'package:gaji_pro/presentation/announcement/bloc/announcement_list/announcement_list_state.dart';
 
 class MockLeaveListBloc extends MockBloc<LeaveListEvent, LeaveListState>
     implements LeaveListBloc {}
@@ -80,6 +83,14 @@ class FakeQuickStatsEvent extends Fake implements QuickStatsEvent {}
 
 class FakeQuickStatsState extends Fake implements QuickStatsState {}
 
+class MockAnnouncementListBloc
+    extends MockBloc<AnnouncementListEvent, AnnouncementListState>
+    implements AnnouncementListBloc {}
+
+class FakeAnnouncementListEvent extends Fake implements AnnouncementListEvent {}
+
+class FakeAnnouncementListState extends Fake implements AnnouncementListState {}
+
 /// Helper: provide all global BLoCs needed by MainScreen tabs
 Widget wrapWithProviders(Widget child) {
   final leaveListBloc = MockLeaveListBloc();
@@ -93,6 +104,7 @@ Widget wrapWithProviders(Widget child) {
   final payslipSummaryBloc = MockPayslipSummaryBloc();
   final dashboardBloc = MockDashboardBloc();
   final quickStatsBloc = MockQuickStatsBloc();
+  final announcementListBloc = MockAnnouncementListBloc();
 
   when(() => leaveListBloc.state).thenReturn(LeaveListInitial());
   when(() => leaveListBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -126,6 +138,8 @@ Widget wrapWithProviders(Widget child) {
   when(() => dashboardBloc.stream).thenAnswer((_) => const Stream.empty());
   when(() => quickStatsBloc.state).thenReturn(QuickStatsInitial());
   when(() => quickStatsBloc.stream).thenAnswer((_) => const Stream.empty());
+  when(() => announcementListBloc.state).thenReturn(AnnouncementListInitial());
+  when(() => announcementListBloc.stream).thenAnswer((_) => const Stream.empty());
 
   return MultiBlocProvider(
     providers: [
@@ -140,6 +154,7 @@ Widget wrapWithProviders(Widget child) {
       BlocProvider<PayslipSummaryBloc>.value(value: payslipSummaryBloc),
       BlocProvider<DashboardBloc>.value(value: dashboardBloc),
       BlocProvider<QuickStatsBloc>.value(value: quickStatsBloc),
+      BlocProvider<AnnouncementListBloc>.value(value: announcementListBloc),
     ],
     child: MaterialApp(home: child),
   );
@@ -155,6 +170,8 @@ void main() {
     registerFallbackValue(FakeDashboardState());
     registerFallbackValue(FakeQuickStatsEvent());
     registerFallbackValue(FakeQuickStatsState());
+    registerFallbackValue(FakeAnnouncementListEvent());
+    registerFallbackValue(FakeAnnouncementListState());
   });
 
   group(

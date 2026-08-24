@@ -12,6 +12,12 @@ import '../../leave/pages/leave_list_screen.dart';
 import '../../overtime/pages/overtime_screen.dart';
 import '../../schedule/pages/schedule_screen.dart';
 import '../../notification/pages/notification_screen.dart';
+import '../../announcement/bloc/announcement_list/announcement_list_bloc.dart';
+import '../../announcement/bloc/announcement_list/announcement_list_event.dart';
+import '../../announcement/bloc/announcement_list/announcement_list_state.dart';
+import '../../announcement/pages/announcement_detail_screen.dart';
+import '../../announcement/pages/announcement_screen.dart';
+import '../../../data/models/responses/announcement_model.dart';
 
 /// Home Screen with 8-point grid system
 /// Spacing: 4, 8, 12, 16, 20, 24, 32, 40, 48 px
@@ -50,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardBloc>().add(LoadDashboard());
       context.read<QuickStatsBloc>().add(LoadQuickStats());
+      context.read<AnnouncementListBloc>().add(const LoadAnnouncements());
     });
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -65,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: () async {
           context.read<DashboardBloc>().add(RefreshDashboard());
           context.read<QuickStatsBloc>().add(RefreshQuickStats());
+          context.read<AnnouncementListBloc>().add(const RefreshAnnouncements());
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -1240,7 +1248,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () {}, // Announcements: fitur belum tersedia
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AnnouncementScreen(),
+                    ),
+                  ).then((_) {
+                    if (context.mounted) {
+                      context
+                          .read<AnnouncementListBloc>()
+                          .add(const RefreshAnnouncements());
+                    }
+                  });
+                },
                 child: const Text(
                   'Lihat Semua',
                   style: TextStyle(
@@ -1254,47 +1275,272 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 120,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              _buildAnnouncementCard(
-                'Libur Nasional',
-                'Kantor tutup tanggal 15 Feb 2026',
-                Icons.celebration_outlined,
-                AppColors.accent500,
+        BlocBuilder<AnnouncementListBloc, AnnouncementListState>(
+          builder: (context, state) {
+            if (state is AnnouncementListLoading) {
+              return SizedBox(
+                height: 120,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: 3,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    return _buildAnnouncementSkeleton();
+                  },
+                ),
+              );
+            }
+
+            if (state is AnnouncementListLoaded) {
+              if (state.announcements.isEmpty) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.campaign_outlined,
+                          color: AppColors.primary600,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Belum Ada Pengumuman',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Semua pengumuman terbaru akan muncul di sini.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final displayAnnouncements = state.announcements.take(5).toList();
+
+              return SizedBox(
+                height: 120,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: displayAnnouncements.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final announcement = displayAnnouncements[index];
+                    return _buildAnnouncementRealCard(context, announcement);
+                  },
+                ),
+              );
+            }
+
+            // Fallback / Error
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
               ),
-              const SizedBox(width: 12),
-              _buildAnnouncementCard(
-                'Meeting Bulanan',
-                'Senin, 17 Feb pukul 10:00',
-                Icons.groups_outlined,
-                AppColors.primary600,
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.campaign_outlined,
+                      color: AppColors.primary600,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pengumuman Kantor',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Ketuk untuk memuat ulang pengumuman.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      context
+                          .read<AnnouncementListBloc>()
+                          .add(const RefreshAnnouncements());
+                    },
+                    child: const Icon(
+                      Icons.refresh_rounded,
+                      color: AppColors.primary600,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              _buildAnnouncementCard(
-                'Update Kebijakan',
-                'Perubahan jam kerja mulai Maret',
-                Icons.policy_outlined,
-                AppColors.info,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
   }
 
-  Widget _buildAnnouncementCard(
-    String title,
-    String subtitle,
-    IconData icon,
-    Color color,
+  Widget _buildAnnouncementRealCard(
+    BuildContext context,
+    AnnouncementModel announcement,
   ) {
+    IconData icon = Icons.article_outlined;
+    Color color = AppColors.primary600;
+
+    if (announcement.isPinned) {
+      icon = Icons.push_pin_rounded;
+      color = AppColors.accent500;
+    } else if (announcement.priority == 'urgent') {
+      icon = Icons.warning_amber_rounded;
+      color = AppColors.danger;
+    } else if (announcement.priority == 'high') {
+      icon = Icons.campaign_outlined;
+      color = AppColors.warning;
+    } else if (announcement.priority == 'low') {
+      icon = Icons.info_outline;
+      color = AppColors.info;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AnnouncementDetailScreen(
+              announcementId: announcement.id,
+            ),
+          ),
+        ).then((_) {
+          if (context.mounted) {
+            context
+                .read<AnnouncementListBloc>()
+                .add(const RefreshAnnouncements());
+          }
+        });
+      },
+      child: Container(
+        width: 190,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: announcement.isPinned
+                ? AppColors.accent500.withValues(alpha: 0.3)
+                : AppColors.border,
+            width: announcement.isPinned ? 1.5 : 1.0,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Icon container - 32px
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 16),
+                ),
+                if (!announcement.isRead)
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary600,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              announcement.title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              announcement.content,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementSkeleton() {
     return Container(
-      width: 184,
+      width: 190,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1305,36 +1551,31 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Icon container - 32px
           Container(
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: AppColors.secondary100,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: 120,
+            height: 14,
+            decoration: BoxDecoration(
+              color: AppColors.secondary100,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
           const SizedBox(height: 6),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          Container(
+            width: 150,
+            height: 10,
+            decoration: BoxDecoration(
+              color: AppColors.secondary100,
+              borderRadius: BorderRadius.circular(4),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

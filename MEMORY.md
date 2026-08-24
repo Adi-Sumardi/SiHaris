@@ -131,5 +131,12 @@
 - **Filter Live Search**: Dropdown static employee diganti dengan input live search (`search`) dengan debounce 300ms, clear button, dan live asynchronous data fetch.
 - **Dukungan Pencarian**: Mencari karyawan berdasarkan `first_name`, `last_name`, `employee_id`, `nik`, `email`, atau nama lengkap secara real-time tanpa full page reload.
 
+---
+
+## 11. Employee Live Search Filter (Pencarian Karyawan Live Data)
+- **Menu Karyawan**: `/employees` (`EmployeeController::index`)
+- **Filter Live Search**: Input pencarian real-time (debounce 300ms) untuk nama depan/belakang/lengkap, NIK, ID Karyawan, PIN, dan email secara asinkron tanpa reload halaman.
+
+
 
 

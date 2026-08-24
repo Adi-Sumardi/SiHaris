@@ -120,7 +120,7 @@ class EmployeeController extends Controller
             'manager_id' => ['nullable', Rule::exists('employees', 'id')->where('company_id', $tenant->id)],
             'hire_date' => ['required', 'date'],
             'employment_status' => ['required', 'in:permanent,contract,probation,intern'],
-            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI'])],
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI Al Azhar', 'YPI', 'YAPI'])],
             'work_schedule_id' => ['nullable', Rule::exists('work_schedules', 'id')->where('company_id', $tenant->id)],
             'schedule_mode' => ['nullable', 'in:default,weekly'],
             'weekly_schedules' => ['nullable', 'array'],
@@ -316,7 +316,7 @@ class EmployeeController extends Controller
             'hire_date' => ['required', 'date'],
             'resignation_date' => ['nullable', 'date'],
             'employment_status' => ['required', 'in:permanent,contract,probation,intern'],
-            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI'])],
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI Al Azhar', 'YPI', 'YAPI'])],
             'work_schedule_id' => ['nullable', Rule::exists('work_schedules', 'id')->where('company_id', $tenant->id)],
             'schedule_mode' => ['nullable', 'in:default,weekly'],
             'weekly_schedules' => ['nullable', 'array'],
@@ -551,10 +551,13 @@ class EmployeeController extends Controller
         }
 
         $validated = $request->validate([
-            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI', ''])],
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI Al Azhar', 'YPI', 'YAPI', ''])],
         ]);
 
         $type = ! empty($validated['employment_type']) ? $validated['employment_type'] : null;
+        if ($type === 'YPI') {
+            $type = 'YPI Al Azhar';
+        }
 
         $employee->update([
             'employment_type' => $type,
@@ -574,10 +577,13 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'employee_ids' => ['required', 'array', 'min:1'],
             'employee_ids.*' => ['required', Rule::exists('employees', 'id')->where('company_id', $tenant->id)],
-            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI', 'YAPI', ''])],
+            'employment_type' => ['nullable', 'string', 'max:50', Rule::in(['YPI Al Azhar', 'YPI', 'YAPI', ''])],
         ]);
 
         $type = ! empty($validated['employment_type']) ? $validated['employment_type'] : null;
+        if ($type === 'YPI') {
+            $type = 'YPI Al Azhar';
+        }
 
         $updatedCount = Employee::where('company_id', $tenant->id)
             ->whereIn('id', $validated['employee_ids'])

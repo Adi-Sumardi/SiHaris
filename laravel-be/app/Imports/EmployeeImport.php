@@ -451,19 +451,17 @@ class EmployeeImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithE
             }
         }
 
-        // Resolve employment type (Status Kepegawaian: YPI / YAPI)
+        // Resolve employment type (Status Kepegawaian: YPI Al Azhar / YAPI)
         $empTypeRaw = $this->getRowValue($row, ['status_kepegawaian', 'employment_type', 'kepegawaian', 'tipe_kepegawaian', 'status_pegawai']);
         $employmentType = null;
         if (! empty($empTypeRaw)) {
             $upperType = strtoupper(trim((string) $empTypeRaw));
-            if (in_array($upperType, ['YPI', 'YAPI'])) {
-                $employmentType = $upperType;
-            } elseif (str_contains($upperType, 'YPI')) {
-                $employmentType = 'YPI';
-            } elseif (str_contains($upperType, 'YAPI')) {
+            if ($upperType === 'YPI' || $upperType === 'YPI AL AZHAR' || str_contains($upperType, 'YPI') || str_contains($upperType, 'AL AZHAR') || str_contains($upperType, 'PESANTREN')) {
+                $employmentType = 'YPI Al Azhar';
+            } elseif ($upperType === 'YAPI' || str_contains($upperType, 'YAPI') || str_contains($upperType, 'ASRAMA')) {
                 $employmentType = 'YAPI';
             } else {
-                $employmentType = $upperType;
+                $employmentType = trim((string) $empTypeRaw);
             }
         }
 

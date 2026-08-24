@@ -195,7 +195,7 @@
                             <li><span class="font-medium">Kode Departemen</span> - Kode atau nama departemen</li>
                             <li><span class="font-medium">Kode Jabatan</span> - Kode atau nama jabatan</li>
                             <li><span class="font-medium">Kode Jadwal</span> - Kode atau nama jadwal kerja</li>
-                            <li><span class="font-medium">Status Kepegawaian</span> - Status yayasan/institusi (<span class="font-semibold text-primary-600">YPI</span> atau <span class="font-semibold text-primary-600">YAPI</span>)</li>
+                            <li><span class="font-medium">Status Kepegawaian</span> - Status yayasan/institusi (<span class="font-semibold text-primary-600">YPI Al Azhar</span> atau <span class="font-semibold text-primary-600">YAPI</span>)</li>
                             <li><span class="font-medium">Kode Lokasi Kantor</span> - Kode atau nama lokasi kantor</li>
                         </ul>
                     </div>
@@ -203,7 +203,7 @@
                     <div>
                         <h4 class="font-medium text-secondary-900 mb-2">Format Data:</h4>
                         <ul class="space-y-1 text-xs">
-                            <li><span class="font-medium">Status Kepegawaian</span> - YPI / YAPI</li>
+                            <li><span class="font-medium">Status Kepegawaian</span> - YPI Al Azhar / YAPI</li>
                             <li><span class="font-medium">Tanggal</span> - YYYY-MM-DD atau DD/MM/YYYY</li>
                             <li><span class="font-medium">Jenis Kelamin</span> - Laki-laki / Perempuan</li>
                             <li><span class="font-medium">Status Karyawan</span> - Tetap / Kontrak / Magang / Percobaan</li>

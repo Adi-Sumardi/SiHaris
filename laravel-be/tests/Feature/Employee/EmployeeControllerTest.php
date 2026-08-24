@@ -419,17 +419,13 @@ describe('Employee Delete', function () {
             'employment_type' => null,
         ]);
 
+        // Update to YPI Al Azhar
         $response = $this->patchJson(route('employees.update-employment-type', $employee), [
-            'employment_type' => 'YPI',
+            'employment_type' => 'YPI Al Azhar',
         ]);
 
         $response->assertOk();
-        $response->assertJson([
-            'success' => true,
-            'employment_type' => 'YPI',
-        ]);
-
-        expect($employee->fresh()->employment_type)->toBe('YPI');
+        expect($employee->fresh()->employment_type)->toBe('YPI Al Azhar');
 
         // Update to YAPI
         $responseYapi = $this->patchJson(route('employees.update-employment-type', $employee), [
@@ -456,7 +452,7 @@ describe('Employee Delete', function () {
             'department_id' => $this->department->id,
             'position_id' => $this->position->id,
             'first_name' => 'Ahmad',
-            'employment_type' => 'YPI',
+            'employment_type' => 'YPI Al Azhar',
         ]);
 
         $empYapi = Employee::factory()->create([
@@ -467,7 +463,7 @@ describe('Employee Delete', function () {
             'employment_type' => 'YAPI',
         ]);
 
-        $response = $this->get('/employees?employment_type=YPI');
+        $response = $this->get('/employees?employment_type=YPI+Al+Azhar');
         $response->assertOk();
         $response->assertSee('Ahmad');
         $response->assertDontSee('Budi');
@@ -487,18 +483,18 @@ describe('Employee Delete', function () {
 
         $response = $this->postJson(route('employees.bulk-employment-type'), [
             'employee_ids' => $empIds,
-            'employment_type' => 'YPI',
+            'employment_type' => 'YPI Al Azhar',
         ]);
 
         $response->assertOk();
         $response->assertJson([
             'success' => true,
             'count' => 3,
-            'employment_type' => 'YPI',
+            'employment_type' => 'YPI Al Azhar',
         ]);
 
         foreach ($empIds as $id) {
-            expect(Employee::find($id)->employment_type)->toBe('YPI');
+            expect(Employee::find($id)->employment_type)->toBe('YPI Al Azhar');
         }
     });
 

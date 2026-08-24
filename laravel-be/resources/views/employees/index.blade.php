@@ -59,12 +59,12 @@
                         </select>
                     </div>
 
-                    {{-- Employment Type (Status Kepegawaian: YPI / YAPI) --}}
-                    <div class="w-28">
+                    {{-- Employment Type (Status Kepegawaian: YPI Al Azhar / YAPI) --}}
+                    <div class="w-36">
                         <label for="employment_type" class="block text-xs font-medium text-secondary-500 mb-1">Kepegawaian</label>
                         <select name="employment_type" id="employment_type" class="input w-full" @change="fetchData()">
                             <option value="">Semua</option>
-                            <option value="YPI" {{ request('employment_type') === 'YPI' ? 'selected' : '' }}>YPI</option>
+                            <option value="YPI Al Azhar" {{ request('employment_type') === 'YPI Al Azhar' || request('employment_type') === 'YPI' ? 'selected' : '' }}>YPI Al Azhar</option>
                             <option value="YAPI" {{ request('employment_type') === 'YAPI' ? 'selected' : '' }}>YAPI</option>
                         </select>
                     </div>
@@ -148,8 +148,8 @@
                         x-model="bulkType"
                         class="input w-full bg-white border-primary-300 text-secondary-800 text-xs font-medium focus:border-primary-500 focus:ring-1 focus:ring-primary-500 shadow-sm"
                     >
-                        <option value="YPI">Set ke: YPI (Yayasan Pesantren Islam)</option>
-                        <option value="YAPI">Set ke: YAPI (Yayasan Asrama Pelajar Islam)</option>
+                        <option value="YPI Al Azhar">Set ke: YPI Al Azhar</option>
+                        <option value="YAPI">Set ke: YAPI</option>
                         <option value="">Set ke: Kosongkan (-)</option>
                     </select>
                 </div>
@@ -237,8 +237,8 @@
                         <td class="text-secondary-600">{{ $employee->department?->name ?? '-' }}</td>
                         <td class="text-secondary-600">{{ $employee->position?->name ?? '-' }}</td>
                         <td>
-                            @if($employee->employment_type === 'YPI')
-                                <x-badge type="primary">YPI</x-badge>
+                            @if($employee->employment_type === 'YPI Al Azhar' || $employee->employment_type === 'YPI')
+                                <x-badge type="primary">YPI Al Azhar</x-badge>
                             @elseif($employee->employment_type === 'YAPI')
                                 <x-badge type="info">YAPI</x-badge>
                             @elseif($employee->employment_type)
@@ -327,7 +327,7 @@
                 loading: false,
                 debounceTimer: null,
                 selectedIds: [],
-                bulkType: 'YPI',
+                bulkType: 'YPI Al Azhar',
                 bulkSaving: false,
                 toastMessage: '',
 

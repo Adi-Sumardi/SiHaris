@@ -216,6 +216,8 @@ class FingerprintDeviceController extends Controller
             'employee_id' => [
                 'required',
                 \Illuminate\Validation\Rule::exists('employees', 'id')->where('company_id', $tenant->id),
+                \Illuminate\Validation\Rule::unique('fingerprint_user_mappings', 'employee_id')
+                    ->where('fingerprint_device_id', $fingerprintDevice->id),
             ],
             'device_user_pin' => [
                 'required',
@@ -225,6 +227,7 @@ class FingerprintDeviceController extends Controller
                     ->where('fingerprint_device_id', $fingerprintDevice->id),
             ],
         ], [
+            'employee_id.unique' => 'Karyawan ini sudah memiliki pemetaan PIN di mesin ini.',
             'device_user_pin.unique' => 'PIN ini sudah dipetakan ke karyawan lain di mesin ini.',
         ]);
 

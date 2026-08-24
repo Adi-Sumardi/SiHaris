@@ -89,13 +89,22 @@ class SyncAdmsEmployeesJob implements ShouldQueue
                     $employee->update(['pin' => $pin]);
                 }
 
-                // Ensure mapping exists in fingerprint_user_mappings
-                FingerprintUserMapping::firstOrCreate([
-                    'fingerprint_device_id' => $device->id,
-                    'device_user_pin' => $pin,
-                ], [
-                    'employee_id' => $employee->id,
-                ]);
+                // Remove conflicting mapping if another employee held this pin on this device
+                FingerprintUserMapping::where('fingerprint_device_id', $device->id)
+                    ->where('device_user_pin', $pin)
+                    ->where('employee_id', '!=', $employee->id)
+                    ->delete();
+
+                // Update or create mapping for this employee on this device
+                FingerprintUserMapping::updateOrCreate(
+                    [
+                        'fingerprint_device_id' => $device->id,
+                        'employee_id' => $employee->id,
+                    ],
+                    [
+                        'device_user_pin' => $pin,
+                    ]
+                );
 
                 $mappedCount++;
             }

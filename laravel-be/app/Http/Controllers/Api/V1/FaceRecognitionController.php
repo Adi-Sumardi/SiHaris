@@ -196,6 +196,7 @@ class FaceRecognitionController extends Controller
             "embedding_data.{$embeddingField}" => ['required', 'array', 'min:128', 'max:192'],
             "embedding_data.{$embeddingField}.*" => ['required', 'numeric'],
             'photo' => ['nullable', 'image', 'max:5120'], // 5MB max
+            'photo_base64' => ['nullable', 'string'],
             'quality_score' => ['nullable', 'numeric', 'between:0,1'],
         ], [
             'embedding_data.required' => 'Face embedding data is required.',
@@ -206,7 +207,19 @@ class FaceRecognitionController extends Controller
 
         $photoPath = null;
         if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('face-enrollments', 'public');
+            $photoPath = $request->file('photo')->store("face-enrollments/{$company->id}", 'public');
+        } elseif ($request->filled('photo_base64')) {
+            try {
+                $rawBase64 = preg_replace('#^data:image/\w+;base64,#i', '', $request->input('photo_base64'));
+                $imageData = base64_decode($rawBase64);
+                if ($imageData !== false) {
+                    $filename = "face-enrollments/{$company->id}/" . \Illuminate\Support\Str::random(40) . '.jpg';
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $imageData);
+                    $photoPath = $filename;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to save face enrollment photo_base64: ' . $e->getMessage());
+            }
         }
 
         $embedding = $this->faceRecognitionService->enrollFace(

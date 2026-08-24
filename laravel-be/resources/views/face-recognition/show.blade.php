@@ -31,8 +31,14 @@
         <div class="lg:col-span-1">
             <div class="card">
                 <div class="card-body text-center">
-                    <div class="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold text-3xl mx-auto mb-4">
-                        {{ strtoupper(substr($employee->first_name, 0, 1)) }}{{ strtoupper(substr($employee->last_name ?? '', 0, 1)) }}
+                    <div class="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold text-3xl mx-auto mb-4 overflow-hidden shadow-sm">
+                        @if($employee->photo && Storage::disk('public')->exists($employee->photo))
+                            <img src="{{ Storage::url($employee->photo) }}" alt="{{ $employee->full_name }}" class="w-full h-full object-cover">
+                        @elseif($employee->user?->avatar && Storage::disk('public')->exists($employee->user->avatar))
+                            <img src="{{ Storage::url($employee->user->avatar) }}" alt="{{ $employee->full_name }}" class="w-full h-full object-cover">
+                        @else
+                            {{ strtoupper(substr($employee->first_name, 0, 1)) }}{{ strtoupper(substr($employee->last_name ?? '', 0, 1)) }}
+                        @endif
                     </div>
                     <h3 class="font-semibold text-lg text-secondary-900">{{ $employee->full_name }}</h3>
                     <p class="text-secondary-500 text-sm">{{ $employee->employee_id }}</p>
@@ -64,14 +70,28 @@
                             </div>
                             <div>
                                 <p class="font-medium text-success-600">Wajah Terdaftar</p>
-                                <p class="text-xs text-secondary-500">{{ $embedding->enrolled_at->format('d M Y H:i') }}</p>
+                                <p class="text-xs text-secondary-500">{{ $embedding->enrolled_at ? $embedding->enrolled_at->format('d M Y H:i') : '-' }}</p>
                             </div>
                         </div>
 
-                        @if($embedding->enrollment_photo)
+                        @php
+                            $hasValidPhoto = $embedding->enrollment_photo && $embedding->enrollment_photo !== 'no-photo' && Storage::disk('public')->exists($embedding->enrollment_photo);
+                        @endphp
+
+                        @if($hasValidPhoto)
                             <div class="mb-4">
-                                <p class="text-sm text-secondary-500 mb-2">Foto Terdaftar:</p>
-                                <img src="{{ Storage::url($embedding->enrollment_photo) }}" alt="Foto Wajah" class="w-full rounded-lg border">
+                                <p class="text-sm text-secondary-500 mb-2 font-medium">Foto Terdaftar:</p>
+                                <img src="{{ Storage::url($embedding->enrollment_photo) }}" alt="Foto Wajah" class="w-full rounded-lg border object-cover shadow-sm">
+                            </div>
+                        @else
+                            <div class="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                                <div class="w-12 h-12 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <p class="text-xs text-secondary-800 font-semibold">Wajah Terdaftar via Aplikasi Mobile</p>
+                                <p class="text-xs text-secondary-500 mt-1">Biometrik embedding (vektor descriptor TFLite) aktif untuk presensi.</p>
                             </div>
                         @endif
 

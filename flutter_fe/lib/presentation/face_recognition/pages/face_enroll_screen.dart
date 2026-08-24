@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:camera/camera.dart';
@@ -208,10 +209,18 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
+                          String? photoBase64;
+                          try {
+                            photoBase64 = base64Encode(img.encodeJpg(croppedFace, quality: 85));
+                          } catch (e) {
+                            debugPrint('Failed to encode cropped face to jpg: $e');
+                          }
+
                           context.read<FaceEnrollBloc>().add(
                             SubmitFaceEnroll(
                               request: FaceEnrollRequestModel(
                                 descriptors: recognition.embedding,
+                                photoBase64: photoBase64,
                               ),
                             ),
                           );

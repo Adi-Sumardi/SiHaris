@@ -92,7 +92,8 @@ version: 1.0.2+8  # <-- naikkan PATCH atau MINOR sesuai jenis perubahan
 | 1.0.2 | +9 | 2026-08-24 | Fix tombol kamera definitif: pindah tombol ke luar CameraPreview (Column layout) |
 | 1.0.3 | +10 | 2026-08-24 | Fix preview kamera gepeng/distorsi: AspectRatio dari controller |
 | 1.0.4 | +11 | 2026-08-24 | Async device-specific FaceDetector config, FaceGuideOverlay, faceDetected flag |
-| **1.0.5** | **+12** | **2026-08-24** | **Fitur Active Liveness Detection sungguhan (multi-step randomized challenge: blink, turn left/right, smile, auto-capture)** |
+| 1.0.5 | +12 | 2026-08-24 | Fitur Active Liveness Detection sungguhan (multi-step randomized challenge: blink, turn left/right, smile, auto-capture) |
+| **1.0.6** | **+13** | **2026-08-24** | **Fix Null check operator on null value during liveness verification (CameraImage stream binding, safe uvPixelStride, safe face crop bounds)** |
 
 ---
 

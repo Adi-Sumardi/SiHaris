@@ -31,7 +31,7 @@ class CameraViewAttendancePage extends StatefulWidget {
   final CustomPaint? customPaint;
   final Widget? overlay;
   final bool showShutterButton;
-  final Function(InputImage inputImage) onImage;
+  final Function(InputImage inputImage, CameraImage cameraImage) onImage;
   final VoidCallback? onCameraFeedReady;
 
   final Function(CameraLensDirection direction)? onCameraLensDirectionChanged;
@@ -469,7 +469,7 @@ class _CameraViewState extends State<CameraViewAttendancePage> {
       return;
     }
 
-    widget.onImage(inputImage);
+    widget.onImage(inputImage, image);
   }
 
   final _orientations = {

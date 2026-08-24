@@ -259,7 +259,7 @@ class _FaceVerifyAttendanceScreenState
     final vPlane = cameraImage.planes[2].bytes;
 
     final yRowStride = cameraImage.planes[0].bytesPerRow;
-    final uvPixelStride = cameraImage.planes[1].bytesPerPixel!;
+    final uvPixelStride = cameraImage.planes[1].bytesPerPixel ?? 1;
     final uvRowStride = cameraImage.planes[1].bytesPerRow;
 
     final image = img.Image(width: width, height: height);
@@ -371,6 +371,10 @@ class _FaceVerifyAttendanceScreenState
         return;
       }
 
+      if (frame == null) {
+        throw Exception('Frame kamera belum tersedia. Silakan ulangi.');
+      }
+
       final colorImage = convertCameraImageToColorImage(frame!);
 
       // Rotation angle - same as CSA
@@ -395,17 +399,18 @@ class _FaceVerifyAttendanceScreenState
       });
       final Rect faceRect = face.boundingBox;
 
-      // Crop face with bounds checking
+      final cropLeft = faceRect.left.toInt().clamp(0, (rotatedColorImage.width - 1).clamp(0, 99999));
+      final cropTop = faceRect.top.toInt().clamp(0, (rotatedColorImage.height - 1).clamp(0, 99999));
+      final maxCropWidth = (rotatedColorImage.width - cropLeft).clamp(1, 99999);
+      final maxCropHeight = (rotatedColorImage.height - cropTop).clamp(1, 99999);
+
+      // Crop face with safe bounds checking
       img.Image croppedFace = img.copyCrop(
         rotatedColorImage,
-        x: faceRect.left.toInt().clamp(0, rotatedColorImage.width - 1),
-        y: faceRect.top.toInt().clamp(0, rotatedColorImage.height - 1),
-        width: faceRect.width
-            .toInt()
-            .clamp(1, rotatedColorImage.width - faceRect.left.toInt()),
-        height: faceRect.height
-            .toInt()
-            .clamp(1, rotatedColorImage.height - faceRect.top.toInt()),
+        x: cropLeft,
+        y: cropTop,
+        width: faceRect.width.toInt().clamp(1, maxCropWidth),
+        height: faceRect.height.toInt().clamp(1, maxCropHeight),
       );
 
       RecognitionEmbedding recognition = recognizer.recognize(
@@ -553,8 +558,10 @@ class _FaceVerifyAttendanceScreenState
     );
   }
 
-  Future<void> _processImage(InputImage inputImage) async {
+  Future<void> _processImage(InputImage inputImage, CameraImage cameraImage) async {
     try {
+      frame = cameraImage;
+
       if (!_canProcess) {
         return;
       }

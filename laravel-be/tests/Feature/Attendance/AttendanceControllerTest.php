@@ -117,6 +117,40 @@ describe('AttendanceController', function () {
             $response->assertOk();
         });
 
+        it('can search attendances by employee name or id', function () {
+            $employeeJohn = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'John',
+                'last_name' => 'Wick',
+                'employee_id' => 'EMP999',
+            ]);
+            $employeeJane = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Jane',
+                'last_name' => 'Foster',
+                'employee_id' => 'EMP888',
+            ]);
+
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $employeeJohn->id,
+            ]);
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $employeeJane->id,
+            ]);
+
+            $response = $this->get(route('attendances.index', ['search' => 'Wick']));
+            $response->assertOk();
+            $response->assertSee('John Wick');
+            $response->assertDontSee('Jane Foster');
+
+            $responseId = $this->get(route('attendances.index', ['search' => 'EMP888']));
+            $responseId->assertOk();
+            $responseId->assertSee('Jane Foster');
+            $responseId->assertDontSee('John Wick');
+        });
+
         it('can filter by status', function () {
             Attendance::factory()->create([
                 'company_id' => $this->company->id,

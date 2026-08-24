@@ -27,6 +27,20 @@ class AttendanceController extends Controller
         $query = Attendance::with(['company', 'employee', 'workSchedule'])
             ->where('company_id', $tenant->id);
 
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->where(function ($eq) use ($search) {
+                    $eq->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('employee_id', 'like', "%{$search}%")
+                        ->orWhere('nik', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', COALESCE(last_name, '')) LIKE ?", ["%{$search}%"]);
+                });
+            });
+        }
+
         if ($request->filled('date')) {
             $query->whereDate('date', $request->date);
         }
@@ -49,12 +63,7 @@ class AttendanceController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $employees = Employee::where('company_id', $tenant->id)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
-
-        return view('attendances.index', compact('attendances', 'employees'));
+        return view('attendances.index', compact('attendances'));
     }
 
     public function syncAdmsAttendance(Request $request): RedirectResponse

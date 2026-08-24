@@ -124,4 +124,12 @@
   - Mendukung komponen gaji tambahan dinamis jika nama kolom di Excel cocok dengan kode/nama komponen pada `salary_components`.
   - Memperbarui data rekening bank dan `base_salary` pada profil karyawan (`Employee`).
 
+---
+
+## 10. Attendance Live Search Filter (Pencarian Kehadiran Live Data)
+- **Menu Kehadiran**: `/attendances` (`AttendanceController::index`)
+- **Filter Live Search**: Dropdown static employee diganti dengan input live search (`search`) dengan debounce 300ms, clear button, dan live asynchronous data fetch.
+- **Dukungan Pencarian**: Mencari karyawan berdasarkan `first_name`, `last_name`, `employee_id`, `nik`, `email`, atau nama lengkap secara real-time tanpa full page reload.
+
+
 

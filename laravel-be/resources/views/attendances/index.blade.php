@@ -28,40 +28,63 @@
 @endsection
 
 @section('content')
-    {{-- Filters --}}
-    <div class="card mb-4">
+    {{-- Filters with Live Search --}}
+    <div class="card mb-4" x-data="attendanceLiveFilter()">
         <div class="card-body-sm">
-            <form action="{{ route('attendances.index') }}" method="GET" class="flex flex-wrap items-end gap-3">
+            <form id="attendance-filter-form" action="{{ route('attendances.index') }}" method="GET" class="flex flex-wrap items-end gap-3" @submit.prevent="fetchData()">
+                {{-- Search Employee --}}
+                <div class="flex-1 min-w-[220px]">
+                    <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            name="search"
+                            id="search"
+                            value="{{ request('search') }}"
+                            placeholder="Ketik nama, NIK, atau email..."
+                            class="input w-full pl-9 pr-8"
+                            autocomplete="off"
+                            x-ref="searchInput"
+                            @input="onSearchInput($event)"
+                        >
+                        {{-- Clear Button --}}
+                        <button
+                            type="button"
+                            x-show="searchQuery.length > 0"
+                            @click="clearSearch()"
+                            class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                            style="display: none;"
+                            title="Hapus pencarian"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
                 {{-- Date --}}
                 <div class="w-36">
                     <label for="date" class="block text-xs font-medium text-secondary-500 mb-1">Tanggal</label>
-                    <input type="date" name="date" id="date" value="{{ request('date') }}" class="input w-full">
+                    <input type="date" name="date" id="date" value="{{ request('date') }}" class="input w-full" @change="fetchData()">
                 </div>
 
                 {{-- Month --}}
                 <div class="w-36">
                     <label for="month" class="block text-xs font-medium text-secondary-500 mb-1">Bulan</label>
-                    <input type="month" name="month" id="month" value="{{ request('month') }}" class="input w-full">
-                </div>
-
-                {{-- Employee --}}
-                <div class="w-44">
-                    <label for="employee_id" class="block text-xs font-medium text-secondary-500 mb-1">Karyawan</label>
-                    <select name="employee_id" id="employee_id" class="input w-full">
-                        <option value="">Semua</option>
-                        @foreach($employees as $employee)
-                            <option value="{{ $employee->id }}" {{ request('employee_id') == $employee->id ? 'selected' : '' }}>
-                                {{ $employee->full_name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <input type="month" name="month" id="month" value="{{ request('month') }}" class="input w-full" @change="fetchData()">
                 </div>
 
                 {{-- Status --}}
-                <div class="w-32">
+                <div class="w-36">
                     <label for="status" class="block text-xs font-medium text-secondary-500 mb-1">Status</label>
-                    <select name="status" id="status" class="input w-full">
-                        <option value="">Semua</option>
+                    <select name="status" id="status" class="input w-full" @change="fetchData()">
+                        <option value="">Semua Status</option>
                         <option value="present" {{ request('status') === 'present' ? 'selected' : '' }}>Hadir</option>
                         <option value="absent" {{ request('status') === 'absent' ? 'selected' : '' }}>Tidak Hadir</option>
                         <option value="late" {{ request('status') === 'late' ? 'selected' : '' }}>Terlambat</option>
@@ -71,20 +94,33 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    @if(request()->hasAny(['date', 'month', 'employee_id', 'status']))
-                        <a href="{{ route('attendances.index') }}" class="btn btn-ghost btn-sm">Reset</a>
-                    @endif
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        Cari
+                    <button type="button" @click="resetFilters()" class="btn btn-ghost btn-sm" x-show="hasActiveFilters" style="display: none;">
+                        Reset
                     </button>
+                    <div class="h-8 flex items-center px-1" x-show="loading" style="display: none;">
+                        <svg class="animate-spin w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
-    {{-- Attendance List --}}
-    <div class="card">
+    {{-- Attendance List Card --}}
+    <div class="card relative" id="attendance-table-card">
+        {{-- Loading Overlay --}}
+        <div id="table-loading-overlay" class="hidden absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl transition-all duration-200">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-md border border-slate-200 text-xs font-medium text-slate-600">
+                <svg class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                Memuat data...
+            </div>
+        </div>
+
         <x-table>
             <x-slot name="header">
                 <th>Tanggal</th>
@@ -189,9 +225,141 @@
         </x-table>
 
         @if($attendances->hasPages())
-            <div class="card-footer">
+            <div class="card-footer" id="attendance-pagination">
                 {{ $attendances->links() }}
             </div>
         @endif
     </div>
+
+    <script>
+        function attendanceLiveFilter() {
+            return {
+                searchQuery: '{{ addslashes(request('search', '')) }}',
+                loading: false,
+                debounceTimer: null,
+
+                get hasActiveFilters() {
+                    return this.searchQuery.length > 0 ||
+                        (document.getElementById('date') && document.getElementById('date').value !== '') ||
+                        (document.getElementById('month') && document.getElementById('month').value !== '') ||
+                        (document.getElementById('status') && document.getElementById('status').value !== '');
+                },
+
+                onSearchInput(event) {
+                    this.searchQuery = event.target.value;
+                    clearTimeout(this.debounceTimer);
+                    this.debounceTimer = setTimeout(() => {
+                        this.fetchData();
+                    }, 300);
+                },
+
+                clearSearch() {
+                    this.searchQuery = '';
+                    const searchInput = document.getElementById('search');
+                    if (searchInput) {
+                        searchInput.value = '';
+                        searchInput.focus();
+                    }
+                    this.fetchData();
+                },
+
+                resetFilters() {
+                    const form = document.getElementById('attendance-filter-form');
+                    if (form) {
+                        const dateInput = document.getElementById('date');
+                        const monthInput = document.getElementById('month');
+                        const statusInput = document.getElementById('status');
+                        const searchInput = document.getElementById('search');
+
+                        if (dateInput) dateInput.value = '';
+                        if (monthInput) monthInput.value = '';
+                        if (statusInput) statusInput.value = '';
+                        if (searchInput) searchInput.value = '';
+
+                        this.searchQuery = '';
+                        this.fetchData(true);
+                    }
+                },
+
+                fetchData(isReset = false) {
+                    const form = document.getElementById('attendance-filter-form');
+                    if (!form) return;
+
+                    const url = new URL(form.action, window.location.origin);
+                    if (!isReset) {
+                        const formData = new FormData(form);
+                        for (const [key, value] of formData.entries()) {
+                            if (value && value.trim() !== '') {
+                                url.searchParams.set(key, value.trim());
+                            }
+                        }
+                    }
+
+                    this.loading = true;
+                    const overlay = document.getElementById('table-loading-overlay');
+                    if (overlay) overlay.classList.remove('hidden');
+
+                    fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.text();
+                    })
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newTable = doc.getElementById('attendance-table-card');
+                        const currentTable = document.getElementById('attendance-table-card');
+                        if (newTable && currentTable) {
+                            currentTable.innerHTML = newTable.innerHTML;
+                        }
+                        window.history.replaceState({}, '', url.toString());
+                    })
+                    .catch(err => {
+                        console.error('Live search error:', err);
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                        const ov = document.getElementById('table-loading-overlay');
+                        if (ov) ov.classList.add('hidden');
+                    });
+                }
+            };
+        }
+
+        // Handle AJAX navigation for pagination inside table
+        document.addEventListener('click', function(e) {
+            const pageLink = e.target.closest('#attendance-table-card .pagination a, #attendance-table-card nav a');
+            if (pageLink && pageLink.href && !pageLink.href.includes('#')) {
+                e.preventDefault();
+                const overlay = document.getElementById('table-loading-overlay');
+                if (overlay) overlay.classList.remove('hidden');
+
+                fetch(pageLink.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newTable = doc.getElementById('attendance-table-card');
+                    const currentTable = document.getElementById('attendance-table-card');
+                    if (newTable && currentTable) {
+                        currentTable.innerHTML = newTable.innerHTML;
+                    }
+                    window.history.replaceState({}, '', pageLink.href);
+                })
+                .catch(err => {
+                    window.location.href = pageLink.href;
+                })
+                .finally(() => {
+                    const ov = document.getElementById('table-loading-overlay');
+                    if (ov) ov.classList.add('hidden');
+                });
+            }
+        });
+    </script>
 @endsection

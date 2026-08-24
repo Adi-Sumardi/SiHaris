@@ -6,6 +6,9 @@ import '../../../core/components/widgets.dart';
 import '../../../core/widgets/delete_account_dialog.dart';
 import '../../../data/datasources/auth_local_datasource.dart';
 import '../../../data/models/responses/auth_response_model.dart';
+import '../../auth/bloc/logout/logout_bloc.dart';
+import '../../auth/bloc/logout/logout_event.dart';
+import '../../auth/bloc/logout/logout_state.dart';
 import '../../auth/bloc/profile/profile_bloc.dart';
 import '../../auth/bloc/profile/profile_event.dart';
 import '../../auth/bloc/profile/profile_state.dart';
@@ -18,7 +21,9 @@ import '../../settings/pages/about_screen.dart';
 import '../../settings/pages/faq_screen.dart';
 import 'package:http/http.dart' as http;
 import '../../../data/datasources/face_recognition_datasource.dart';
+import '../../approval/pages/approval_screen.dart';
 import '../../face_recognition/pages/face_enroll_screen.dart';
+import '../../reimbursement/pages/reimbursement_screen.dart';
 import 'edit_profile_screen.dart';
 
 /// Profile Screen - Dynamic from API
@@ -38,34 +43,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      body: BlocBuilder<ProfileBloc, ProfileState>(
-        builder: (context, state) {
-          if (state is ProfileLoading || state is ProfileInitial) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is ProfileError) {
-            return _buildError(context, state.message);
-          }
-          if (state is ProfileLoaded) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<ProfileBloc>().add(RefreshProfile());
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildHeader(context, state.user, state.company),
-                    _buildProfileContent(context, state.user, state.company),
-                  ],
+    return BlocListener<LogoutBloc, LogoutState>(
+      listener: (context, state) {
+        if (state is LogoutSuccess) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
+        } else if (state is LogoutError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.scaffoldBackground,
+        body: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            if (state is ProfileLoading || state is ProfileInitial) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state is ProfileError) {
+              return _buildError(context, state.message);
+            }
+            if (state is ProfileLoaded) {
+              return RefreshIndicator(
+                onRefresh: () async {
+                  context.read<ProfileBloc>().add(RefreshProfile());
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    children: [
+                      _buildHeader(context, state.user, state.company),
+                      _buildProfileContent(context, state.user, state.company),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }
-          return const SizedBox();
-        },
+              );
+            }
+            return const SizedBox();
+          },
+        ),
       ),
     );
   }
@@ -84,8 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () =>
-                context.read<ProfileBloc>().add(GetProfile()),
+            onPressed: () => context.read<ProfileBloc>().add(GetProfile()),
             child: const Text('Coba Lagi'),
           ),
         ],
@@ -93,7 +114,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, UserModel user, CompanyModel? company) {
+  Widget _buildHeader(
+    BuildContext context,
+    UserModel user,
+    CompanyModel? company,
+  ) {
     final employee = user.employee;
     final displayName = employee?.fullName.isNotEmpty == true
         ? employee!.fullName
@@ -119,8 +144,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        size: 20, color: Colors.white),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
                     onPressed: () {
                       if (Navigator.canPop(context)) {
                         Navigator.pop(context);
@@ -143,8 +171,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit_outlined,
-                            size: 22, color: Colors.white),
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          size: 22,
+                          color: Colors.white,
+                        ),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -155,12 +186,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.settings_outlined,
-                            size: 24, color: Colors.white),
+                        icon: const Icon(
+                          Icons.settings_outlined,
+                          size: 24,
+                          color: Colors.white,
+                        ),
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
+                            ),
                           );
                         },
                       ),
@@ -191,11 +227,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Image.network(
                         employee!.photo!,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.person_rounded,
-                          color: AppColors.primary600,
-                          size: 40,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.person_rounded,
+                              color: AppColors.primary600,
+                              size: 40,
+                            ),
                       ),
                     )
                   : const Icon(
@@ -236,8 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Stats row
             Container(
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
@@ -245,16 +281,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 children: [
                   _buildStatItem(
-                      employee?.employeeId.isNotEmpty == true
-                          ? employee!.employeeId
-                          : '-',
-                      'ID Karyawan'),
+                    employee?.employeeId.isNotEmpty == true
+                        ? employee!.employeeId
+                        : '-',
+                    'ID Karyawan',
+                  ),
                   _buildDivider(),
                   _buildStatItem(
-                      employee?.pin?.isNotEmpty == true
-                          ? employee!.pin!
-                          : '-',
-                      'PIN Mesin'),
+                    employee?.pin?.isNotEmpty == true ? employee!.pin! : '-',
+                    'PIN Mesin',
+                  ),
                   _buildDivider(),
                   _buildStatItem(
                     employee?.faceEnrolled == true ? 'Terdaftar' : 'Belum',
@@ -304,7 +340,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileContent(BuildContext context, UserModel user, CompanyModel? company) {
+  Widget _buildProfileContent(
+    BuildContext context,
+    UserModel user,
+    CompanyModel? company,
+  ) {
     final employee = user.employee;
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -316,12 +356,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildInfoCard([
             _buildInfoRow(Icons.email_outlined, 'Email', user.email),
             if (employee?.phone != null)
-              _buildInfoRow(
-                  Icons.phone_outlined, 'Telepon', employee!.phone!),
+              _buildInfoRow(Icons.phone_outlined, 'Telepon', employee!.phone!),
             if (employee?.nik != null && employee!.nik!.isNotEmpty)
               _buildInfoRow(
-                  Icons.credit_card_outlined, 'NIK (No. KTP)', employee.nik!,
-                  copyable: true),
+                Icons.credit_card_outlined,
+                'NIK (No. KTP)',
+                employee.nik!,
+                copyable: true,
+              ),
           ]),
           const SizedBox(height: 20),
           _buildSectionTitle('Informasi Pekerjaan'),
@@ -329,29 +371,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildInfoCard([
             if (company != null)
               _buildInfoRow(
-                  Icons.apartment_outlined, 'Perusahaan', company.name),
+                Icons.apartment_outlined,
+                'Perusahaan',
+                company.name,
+              ),
             if (employee != null) ...[
               _buildInfoRow(
-                  Icons.badge_outlined, 'ID Karyawan', employee.employeeId,
-                  copyable: true),
+                Icons.badge_outlined,
+                'ID Karyawan',
+                employee.employeeId,
+                copyable: true,
+              ),
               _buildInfoRow(
-                  Icons.fingerprint_rounded,
-                  'PIN Mesin Fingerprint',
-                  employee.pin?.isNotEmpty == true ? employee.pin! : '-',
-                  copyable: true),
+                Icons.fingerprint_rounded,
+                'PIN Mesin Fingerprint',
+                employee.pin?.isNotEmpty == true ? employee.pin! : '-',
+                copyable: true,
+              ),
               if (employee.department != null)
-                _buildInfoRow(Icons.business_outlined, 'Departemen',
-                    employee.department!),
+                _buildInfoRow(
+                  Icons.business_outlined,
+                  'Departemen',
+                  employee.department!,
+                ),
               if (employee.position != null)
                 _buildInfoRow(
-                    Icons.work_outline, 'Jabatan', employee.position!),
+                  Icons.work_outline,
+                  'Jabatan',
+                  employee.position!,
+                ),
               if (employee.employmentStatus != null)
-                _buildInfoRow(Icons.verified_outlined, 'Status',
-                    employee.employmentStatus!),
+                _buildInfoRow(
+                  Icons.verified_outlined,
+                  'Status',
+                  employee.employmentStatus!,
+                ),
               if (employee.hireDate != null)
-                _buildInfoRow(Icons.calendar_today_outlined, 'Bergabung',
-                    employee.hireDate!,
-                    isLast: true),
+                _buildInfoRow(
+                  Icons.calendar_today_outlined,
+                  'Bergabung',
+                  employee.hireDate!,
+                  isLast: true,
+                ),
             ],
           ]),
           const SizedBox(height: 20),
@@ -392,7 +453,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: isEnrolled ? AppColors.successLight : AppColors.warningLight,
+                  color: isEnrolled
+                      ? AppColors.successLight
+                      : AppColors.warningLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -432,7 +495,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isEnrolled ? AppColors.successLight : AppColors.warningLight,
+                  color: isEnrolled
+                      ? AppColors.successLight
+                      : AppColors.warningLight,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isEnrolled ? AppColors.success : AppColors.warning,
@@ -442,9 +507,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isEnrolled ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                      isEnrolled
+                          ? Icons.check_circle_rounded
+                          : Icons.info_outline_rounded,
                       size: 12,
-                      color: isEnrolled ? AppColors.success : AppColors.warningDark,
+                      color: isEnrolled
+                          ? AppColors.success
+                          : AppColors.warningDark,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -452,7 +521,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: isEnrolled ? AppColors.successDark : AppColors.warningDark,
+                        color: isEnrolled
+                            ? AppColors.successDark
+                            : AppColors.warningDark,
                       ),
                     ),
                   ],
@@ -468,9 +539,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const FaceEnrollScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const FaceEnrollScreen()),
                   ).then((_) {
                     if (context.mounted) {
                       context.read<ProfileBloc>().add(GetProfile());
@@ -499,7 +568,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: () => _showFaceReEnrollmentInfoDialog(context),
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.secondary50,
                   borderRadius: BorderRadius.circular(8),
@@ -555,12 +627,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         content: const Text(
           'Wajah Anda sudah terdaftar dan terverifikasi untuk absensi.\n\nUntuk menjaga keamanan absensi, pendaftaran wajah hanya dapat dilakukan 1 kali. Jika ada kendala biometrik atau perubahan wajah, silakan ajukan permohonan reset ke Administrator HRD.\n\nSetelah Administrator menyetujui dan mereset data wajah Anda di sistem, tombol pendaftaran wajah akan otomatis aktif kembali.',
-          style: TextStyle(fontSize: 13, height: 1.5, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tutup', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Tutup',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -608,7 +687,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     const Text(
                       'Ajukan Reset Pendaftaran Wajah',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, size: 20),
@@ -619,7 +702,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'Sebutkan alasan permohonan reset data wajah Anda (misal: kacamata baru, kamera berganti, atau kendala scan absensi).',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -627,7 +714,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'Tuliskan alasan pengajuan Anda di sini...',
-                    hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textHint,
+                    ),
                     filled: true,
                     fillColor: AppColors.background,
                     border: OutlineInputBorder(
@@ -636,7 +726,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.primary600, width: 1.5),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary600,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -662,14 +755,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               (error) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(error), backgroundColor: AppColors.danger),
+                                    SnackBar(
+                                      content: Text(error),
+                                      backgroundColor: AppColors.danger,
+                                    ),
                                   );
                                 }
                               },
                               (message) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(message), backgroundColor: AppColors.success),
+                                    SnackBar(
+                                      content: Text(message),
+                                      backgroundColor: AppColors.success,
+                                    ),
                                   );
                                 }
                               },
@@ -679,11 +778,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: AppColors.primary600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     child: isSubmitting
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Kirim Pengajuan ke Administrator', style: TextStyle(fontWeight: FontWeight.w600)),
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Kirim Pengajuan ke Administrator',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
                   ),
                 ),
               ],
@@ -717,8 +828,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value,
-      {bool isLast = false, bool copyable = false}) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isLast = false,
+    bool copyable = false,
+  }) {
     return Builder(
       builder: (context) {
         return Container(
@@ -728,7 +844,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? null
                 : Border(
                     bottom: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.5))),
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
+                  ),
           ),
           child: Row(
             children: [
@@ -767,7 +885,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               if (copyable && value != '-' && value.isNotEmpty)
                 IconButton(
-                  icon: const Icon(Icons.copy_rounded, size: 18, color: AppColors.primary600),
+                  icon: const Icon(
+                    Icons.copy_rounded,
+                    size: 18,
+                    color: AppColors.primary600,
+                  ),
                   tooltip: 'Salin $label',
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: value));
@@ -796,13 +918,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
-          _buildMenuItem(Icons.receipt_long_outlined, 'Bukti Potong 1721-A1',
-              onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TaxFormScreen()),
-            );
-          }, isLast: true),
+          _buildMenuItem(
+            Icons.receipt_long_outlined,
+            'Bukti Potong 1721-A1',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TaxFormScreen()),
+              );
+            },
+            isLast: true,
+          ),
         ],
       ),
     );
@@ -817,51 +943,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
-          _buildMenuItem(Icons.lock_outline_rounded, 'Ubah Password',
-              onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
-            );
-          }),
-          _buildMenuItem(Icons.help_outline_rounded, 'Bantuan',
-              onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FaqScreen()),
-            );
-          }),
           _buildMenuItem(
-              Icons.delete_outline_rounded, 'Hapus Akun',
-              onTap: () => DeleteAccountDialog.show(context)),
+            Icons.receipt_outlined,
+            'Reimbursement',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReimbursementScreen()),
+              );
+            },
+          ),
           _buildMenuItem(
-              Icons.info_outline_rounded, 'Tentang Aplikasi',
-              onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AboutScreen()),
-            );
-          },
-              trailing: _buildTrailingText('v1.0.0'),
-              isLast: true),
+            Icons.fact_check_outlined,
+            'Persetujuan',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ApprovalScreen()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            Icons.lock_outline_rounded,
+            'Ubah Password',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            Icons.help_outline_rounded,
+            'Bantuan',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FaqScreen()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            Icons.delete_outline_rounded,
+            'Hapus Akun',
+            onTap: () => DeleteAccountDialog.show(context),
+          ),
+          _buildMenuItem(
+            Icons.info_outline_rounded,
+            'Tentang Aplikasi',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutScreen()),
+              );
+            },
+            trailing: _buildTrailingText('v1.0.0'),
+            isLast: true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title,
-      {VoidCallback? onTap, Widget? trailing, bool isLast = false}) {
+  Widget _buildMenuItem(
+    IconData icon,
+    String title, {
+    VoidCallback? onTap,
+    Widget? trailing,
+    bool isLast = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           border: isLast
               ? null
               : Border(
                   bottom: BorderSide(
-                      color: AppColors.border.withValues(alpha: 0.5))),
+                    color: AppColors.border.withValues(alpha: 0.5),
+                  ),
+                ),
         ),
         child: Row(
           children: [
@@ -886,8 +1048,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             trailing ??
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.secondary300, size: 20),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.secondary300,
+                  size: 20,
+                ),
           ],
         ),
       ),
@@ -897,10 +1062,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildTrailingText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 12,
-        color: AppColors.textSecondary,
-      ),
+      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
     );
   }
 
@@ -915,14 +1077,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           cancelText: 'Batal',
           isDanger: true,
           onConfirm: () {
-            // Force logout: clear auth data then navigate to login
-            final navigator = Navigator.of(context);
-            AuthLocalDatasource().removeAuthData().then((_) {
-              navigator.pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
-            });
+            // Revoke the Sanctum token server-side, then clear local auth
+            // data and navigate to login (handled by the BlocListener above).
+            context.read<LogoutBloc>().add(LogoutSubmitted());
           },
         );
       },
@@ -932,8 +1089,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: AppColors.danger.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -953,5 +1109,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
-  }
+}

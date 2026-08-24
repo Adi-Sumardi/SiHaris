@@ -312,7 +312,7 @@ class ApprovalController extends Controller
 
         $overtime->update([
             'status' => 'approved',
-            'approved_by' => $employee->id,
+            'approved_by' => $user->id,
             'approved_at' => now(),
             'approval_notes' => $request->input('notes'),
         ]);
@@ -367,7 +367,7 @@ class ApprovalController extends Controller
 
         $overtime->update([
             'status' => 'rejected',
-            'approved_by' => $employee->id,
+            'approved_by' => $user->id,
             'approved_at' => now(),
             'approval_notes' => $request->input('notes'),
         ]);
@@ -410,7 +410,7 @@ class ApprovalController extends Controller
 
         $reimbursement->update([
             'status' => 'approved',
-            'approved_by' => $employee->id,
+            'approved_by' => $user->id,
             'approved_at' => now(),
             'approval_notes' => $request->input('notes'),
         ]);
@@ -465,7 +465,7 @@ class ApprovalController extends Controller
 
         $reimbursement->update([
             'status' => 'rejected',
-            'approved_by' => $employee->id,
+            'approved_by' => $user->id,
             'approved_at' => now(),
             'approval_notes' => $request->input('notes'),
         ]);
@@ -526,7 +526,7 @@ class ApprovalController extends Controller
         // Leave requests approved/rejected by this manager
         $leaveHistory = LeaveRequest::with(['employee'])
             ->where('company_id', $user->company_id)
-            ->where('approved_by', $employee->id)
+            ->where('approved_by', $user->id)
             ->whereIn('status', ['approved', 'rejected'])
             ->orderBy('approved_at', 'desc')
             ->limit(50)
@@ -544,7 +544,7 @@ class ApprovalController extends Controller
         // Overtime requests approved/rejected by this manager
         $overtimeHistory = OvertimeRequest::with(['employee'])
             ->where('company_id', $user->company_id)
-            ->where('approved_by', $employee->id)
+            ->where('approved_by', $user->id)
             ->whereIn('status', ['approved', 'rejected'])
             ->orderBy('approved_at', 'desc')
             ->limit(50)
@@ -562,7 +562,7 @@ class ApprovalController extends Controller
         // Reimbursements approved/rejected by this manager
         $reimbursementHistory = Reimbursement::with(['employee'])
             ->where('company_id', $user->company_id)
-            ->where('approved_by', $employee->id)
+            ->where('approved_by', $user->id)
             ->whereIn('status', ['approved', 'rejected'])
             ->orderBy('approved_at', 'desc')
             ->limit(50)

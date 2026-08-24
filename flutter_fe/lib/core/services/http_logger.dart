@@ -1,10 +1,16 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-/// HTTP Logger for debugging API requests and responses
+import 'package:flutter/foundation.dart' show kDebugMode;
+
+/// HTTP Logger for debugging API requests and responses.
+///
+/// Disabled by default outside debug builds: request/response bodies can
+/// contain passwords, OTPs, and face embeddings, which must never reach
+/// device system logs (logcat/os_log) in a release build.
 class HttpLogger {
   static const String _tag = 'HTTP';
-  static bool enabled = true;
+  static bool enabled = kDebugMode;
 
   /// Log HTTP request
   static void logRequest({

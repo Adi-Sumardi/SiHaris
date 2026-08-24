@@ -299,6 +299,56 @@ describe('GET /api/v1/tax-forms/{id}/download', function () {
     });
 });
 
+describe('GET /api/v1/tax-forms/{id}/pdf', function () {
+    it('downloads the pdf without authentication using a token obtained from the download endpoint', function () {
+        Sanctum::actingAs($this->user);
+
+        $taxForm = TaxForm1721A1::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+        ]);
+
+        $downloadUrl = $this->getJson("/api/v1/tax-forms/{$taxForm->id}/download")
+            ->json('data.download_url');
+
+        // Simulate an external browser opening the link without the app's Bearer token.
+        $response = $this->get($downloadUrl);
+
+        $response->assertOk();
+        expect($response->headers->get('content-type'))->toContain('application/pdf');
+    });
+
+    it('rejects a token after it has expired', function () {
+        Sanctum::actingAs($this->user);
+
+        $taxForm = TaxForm1721A1::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+        ]);
+
+        $downloadUrl = $this->getJson("/api/v1/tax-forms/{$taxForm->id}/download")
+            ->json('data.download_url');
+
+        $this->travel(10)->minutes();
+
+        $response = $this->get($downloadUrl);
+
+        $response->assertForbidden();
+    });
+
+    it('rejects an invalid token', function () {
+        $taxForm = TaxForm1721A1::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+        ]);
+
+        $expires = now()->addMinutes(5)->timestamp;
+        $response = $this->get("/api/v1/tax-forms/{$taxForm->id}/pdf?token=invalid&expires={$expires}");
+
+        $response->assertForbidden();
+    });
+});
+
 describe('GET /api/v1/tax-forms/years', function () {
     it('returns available tax years for employee', function () {
         Sanctum::actingAs($this->user);

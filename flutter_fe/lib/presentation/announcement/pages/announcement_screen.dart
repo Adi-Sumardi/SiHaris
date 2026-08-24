@@ -11,6 +11,7 @@ import '../bloc/announcement_list/announcement_list_state.dart';
 import '../bloc/announcement_unread_count/announcement_unread_count_bloc.dart';
 import '../bloc/announcement_unread_count/announcement_unread_count_event.dart';
 import '../bloc/announcement_unread_count/announcement_unread_count_state.dart';
+import '../../notification/pages/notification_screen.dart';
 import 'announcement_detail_screen.dart';
 
 class AnnouncementScreen extends StatefulWidget {
@@ -96,7 +97,20 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
                       ),
                   ],
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationScreen(),
+                    ),
+                  ).then((_) {
+                    if (context.mounted) {
+                      context.read<AnnouncementUnreadCountBloc>().add(
+                        const RefreshUnreadCount(),
+                      );
+                    }
+                  });
+                },
               );
             },
           ),

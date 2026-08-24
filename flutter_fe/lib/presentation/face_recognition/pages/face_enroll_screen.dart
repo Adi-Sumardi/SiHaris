@@ -97,7 +97,10 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
 
     setState(() {
       _faceDetector = FaceDetector(
-        options: _detectorConfig?.options ??
+        options: _detectorConfig?.toLivenessOptions(
+              enableClassification: false,
+              enableTracking: true,
+            ) ??
             FaceDetectorOptions(
               performanceMode: FaceDetectorMode.accurate,
               minFaceSize: 0.1,
@@ -171,6 +174,8 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
 
       log('🔄 Image rotated: ${image!.width}x${image!.height} -> ${rotatedImage.width}x${rotatedImage.height} (angle: $rotationAngle)');
 
+      bool dialogShown = false;
+
       for (Face face in faces) {
         Rect faceRect = face.boundingBox;
 
@@ -194,9 +199,9 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
 
         log('🧬 Face embedding extracted: ${recognition.embedding.length} dimensions');
 
-        if (register) {
+        if (!dialogShown) {
           _showFaceRegistrationDialog(croppedFace, recognition);
-          register = false;
+          dialogShown = true;
         }
       }
 

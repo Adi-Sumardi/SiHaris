@@ -96,6 +96,15 @@ class Variables {
   static const String announcementUnreadCount =
       '$apiBaseUrl/announcements/unread-count';
 
+  static const String notifications = '$apiBaseUrl/notifications';
+  static const String notificationUnreadCount =
+      '$apiBaseUrl/notifications/unread-count';
+  static const String notificationMarkAllRead =
+      '$apiBaseUrl/notifications/mark-all-read';
+  static String notificationRead(int id) =>
+      '$apiBaseUrl/notifications/$id/read';
+  static String notificationDelete(int id) => '$apiBaseUrl/notifications/$id';
+
   // ============================================
   // Approvals (Manager)
   // ============================================

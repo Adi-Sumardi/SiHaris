@@ -15,12 +15,12 @@ import '../../notification/pages/notification_screen.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_bloc.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_event.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_state.dart';
-import '../../announcement/bloc/announcement_unread_count/announcement_unread_count_bloc.dart';
-import '../../announcement/bloc/announcement_unread_count/announcement_unread_count_event.dart';
-import '../../announcement/bloc/announcement_unread_count/announcement_unread_count_state.dart';
 import '../../announcement/pages/announcement_detail_screen.dart';
 import '../../announcement/pages/announcement_screen.dart';
 import '../../../data/models/responses/announcement_model.dart';
+import '../../notification/bloc/notification_unread_count/notification_unread_count_bloc.dart';
+import '../../notification/bloc/notification_unread_count/notification_unread_count_event.dart';
+import '../../notification/bloc/notification_unread_count/notification_unread_count_state.dart';
 
 /// Home Screen with 8-point grid system
 /// Spacing: 4, 8, 12, 16, 20, 24, 32, 40, 48 px
@@ -60,7 +60,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<DashboardBloc>().add(LoadDashboard());
       context.read<QuickStatsBloc>().add(LoadQuickStats());
       context.read<AnnouncementListBloc>().add(const LoadAnnouncements());
-      context.read<AnnouncementUnreadCountBloc>().add(const LoadUnreadCount());
+      context
+          .read<NotificationUnreadCountBloc>()
+          .add(const LoadNotificationUnreadCount());
     });
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -77,7 +79,9 @@ class _HomeScreenState extends State<HomeScreen> {
           context.read<DashboardBloc>().add(RefreshDashboard());
           context.read<QuickStatsBloc>().add(RefreshQuickStats());
           context.read<AnnouncementListBloc>().add(const RefreshAnnouncements());
-          context.read<AnnouncementUnreadCountBloc>().add(const RefreshUnreadCount());
+          context
+              .read<NotificationUnreadCountBloc>()
+              .add(const RefreshNotificationUnreadCount());
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -182,8 +186,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ).then((_) {
                         if (context.mounted) {
                           context
-                              .read<AnnouncementUnreadCountBloc>()
-                              .add(const RefreshUnreadCount());
+                              .read<NotificationUnreadCountBloc>()
+                              .add(const RefreshNotificationUnreadCount());
                           context
                               .read<AnnouncementListBloc>()
                               .add(const RefreshAnnouncements());
@@ -209,11 +213,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               size: 22,
                             ),
                           ),
-                          BlocBuilder<AnnouncementUnreadCountBloc,
-                              AnnouncementUnreadCountState>(
+                          BlocBuilder<NotificationUnreadCountBloc,
+                              NotificationUnreadCountState>(
                             builder: (context, state) {
                               final hasUnread =
-                                  state is AnnouncementUnreadCountLoaded &&
+                                  state is NotificationUnreadCountLoaded &&
                                       state.count > 0;
                               if (!hasUnread) return const SizedBox.shrink();
 
@@ -1150,71 +1154,126 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildActivityItem(
-                'Clock In',
-                'Hari ini, 08:02',
-                Icons.login_rounded,
-                AppColors.success,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AttendanceHistoryScreen(),
+        BlocBuilder<DashboardBloc, DashboardState>(
+          builder: (context, state) {
+            final items = <Widget>[];
+
+            if (state is DashboardLoaded) {
+              final attendance = state.data.attendance;
+              final pendingLeave = state.data.leave?.pendingRequests ?? 0;
+
+              if (attendance != null && attendance.hasClockedIn) {
+                items.add(
+                  _buildActivityItem(
+                    'Clock In',
+                    'Hari ini, ${attendance.formattedClockIn}',
+                    Icons.login_rounded,
+                    AppColors.success,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AttendanceHistoryScreen(),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const Divider(
-                height: 1,
-                indent: 56,
-                endIndent: 16,
-                color: AppColors.border,
-              ),
-              _buildActivityItem(
-                'Pengajuan Cuti',
-                'Kemarin, 14:30',
-                Icons.event_available_outlined,
-                AppColors.accent500,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LeaveListScreen(),
+                );
+              }
+
+              if (attendance != null && attendance.hasClockedOut) {
+                items.add(
+                  _buildActivityItem(
+                    'Clock Out',
+                    'Hari ini, ${attendance.formattedClockOut}',
+                    Icons.logout_rounded,
+                    AppColors.info,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AttendanceHistoryScreen(),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const Divider(
-                height: 1,
-                indent: 56,
-                endIndent: 16,
-                color: AppColors.border,
-              ),
-              _buildActivityItem(
-                'Clock Out',
-                'Kemarin, 17:15',
-                Icons.logout_rounded,
-                AppColors.info,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AttendanceHistoryScreen(),
+                );
+              }
+
+              if (pendingLeave > 0) {
+                items.add(
+                  _buildActivityItem(
+                    'Pengajuan Cuti',
+                    '$pendingLeave pengajuan menunggu persetujuan',
+                    Icons.event_available_outlined,
+                    AppColors.accent500,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LeaveListScreen(),
+                      ),
+                    ),
                   ),
+                );
+              }
+            }
+
+            if (items.isEmpty) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
                 ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.inbox_outlined,
+                      color: AppColors.textTertiary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      state is DashboardLoaded
+                          ? 'Belum ada aktivitas hari ini'
+                          : 'Memuat aktivitas...',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    items[i],
+                    if (i != items.length - 1)
+                      const Divider(
+                        height: 1,
+                        indent: 56,
+                        endIndent: 16,
+                        color: AppColors.border,
+                      ),
+                  ],
+                ],
+              ),
+            );
+          },
         ),
       ],
     );

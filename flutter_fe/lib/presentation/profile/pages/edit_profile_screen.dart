@@ -38,7 +38,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         TextEditingController(text: employee?.lastName ?? '');
     _phoneController =
         TextEditingController(text: employee?.phone ?? '');
-    _addressController = TextEditingController();
+    _addressController = TextEditingController(text: employee?.address ?? '');
   }
 
   @override

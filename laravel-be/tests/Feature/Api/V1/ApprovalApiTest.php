@@ -287,7 +287,7 @@ describe('GET /api/v1/approvals/history', function () {
             'employee_id' => $this->employee->id,
             'leave_type_id' => $leaveType->id,
             'status' => 'approved',
-            'approved_by' => $this->manager->id,
+            'approved_by' => $this->managerUser->id,
             'approved_at' => now(),
         ]);
 
@@ -297,7 +297,7 @@ describe('GET /api/v1/approvals/history', function () {
             'employee_id' => $this->employee->id,
             'leave_type_id' => $leaveType->id,
             'status' => 'rejected',
-            'approved_by' => $this->manager->id,
+            'approved_by' => $this->managerUser->id,
             'approved_at' => now(),
         ]);
 
@@ -316,5 +316,33 @@ describe('GET /api/v1/approvals/history', function () {
                     ],
                 ],
             ]);
+
+        expect(count($response->json('data')))->toBe(2);
+    });
+
+    it('records approved_by as the approving user id for overtime and reimbursement', function () {
+        Sanctum::actingAs($this->managerUser);
+
+        $overtime = OvertimeRequest::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'date' => now()->addDay()->toDateString(),
+            'status' => 'pending',
+        ]);
+        $this->postJson("/api/v1/approvals/overtime/{$overtime->id}/approve")->assertOk();
+
+        $reimbursement = Reimbursement::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'status' => 'pending',
+        ]);
+        $this->postJson("/api/v1/approvals/reimbursement/{$reimbursement->id}/approve")->assertOk();
+
+        expect($overtime->fresh()->approved_by)->toBe($this->managerUser->id);
+        expect($reimbursement->fresh()->approved_by)->toBe($this->managerUser->id);
+
+        $response = $this->getJson('/api/v1/approvals/history');
+        $response->assertOk();
+        expect(count($response->json('data')))->toBe(2);
     });
 });

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/text_styles.dart';
 import '../../../core/constants/spacing.dart';
+import '../../../data/models/responses/attendance_history_model.dart';
+import '../bloc/attendance_history/attendance_history_bloc.dart';
 
 class AttendanceCalendar extends StatefulWidget {
   const AttendanceCalendar({super.key});
@@ -14,49 +17,66 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
   late DateTime _selectedDate;
   late DateTime _focusedMonth;
 
-  // Mock data for attendance
-  final Map<DateTime, AttendanceStatus> _attendanceData = {
-    DateTime(2026, 2, 1): AttendanceStatus.present,
-    DateTime(2026, 2, 2): AttendanceStatus.weekend,
-    DateTime(2026, 2, 3): AttendanceStatus.present,
-    DateTime(2026, 2, 4): AttendanceStatus.present,
-    DateTime(2026, 2, 5): AttendanceStatus.late,
-    DateTime(2026, 2, 6): AttendanceStatus.present,
-    DateTime(2026, 2, 7): AttendanceStatus.present,
-    DateTime(2026, 2, 8): AttendanceStatus.weekend,
-    DateTime(2026, 2, 9): AttendanceStatus.weekend,
-    DateTime(2026, 2, 10): AttendanceStatus.present,
-    DateTime(2026, 2, 11): AttendanceStatus.leave,
-    DateTime(2026, 2, 12): AttendanceStatus.present,
-  };
-
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
     _focusedMonth = DateTime.now();
+    _loadMonth(_focusedMonth);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        children: [
-          // Calendar
-          _buildCalendar(),
-          const SizedBox(height: AppSpacing.lg),
-          // Legend
-          _buildLegend(),
-          const SizedBox(height: AppSpacing.lg),
-          // Selected date info
-          _buildSelectedDateInfo(),
-        ],
+  void _loadMonth(DateTime month) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    context.read<AttendanceHistoryBloc>().add(
+      GetAttendanceHistory(
+        startDate: _isoDate(firstDay),
+        endDate: _isoDate(lastDay),
       ),
     );
   }
 
-  Widget _buildCalendar() {
+  String _isoDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AttendanceHistoryBloc, AttendanceHistoryState>(
+      builder: (context, state) {
+        final records = <DateTime, AttendanceHistoryModel>{};
+        if (state is AttendanceHistoryLoaded) {
+          for (final record in state.data) {
+            final date = DateTime.tryParse(record.date);
+            if (date != null) {
+              records[DateTime(date.year, date.month, date.day)] = record;
+            }
+          }
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            children: [
+              _buildCalendar(records, isLoading: state is AttendanceHistoryLoading),
+              const SizedBox(height: AppSpacing.lg),
+              _buildLegend(),
+              const SizedBox(height: AppSpacing.lg),
+              _buildSelectedDateInfo(records[DateTime(
+                _selectedDate.year,
+                _selectedDate.month,
+                _selectedDate.day,
+              )]),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCalendar(
+    Map<DateTime, AttendanceHistoryModel> records, {
+    required bool isLoading,
+  }) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -84,12 +104,26 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
                       _focusedMonth.month - 1,
                     );
                   });
+                  _loadMonth(_focusedMonth);
                 },
                 icon: const Icon(Icons.chevron_left_rounded),
               ),
-              Text(
-                _getMonthYear(_focusedMonth),
-                style: AppTextStyles.titleMedium,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _getMonthYear(_focusedMonth),
+                    style: AppTextStyles.titleMedium,
+                  ),
+                  if (isLoading) ...[
+                    const SizedBox(width: 8),
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ],
+                ],
               ),
               IconButton(
                 onPressed: () {
@@ -99,6 +133,7 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
                       _focusedMonth.month + 1,
                     );
                   });
+                  _loadMonth(_focusedMonth);
                 },
                 icon: const Icon(Icons.chevron_right_rounded),
               ),
@@ -123,13 +158,13 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
           ),
           const SizedBox(height: AppSpacing.sm),
           // Calendar grid
-          _buildCalendarGrid(),
+          _buildCalendarGrid(records),
         ],
       ),
     );
   }
 
-  Widget _buildCalendarGrid() {
+  Widget _buildCalendarGrid(Map<DateTime, AttendanceHistoryModel> records) {
     final firstDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final lastDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
     final firstWeekday = firstDayOfMonth.weekday % 7;
@@ -145,7 +180,7 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
     // Day cells
     for (var day = 1; day <= daysInMonth; day++) {
       final date = DateTime(_focusedMonth.year, _focusedMonth.month, day);
-      final status = _attendanceData[date];
+      final status = _statusFor(records[date]);
       final isSelected = _isSameDay(date, _selectedDate);
       final isToday = _isSameDay(date, DateTime.now());
 
@@ -243,12 +278,8 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
     );
   }
 
-  Widget _buildSelectedDateInfo() {
-    final status = _attendanceData[DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-    )];
+  Widget _buildSelectedDateInfo(AttendanceHistoryModel? record) {
+    final status = _statusFor(record);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -264,7 +295,7 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
             style: AppTextStyles.titleSmall,
           ),
           const SizedBox(height: AppSpacing.md),
-          if (status != null) ...[
+          if (status != null && record != null) ...[
             Row(
               children: [
                 _buildInfoItem(
@@ -273,18 +304,23 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
                   _getStatusColor(status)!,
                 ),
                 const SizedBox(width: AppSpacing.lg),
-                if (status == AttendanceStatus.present || status == AttendanceStatus.late)
-                  _buildInfoItem('Clock In', '08:02', AppColors.success),
+                if (record.clockIn != null)
+                  _buildInfoItem('Clock In', record.clockIn!, AppColors.success),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                if (status == AttendanceStatus.present || status == AttendanceStatus.late) ...[
-                  _buildInfoItem('Clock Out', '17:15', AppColors.info),
+                if (record.clockOut != null) ...[
+                  _buildInfoItem('Clock Out', record.clockOut!, AppColors.info),
                   const SizedBox(width: AppSpacing.lg),
-                  _buildInfoItem('Jam Kerja', '8j 13m', AppColors.primary600),
                 ],
+                if (record.workingFormatted != null)
+                  _buildInfoItem(
+                    'Jam Kerja',
+                    record.workingFormatted!,
+                    AppColors.primary600,
+                  ),
               ],
             ),
           ] else
@@ -364,6 +400,30 @@ class _AttendanceCalendarState extends State<AttendanceCalendar> {
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  /// Maps the backend's `status` string (see Attendance::getStatusLabelAttribute)
+  /// to the local display enum. 'half_day' falls back to [AttendanceStatus.present]
+  /// since there's no dedicated legend/color for it.
+  AttendanceStatus? _statusFor(AttendanceHistoryModel? record) {
+    switch (record?.status) {
+      case 'present':
+        return AttendanceStatus.present;
+      case 'late':
+        return AttendanceStatus.late;
+      case 'leave':
+        return AttendanceStatus.leave;
+      case 'absent':
+        return AttendanceStatus.absent;
+      case 'weekend':
+        return AttendanceStatus.weekend;
+      case 'holiday':
+        return AttendanceStatus.holiday;
+      case 'half_day':
+        return AttendanceStatus.present;
+      default:
+        return null;
+    }
   }
 
   Color? _getStatusColor(AttendanceStatus? status) {

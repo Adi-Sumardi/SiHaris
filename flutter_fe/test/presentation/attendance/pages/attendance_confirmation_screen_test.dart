@@ -418,6 +418,7 @@ void main() {
         office: _testOffice,
         faceConfidence: 0.87,
         faceDescriptors: [],
+        livenessPassed: true,
       );
       expect(screen, isA<AttendanceConfirmationScreen>());
     });

@@ -3,12 +3,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/text_styles.dart';
 import '../../../core/constants/spacing.dart';
+import '../../../core/services/biometric_service.dart';
 import 'home_screen.dart';
 import '../../attendance/pages/attendance_history_screen.dart';
 import '../../leave/pages/leave_list_screen.dart';
 import '../../payslip/pages/payslip_screen.dart';
 import '../../profile/pages/profile_screen.dart';
 import '../../attendance/pages/attendance_screen.dart';
+import '../widgets/app_lock_overlay.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -17,8 +19,15 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
+
+  /// Whether the app was actually sent to the background (not just a
+  /// transient `inactive`, e.g. pulling down the notification shade) since
+  /// this screen last checked the lock — only a real background trip should
+  /// trigger a re-lock on resume.
+  bool _wasBackgrounded = false;
+  bool _locked = false;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -29,12 +38,61 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _wasBackgrounded = true;
+    } else if (state == AppLifecycleState.resumed && _wasBackgrounded) {
+      _wasBackgrounded = false;
+      _checkLock();
+    }
+  }
+
+  /// Re-lock behind biometrics after returning from background. Gated only
+  /// on [BiometricService.isEnabled] — deliberately not on `isAvailable()`,
+  /// which would silently skip the gate if biometric hardware/enrollment
+  /// disappeared after the user turned the lock on.
+  Future<void> _checkLock() async {
+    final enabled = await BiometricService.instance.isEnabled();
+    if (!enabled || !mounted) return;
+    setState(() => _locked = true);
+    await _attemptUnlock();
+  }
+
+  Future<void> _attemptUnlock() async {
+    final passed = await BiometricService.instance.authenticate(
+      reason: 'Buka kembali SiHaris dengan verifikasi biometrik',
+    );
+    if (!mounted) return;
+    if (passed) {
+      setState(() => _locked = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _buildFab(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    return Stack(
+      children: [
+        Scaffold(
+          body: IndexedStack(index: _currentIndex, children: _screens),
+          bottomNavigationBar: _buildBottomNav(),
+          floatingActionButton: _buildFab(),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+        ),
+        if (_locked) AppLockOverlay(onRetry: _attemptUnlock),
+      ],
     );
   }
 

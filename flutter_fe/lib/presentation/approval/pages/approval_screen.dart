@@ -237,14 +237,16 @@ class _ApprovalScreenState extends State<ApprovalScreen>
                     const SizedBox(height: 24),
                   ],
 
-                  // Overtime requests (placeholder for now)
+                  // Overtime requests
                   if (data.overtimeRequests.isNotEmpty) ...[
                     _buildSectionTitle(
                       'Pengajuan Lembur',
                       data.overtimeRequests.length,
                     ),
                     const SizedBox(height: 12),
-                    const Text('Overtime requests (coming soon)'),
+                    ...data.overtimeRequests.map(
+                      (overtime) => _buildOvertimeCard(overtime),
+                    ),
                     const SizedBox(height: 24),
                   ],
 
@@ -497,6 +499,169 @@ class _ApprovalScreenState extends State<ApprovalScreen>
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _approveRequest(leave.id, 'leave'),
+                    icon: const Icon(Icons.check_rounded, size: 20),
+                    label: const Text('Setujui'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOvertimeCard(dynamic overtime) {
+    final map = overtime as Map<String, dynamic>;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.schedule_rounded,
+                        color: AppColors.info,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            map['employee_name'] as String? ??
+                                'Request #${map['id']}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            map['date'] as String? ?? '-',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${map['hours']} jam',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.info,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                        Icons.access_time_outlined,
+                        'Jam',
+                        '${map['start_time']} - ${map['end_time']}',
+                      ),
+                      if (map['reason'] != null) ...[
+                        const SizedBox(height: 8),
+                        _buildDetailRow(
+                          Icons.note_outlined,
+                          'Alasan',
+                          map['reason'] as String,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppColors.secondary50,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _showRejectDialog(map['id'] as int, 'overtime'),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    label: const Text('Tolak'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      side: const BorderSide(color: AppColors.danger),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () =>
+                        _approveRequest(map['id'] as int, 'overtime'),
                     icon: const Icon(Icons.check_rounded, size: 20),
                     label: const Text('Setujui'),
                     style: ElevatedButton.styleFrom(
@@ -878,6 +1043,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
   void _approveRequest(int id, String type) {
     if (type == 'leave') {
       context.read<ApprovalActionBloc>().add(ApproveLeaveRequest(id, null));
+    } else if (type == 'overtime') {
+      context.read<ApprovalActionBloc>().add(
+        ApproveOvertimeRequest(id, null),
+      );
     } else if (type == 'reimbursement') {
       context.read<ApprovalActionBloc>().add(
         ApproveReimbursementRequest(id, null),
@@ -957,6 +1126,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
                   if (type == 'leave') {
                     context.read<ApprovalActionBloc>().add(
                       RejectLeaveRequest(id, notes),
+                    );
+                  } else if (type == 'overtime') {
+                    context.read<ApprovalActionBloc>().add(
+                      RejectOvertimeRequest(id, notes),
                     );
                   } else if (type == 'reimbursement') {
                     context.read<ApprovalActionBloc>().add(

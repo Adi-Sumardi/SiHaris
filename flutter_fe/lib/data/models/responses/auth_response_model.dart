@@ -93,7 +93,19 @@ class UserModel {
             : null,
       );
     }
-    // Flat response fallback (e.g., updateProfile returns user directly)
+    // PATCH /auth/profile (updateProfile) returns {employee: {...}} only —
+    // no top-level user object, so id/name/email genuinely aren't available
+    // here. Still parse `employee` so callers that read it don't silently
+    // get null.
+    if (json.containsKey('employee') && json['employee'] is Map<String, dynamic>) {
+      return UserModel(
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        name: json['name']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        employee: EmployeeModel.fromJson(json['employee'] as Map<String, dynamic>),
+      );
+    }
+    // Flat response fallback
     return UserModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
       name: json['name']?.toString() ?? '',
@@ -133,6 +145,7 @@ class EmployeeModel {
   final String? lastName;
   final String? phone;
   final String? photo;
+  final String? address;
   final String? department;
   final String? position;
   final String? hireDate;
@@ -151,6 +164,7 @@ class EmployeeModel {
     this.lastName,
     this.phone,
     this.photo,
+    this.address,
     this.department,
     this.position,
     this.hireDate,
@@ -171,6 +185,7 @@ class EmployeeModel {
       lastName: json['last_name']?.toString(),
       phone: json['phone']?.toString(),
       photo: json['photo']?.toString(),
+      address: json['address']?.toString(),
       department: json['department']?.toString(),
       position: json['position']?.toString(),
       hireDate: json['hire_date']?.toString(),
@@ -199,6 +214,7 @@ class EmployeeModel {
       'last_name': lastName,
       'phone': phone,
       'photo': photo,
+      'address': address,
       'department': department,
       'position': position,
       'hire_date': hireDate,

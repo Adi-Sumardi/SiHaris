@@ -75,10 +75,15 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    // Gerbang biometrik: jika user mengaktifkannya & perangkat mendukung,
-    // wajib lolos Face ID / sidik jari sebelum membuka aplikasi.
+    // Gerbang biometrik: jika user mengaktifkannya, wajib lolos autentikasi
+    // sebelum membuka aplikasi. Sengaja TIDAK menambahkan pre-check
+    // `isAvailable()` di sini — authenticate() sendiri sudah gagal aman
+    // (return false) bila perangkat tak punya biometrik/PIN sama sekali,
+    // sedangkan pre-check seperti itu justru membuat gerbang ini dilewati
+    // begitu saja saat hardware/pendaftaran biometrik hilang setelah user
+    // mengaktifkan kuncinya.
     final biometric = BiometricService.instance;
-    if (await biometric.isEnabled() && await biometric.isAvailable()) {
+    if (await biometric.isEnabled()) {
       final passed = await biometric.authenticate(
         reason: 'Buka SiHaris dengan verifikasi biometrik',
       );

@@ -1,4 +1,3 @@
-// Copied EXACTLY from CSA project - face_detector_attendance_page.dart
 import 'dart:developer';
 import 'dart:io';
 
@@ -12,10 +11,12 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/ml/recognizer.dart';
 import '../../../core/ml/recognition_embedding.dart';
+import '../../../core/ml/active_liveness_detector.dart';
 import '../../../core/config/device_face_detector_config.dart';
 import '../../../core/constants/colors.dart';
 import '../../../data/datasources/auth_local_datasource.dart';
 import '../widgets/face_detector_painter.dart';
+import '../widgets/liveness_guide_overlay.dart';
 import 'camera_view_attendance_page.dart';
 
 // Helper function untuk encode JPEG di isolate
@@ -33,16 +34,19 @@ class FaceVerificationResult {
   final double? confidence;
   final List<double>? embedding;
 
+  /// Whether active liveness challenges were successfully satisfied.
+  final bool livenessPassed;
+
   FaceVerificationResult({
     required this.isValid,
     required this.image,
     this.confidence,
     this.embedding,
+    required this.livenessPassed,
   });
 }
 
-/// Face verification screen for attendance (Clock In/Out)
-/// Copied from CSA project's face_detector_attendance_page.dart
+/// Face verification screen for attendance (Clock In/Out) with Active Liveness Detection
 class FaceVerifyAttendanceScreen extends StatefulWidget {
   final bool isClockIn;
 
@@ -76,7 +80,6 @@ class _FaceVerifyAttendanceScreenState
 
   late Recognizer recognizer;
   bool isTakePicture = false;
-  String? _countdown;
 
   // Time-based throttling
   DateTime? _lastProcessTime;
@@ -85,11 +88,21 @@ class _FaceVerifyAttendanceScreenState
   // Stored embedding for comparison
   List<double>? _storedEmbedding;
 
+  // Active Liveness Detection Engine
+  late final ActiveLivenessDetector _livenessDetector;
+  LivenessFrameResult _livenessResult = const LivenessFrameResult(
+    status: LivenessStatus.waitingForFace,
+    message: 'Posisikan wajah Anda di dalam lingkaran',
+    currentStep: 1,
+    totalSteps: 2,
+  );
+
   @override
   void initState() {
     super.initState();
 
     recognizer = Recognizer();
+    _livenessDetector = ActiveLivenessDetector(randomized: true, challengeCount: 2);
     _loadStoredEmbedding();
     _initializeFaceDetector();
   }
@@ -115,21 +128,19 @@ class _FaceVerifyAttendanceScreenState
         );
 
         if (kDebugMode) {
-          log('Device-Specific FaceDetector Config:');
+          log('Device-Specific FaceDetector Config for Liveness:');
           log(_deviceConfig!.toDebugString());
         }
 
-        _faceDetector = FaceDetector(options: _deviceConfig!.options);
+        _faceDetector = FaceDetector(
+          options: _deviceConfig!.toLivenessOptions(
+            enableClassification: true,
+            enableTracking: true,
+          ),
+        );
       } else {
         // iOS
         final deviceInfo = await DeviceInfoPlugin().iosInfo;
-
-        if (kDebugMode) {
-          log('iOS DEVICE DETECTED');
-          log('Device: ${deviceInfo.name}');
-          log('Model: ${deviceInfo.localizedModel} (${deviceInfo.model})');
-          log('iOS Version: ${deviceInfo.systemVersion}');
-        }
 
         _deviceConfig = DeviceFaceDetectorConfig(
           deviceModel: '${deviceInfo.localizedModel} (${deviceInfo.model})',
@@ -141,6 +152,8 @@ class _FaceVerifyAttendanceScreenState
             minFaceSize: 0.1,
             enableContours: false,
             enableLandmarks: false,
+            enableClassification: true,
+            enableTracking: true,
           ),
           reason: 'iOS device - Standard accurate mode configuration',
           isProblematic: false,
@@ -157,6 +170,8 @@ class _FaceVerifyAttendanceScreenState
         options: FaceDetectorOptions(
           enableContours: false,
           enableLandmarks: false,
+          enableClassification: true,
+          enableTracking: true,
         ),
       );
     }
@@ -169,14 +184,25 @@ class _FaceVerifyAttendanceScreenState
     super.dispose();
   }
 
-  void _startCountdown(CameraImage cameraImage) {
-    setState(() => _countdown = 'Face verification…');
+  void _onManualCapture(CameraImage cameraImage) {
+    if (!_livenessResult.isLivenessPassed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_livenessResult.message),
+          backgroundColor: AppColors.warning,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
 
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() => _countdown = null);
-        _takePicture(cameraImage);
-      }
+    _takePicture(cameraImage);
+  }
+
+  void _takePicture(CameraImage cameraImage) async {
+    setState(() {
+      frame = cameraImage;
+      isTakePicture = true;
     });
   }
 
@@ -327,13 +353,6 @@ class _FaceVerifyAttendanceScreenState
     return image;
   }
 
-  void _takePicture(CameraImage cameraImage) async {
-    setState(() {
-      frame = cameraImage;
-      isTakePicture = true;
-    });
-  }
-
   Future<void> performFaceRecognition(List<Face> faces) async {
     try {
       recognitions.clear();
@@ -415,8 +434,6 @@ class _FaceVerifyAttendanceScreenState
 
       if (!mounted) return;
 
-      _canProcess = false;
-
       if (isValid) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -437,15 +454,19 @@ class _FaceVerifyAttendanceScreenState
             image: xfile,
             confidence: faceSimilarity,
             embedding: recognition.embedding,
+            livenessPassed: true,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Wajah tidak cocok, silakan coba lagi'),
+            content: Text('Wajah tidak cocok dengan data biometrik terdaftar'),
             backgroundColor: AppColors.danger,
           ),
         );
+
+        // Require fresh liveness challenges for the next attempt
+        _livenessDetector.reset();
 
         if (mounted) {
           setState(() {
@@ -470,6 +491,8 @@ class _FaceVerifyAttendanceScreenState
           ),
         );
 
+        _livenessDetector.reset();
+
         setState(() {
           isTakePicture = false;
           _canProcess = true;
@@ -482,12 +505,11 @@ class _FaceVerifyAttendanceScreenState
   Widget build(BuildContext context) {
     final title = widget.isClockIn ? 'Verifikasi Clock In' : 'Verifikasi Clock Out';
 
-    // Same structure as CSA - Scaffold with Stack
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // LAYER 1: Camera
+          // LAYER 1: Camera with Liveness Overlay
           CameraViewAttendancePage(
             title: title,
             customPaint: _customPaint,
@@ -495,50 +517,35 @@ class _FaceVerifyAttendanceScreenState
             initialCameraLensDirection: _cameraLensDirection,
             onCameraLensDirectionChanged: (value) =>
                 _cameraLensDirection = value,
-            onTakePicture: _startCountdown,
+            onTakePicture: _onManualCapture,
+            overlay: LivenessGuideOverlay(
+              result: _livenessResult,
+              onRetry: () {
+                setState(() {
+                  _livenessDetector.reset();
+                  _canProcess = true;
+                  isTakePicture = false;
+                });
+              },
+            ),
           ),
 
-          // LAYER 2: Overlay countdown
-          if (_countdown != null)
-            Positioned(
-              top: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    _countdown!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 10,
-                          color: Colors.black.withValues(alpha: 0.8),
-                          offset: const Offset(2, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // LAYER 3: Loading indicator
+          // LAYER 2: Loading indicator during biometric matching
           if (isTakePicture)
             Container(
               color: Colors.black54,
               child: const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: 16),
+                    Text(
+                      'Memverifikasi biometrik wajah...',
+                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
@@ -570,7 +577,7 @@ class _FaceVerifyAttendanceScreenState
 
       final faces = await _faceDetector.processImage(inputImage);
 
-      // Create painter with metadata - ALWAYS create painter
+      // Create painter with metadata
       Size imageSize;
       InputImageRotation imageRotation;
 
@@ -584,7 +591,16 @@ class _FaceVerifyAttendanceScreenState
             inputImage.metadata?.rotation ?? InputImageRotation.rotation0deg;
       }
 
-      // Always create painter to show face detection boxes
+      // 1. Process active liveness detection
+      final livenessResult = _livenessDetector.processFrame(
+        faces: faces,
+        imageSize: imageSize,
+        cameraLensDirection: _cameraLensDirection,
+      );
+
+      _livenessResult = livenessResult;
+
+      // 2. Face Detector Painter for visualization
       final painter = FaceDetectorPainter(
         faces: faces,
         imageSize: imageSize,
@@ -592,31 +608,23 @@ class _FaceVerifyAttendanceScreenState
         cameraLensDirection: _cameraLensDirection,
       );
 
-      if (isTakePicture) {
-        isTakePicture = false;
-
-        if (!mounted) {
-          _isBusy = false;
-          return;
-        }
-
-        if (faces.isEmpty) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Tidak ada wajah yang terdeteksi. Pastikan wajah anda menghadap kamera dan pencahayaan yang cukup.',
-                ),
-                backgroundColor: AppColors.warning,
-              ),
-            );
-          }
-        } else {
-          await performFaceRecognition(faces);
-        }
-      }
-
       _customPaint = CustomPaint(painter: painter);
+
+      // 3. Auto-trigger recognition as soon as all liveness challenges pass!
+      if (livenessResult.status == LivenessStatus.allCompleted &&
+          !isTakePicture &&
+          _canProcess &&
+          faces.isNotEmpty) {
+        isTakePicture = true;
+        _canProcess = false;
+        _isBusy = false;
+
+        if (mounted) setState(() {});
+
+        // Process biometric matching with current frame
+        await performFaceRecognition(faces);
+        return;
+      }
 
       _isBusy = false;
 
@@ -624,7 +632,7 @@ class _FaceVerifyAttendanceScreenState
         setState(() {});
       }
     } catch (e) {
-      log('Error processing image: $e');
+      log('Error processing image in liveness verification: $e');
       _isBusy = false;
     }
   }

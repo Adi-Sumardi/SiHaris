@@ -8,6 +8,8 @@ import '../../../core/components/widgets.dart';
 import '../bloc/announcement_detail/announcement_detail_bloc.dart';
 import '../bloc/announcement_detail/announcement_detail_event.dart';
 import '../bloc/announcement_detail/announcement_detail_state.dart';
+import '../bloc/announcement_mark_read/announcement_mark_read_bloc.dart';
+import '../bloc/announcement_mark_read/announcement_mark_read_event.dart';
 
 class AnnouncementDetailScreen extends StatefulWidget {
   final int announcementId;
@@ -25,6 +27,9 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
     super.initState();
     context.read<AnnouncementDetailBloc>().add(
       LoadAnnouncementDetail(widget.announcementId),
+    );
+    context.read<AnnouncementMarkReadBloc>().add(
+      MarkAnnouncementAsRead(widget.announcementId),
     );
   }
 

@@ -4,15 +4,21 @@
 /// AttendanceSummaryBloc dari context. Harus di-wrap dengan MultiBlocProvider.
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gaji_pro/presentation/home/pages/main_screen.dart';
+import 'package:gaji_pro/presentation/home/widgets/app_lock_overlay.dart';
 import 'package:gaji_pro/presentation/attendance/pages/attendance_history_screen.dart';
 import 'package:gaji_pro/presentation/leave/bloc/leave_list/leave_list_bloc.dart';
 import 'package:gaji_pro/presentation/leave/bloc/leave_balance/leave_balance_bloc.dart';
 import 'package:gaji_pro/presentation/leave/bloc/leave_types/leave_types_bloc.dart';
 import 'package:gaji_pro/presentation/leave/bloc/leave_crud/leave_crud_bloc.dart';
+import 'package:gaji_pro/presentation/auth/bloc/logout/logout_bloc.dart';
+import 'package:gaji_pro/presentation/auth/bloc/logout/logout_event.dart';
+import 'package:gaji_pro/presentation/auth/bloc/logout/logout_state.dart';
 import 'package:gaji_pro/presentation/auth/bloc/profile/profile_bloc.dart';
 import 'package:gaji_pro/presentation/attendance/bloc/attendance_history/attendance_history_bloc.dart';
 import 'package:gaji_pro/presentation/attendance/bloc/attendance_summary/attendance_summary_bloc.dart';
@@ -32,6 +38,9 @@ import 'package:gaji_pro/presentation/announcement/bloc/announcement_list/announ
 import 'package:gaji_pro/presentation/announcement/bloc/announcement_unread_count/announcement_unread_count_bloc.dart';
 import 'package:gaji_pro/presentation/announcement/bloc/announcement_unread_count/announcement_unread_count_event.dart';
 import 'package:gaji_pro/presentation/announcement/bloc/announcement_unread_count/announcement_unread_count_state.dart';
+import 'package:gaji_pro/presentation/notification/bloc/notification_unread_count/notification_unread_count_bloc.dart';
+import 'package:gaji_pro/presentation/notification/bloc/notification_unread_count/notification_unread_count_event.dart';
+import 'package:gaji_pro/presentation/notification/bloc/notification_unread_count/notification_unread_count_state.dart';
 
 class MockLeaveListBloc extends MockBloc<LeaveListEvent, LeaveListState>
     implements LeaveListBloc {}
@@ -48,6 +57,9 @@ class MockLeaveCrudBloc extends MockBloc<LeaveCrudEvent, LeaveCrudState>
 
 class MockProfileBloc extends MockBloc<ProfileEvent, ProfileState>
     implements ProfileBloc {}
+
+class MockLogoutBloc extends MockBloc<LogoutEvent, LogoutState>
+    implements LogoutBloc {}
 
 class MockAttendanceHistoryBloc
     extends MockBloc<AttendanceHistoryEvent, AttendanceHistoryState>
@@ -101,6 +113,16 @@ class MockAnnouncementUnreadCountBloc
 class FakeAnnouncementUnreadCountEvent extends Fake
     implements AnnouncementUnreadCountEvent {}
 
+class MockNotificationUnreadCountBloc extends MockBloc<
+    NotificationUnreadCountEvent,
+    NotificationUnreadCountState> implements NotificationUnreadCountBloc {}
+
+class FakeNotificationUnreadCountEvent extends Fake
+    implements NotificationUnreadCountEvent {}
+
+class FakeNotificationUnreadCountState extends Fake
+    implements NotificationUnreadCountState {}
+
 class FakeAnnouncementUnreadCountState extends Fake
     implements AnnouncementUnreadCountState {}
 
@@ -111,6 +133,7 @@ Widget wrapWithProviders(Widget child) {
   final leaveTypesBloc = MockLeaveTypesBloc();
   final leaveCrudBloc = MockLeaveCrudBloc();
   final profileBloc = MockProfileBloc();
+  final logoutBloc = MockLogoutBloc();
   final attendanceHistoryBloc = MockAttendanceHistoryBloc();
   final attendanceSummaryBloc = MockAttendanceSummaryBloc();
   final payslipListBloc = MockPayslipListBloc();
@@ -119,6 +142,7 @@ Widget wrapWithProviders(Widget child) {
   final quickStatsBloc = MockQuickStatsBloc();
   final announcementListBloc = MockAnnouncementListBloc();
   final announcementUnreadCountBloc = MockAnnouncementUnreadCountBloc();
+  final notificationUnreadCountBloc = MockNotificationUnreadCountBloc();
 
   when(() => leaveListBloc.state).thenReturn(LeaveListInitial());
   when(() => leaveListBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -131,6 +155,9 @@ Widget wrapWithProviders(Widget child) {
 
   when(() => profileBloc.state).thenReturn(ProfileInitial());
   when(() => profileBloc.stream).thenAnswer((_) => const Stream.empty());
+
+  when(() => logoutBloc.state).thenReturn(LogoutInitial());
+  when(() => logoutBloc.stream).thenAnswer((_) => const Stream.empty());
 
   when(
     () => attendanceHistoryBloc.state,
@@ -158,6 +185,10 @@ Widget wrapWithProviders(Widget child) {
       .thenReturn(const AnnouncementUnreadCountLoaded(0));
   when(() => announcementUnreadCountBloc.stream)
       .thenAnswer((_) => const Stream.empty());
+  when(() => notificationUnreadCountBloc.state)
+      .thenReturn(const NotificationUnreadCountLoaded(0));
+  when(() => notificationUnreadCountBloc.stream)
+      .thenAnswer((_) => const Stream.empty());
 
   return MultiBlocProvider(
     providers: [
@@ -166,6 +197,10 @@ Widget wrapWithProviders(Widget child) {
       BlocProvider<LeaveTypesBloc>.value(value: leaveTypesBloc),
       BlocProvider<LeaveCrudBloc>.value(value: leaveCrudBloc),
       BlocProvider<ProfileBloc>.value(value: profileBloc),
+      BlocProvider<LogoutBloc>.value(value: logoutBloc),
+      BlocProvider<NotificationUnreadCountBloc>.value(
+        value: notificationUnreadCountBloc,
+      ),
       BlocProvider<AttendanceHistoryBloc>.value(value: attendanceHistoryBloc),
       BlocProvider<AttendanceSummaryBloc>.value(value: attendanceSummaryBloc),
       BlocProvider<PayslipListBloc>.value(value: payslipListBloc),
@@ -234,4 +269,85 @@ void main() {
       );
     },
   );
+
+  group('MainScreen — re-lock biometrik saat resume dari background', () {
+    const localAuthChannel = MethodChannel('plugins.flutter.io/local_auth');
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(localAuthChannel, null);
+    });
+
+    testWidgets(
+      'menampilkan AppLockOverlay setelah resume, dan membukanya lagi setelah autentikasi biometrik berhasil',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'biometric_enabled': true});
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(localAuthChannel, (call) async {
+          if (call.method == 'authenticate') return true;
+          return null;
+        });
+
+        await tester.pumpWidget(wrapWithProviders(const MainScreen()));
+        await tester.pump();
+        expect(find.byType(AppLockOverlay), findsNothing);
+
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        tester.binding
+            .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+        // Biarkan rantai Future (isEnabled -> setState(locked) -> authenticate) berjalan.
+        for (var i = 0; i < 5; i++) {
+          await tester.pump();
+        }
+
+        expect(find.byType(AppLockOverlay), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tetap terkunci jika autentikasi biometrik gagal/dibatalkan',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'biometric_enabled': true});
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(localAuthChannel, (call) async {
+          if (call.method == 'authenticate') return false;
+          return null;
+        });
+
+        await tester.pumpWidget(wrapWithProviders(const MainScreen()));
+        await tester.pump();
+
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        tester.binding
+            .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+        for (var i = 0; i < 5; i++) {
+          await tester.pump();
+        }
+
+        expect(find.byType(AppLockOverlay), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tidak pernah terkunci jika kunci biometrik dinonaktifkan',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'biometric_enabled': false});
+
+        await tester.pumpWidget(wrapWithProviders(const MainScreen()));
+        await tester.pump();
+
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        tester.binding
+            .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+        for (var i = 0; i < 5; i++) {
+          await tester.pump();
+        }
+
+        expect(find.byType(AppLockOverlay), findsNothing);
+      },
+    );
+  });
 }

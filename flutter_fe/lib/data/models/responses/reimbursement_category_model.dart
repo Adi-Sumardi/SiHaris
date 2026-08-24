@@ -1,14 +1,14 @@
 class ReimbursementCategoryModel {
   final int id;
   final String name;
-  final String description;
+  final String? description;
   final int maxAmount;
   final bool requiresReceipt;
 
   const ReimbursementCategoryModel({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.maxAmount,
     required this.requiresReceipt,
   });
@@ -17,8 +17,8 @@ class ReimbursementCategoryModel {
     return ReimbursementCategoryModel(
       id: json['id'] as int,
       name: json['name'] as String,
-      description: json['description'] as String,
-      maxAmount: json['max_amount'] as int,
+      description: json['description'] as String?,
+      maxAmount: (json['max_amount'] as num).toInt(),
       requiresReceipt: json['requires_receipt'] as bool,
     );
   }

@@ -663,6 +663,7 @@ class AuthController extends Controller
                     'last_name' => $employee->last_name,
                     'phone' => $employee->phone,
                     'photo' => $employee->photo ? asset('storage/'.$employee->photo) : null,
+                    'address' => $employee->address,
                     'department' => $employee->department?->name,
                     'position' => $employee->position?->name,
                     'hire_date' => $employee->hire_date?->toDateString(),

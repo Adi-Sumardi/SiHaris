@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\EmployeeOfficeController;
 use App\Http\Controllers\Api\V1\FaceRecognitionController;
 use App\Http\Controllers\Api\V1\LeaveController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OfficeLocationController;
 use App\Http\Controllers\Api\V1\OvertimeController;
 use App\Http\Controllers\Api\V1\PayslipController;
@@ -58,6 +59,14 @@ Route::prefix('v1/webhooks')
 */
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
+    // Payslip & Tax Form PDF downloads — intentionally OUTSIDE auth:sanctum.
+    // These URLs carry their own short-lived signed token (see
+    // PayslipController::download()/pdf() and TaxFormController::download()/pdf())
+    // so they can be opened directly in an external browser/PDF viewer, which
+    // does not send the mobile app's Bearer token.
+    Route::get('/payslips/{payslip}/pdf', [PayslipController::class, 'pdf'])->name('payslips.pdf');
+    Route::get('/tax-forms/{id}/pdf', [TaxFormController::class, 'pdf'])->name('tax-forms.pdf');
+
     // Authentication (public) - with strict rate limiting
     Route::prefix('auth')->name('auth.')->group(function () {
         // Login: 5 attempts per minute per IP in production (brute-force protection),
@@ -147,7 +156,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/summary', [PayslipController::class, 'summary'])->name('summary');
             Route::get('/{payslip}', [PayslipController::class, 'show'])->name('show');
             Route::get('/{payslip}/download', [PayslipController::class, 'download'])->name('download');
-            Route::get('/{payslip}/pdf', [PayslipController::class, 'pdf'])->name('pdf');
         });
 
         // Tax Forms (Bukti Potong 1721-A1)
@@ -156,7 +164,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/years', [TaxFormController::class, 'years'])->name('years');
             Route::get('/{id}', [TaxFormController::class, 'show'])->name('show');
             Route::get('/{id}/download', [TaxFormController::class, 'download'])->name('download');
-            Route::get('/{id}/pdf', [TaxFormController::class, 'pdf'])->name('pdf');
         });
 
         // Announcements
@@ -198,6 +205,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/verify', [FaceRecognitionController::class, 'verify'])
                 ->middleware('throttle:10,1')
                 ->name('verify');
+        });
+
+        // Notifications
+        Route::prefix('notifications')->name('notifications.')->group(function () {
+            Route::get('/', [NotificationController::class, 'index'])->name('index');
+            Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+            Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+            Route::post('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
+            Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
         });
 
         // Device Tokens (Push Notifications)

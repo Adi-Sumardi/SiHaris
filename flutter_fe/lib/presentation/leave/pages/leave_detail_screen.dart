@@ -12,6 +12,15 @@ class LeaveDetailScreen extends StatelessWidget {
 
   const LeaveDetailScreen({super.key, required this.leave});
 
+  /// Mirrors the backend's `LeaveRequest::canBeCancelled()`: pending, or
+  /// approved but not yet started.
+  bool get _canCancel {
+    if (leave.status == 'pending') return true;
+    if (leave.status != 'approved') return false;
+    final startDate = DateTime.tryParse(leave.startDate);
+    return startDate != null && startDate.isAfter(DateTime.now());
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<LeaveCrudBloc, LeaveCrudState>(
@@ -46,7 +55,7 @@ class LeaveDetailScreen extends StatelessWidget {
               _buildStatusCard(context),
               const SizedBox(height: 16),
               _buildDetailSection(context),
-              if (leave.status == 'pending') ...[
+              if (_canCancel) ...[
                 const SizedBox(height: 32),
                 BlocBuilder<LeaveCrudBloc, LeaveCrudState>(
                   builder: (context, state) {

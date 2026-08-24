@@ -184,6 +184,23 @@ class DeviceFaceDetectorConfig {
     return 'Mode: $mode, MinFace: $minSize%, Problematic: $isProblematic';
   }
 
+  /// Create FaceDetectorOptions optimized for active liveness detection
+  /// preserving device-specific performanceMode and minFaceSize while
+  /// enabling classification (eyes open/smile) and tracking.
+  FaceDetectorOptions toLivenessOptions({
+    bool enableClassification = true,
+    bool enableTracking = true,
+  }) {
+    return FaceDetectorOptions(
+      performanceMode: options.performanceMode,
+      minFaceSize: options.minFaceSize,
+      enableContours: false,
+      enableLandmarks: false,
+      enableClassification: enableClassification,
+      enableTracking: enableTracking,
+    );
+  }
+
   /// Print config untuk debugging
   String toDebugString() {
     return '''

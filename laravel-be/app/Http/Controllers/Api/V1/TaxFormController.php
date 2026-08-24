@@ -343,9 +343,10 @@ class TaxFormController extends Controller
             ], 404);
         }
 
-        // Generate signed URL for PDF download
-        $token = hash('sha256', $taxForm->id.'-'.$employee->id.'-'.config('app.key'));
-        $downloadUrl = url("/api/v1/tax-forms/{$taxForm->id}/pdf?token={$token}");
+        // Generate signed URL for PDF download (valid for 5 minutes)
+        $expires = now()->addMinutes(5)->timestamp;
+        $token = hash('sha256', $taxForm->id.'-'.$employee->id.'-'.$expires.'-'.config('app.key'));
+        $downloadUrl = url("/api/v1/tax-forms/{$taxForm->id}/pdf?token={$token}&expires={$expires}");
 
         return response()->json([
             'success' => true,
@@ -374,12 +375,13 @@ class TaxFormController extends Controller
             ], 404);
         }
 
-        // Validate token
+        // Validate token and expiry
         $providedToken = $request->query('token');
+        $expires = (int) $request->query('expires');
         $employee = $taxForm->employee;
-        $expectedToken = hash('sha256', $taxForm->id.'-'.$employee->id.'-'.config('app.key'));
+        $expectedToken = hash('sha256', $taxForm->id.'-'.$employee->id.'-'.$expires.'-'.config('app.key'));
 
-        if ($providedToken !== $expectedToken) {
+        if ($expires < now()->timestamp || ! $providedToken || ! hash_equals($expectedToken, $providedToken)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Token tidak valid atau sudah kadaluarsa.',

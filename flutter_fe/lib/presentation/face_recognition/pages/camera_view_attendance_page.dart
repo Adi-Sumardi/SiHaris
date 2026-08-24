@@ -19,6 +19,8 @@ class CameraViewAttendancePage extends StatefulWidget {
     required this.title,
     required this.customPaint,
     required this.onImage,
+    this.overlay,
+    this.showShutterButton = false,
     this.onCameraFeedReady,
     this.onCameraLensDirectionChanged,
     this.initialCameraLensDirection = CameraLensDirection.back,
@@ -27,6 +29,8 @@ class CameraViewAttendancePage extends StatefulWidget {
 
   final String title;
   final CustomPaint? customPaint;
+  final Widget? overlay;
+  final bool showShutterButton;
   final Function(InputImage inputImage) onImage;
   final VoidCallback? onCameraFeedReady;
 
@@ -240,18 +244,37 @@ class _CameraViewState extends State<CameraViewAttendancePage> {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        Center(
-          child: _changingCameraLens
-              ? const Center(
-                  child: Text(
-                    'Ganti Kamera...',
-                    style: TextStyle(color: Colors.white, fontSize: 24.0),
+        // Centered Camera Preview with preserved aspect ratio
+        ColoredBox(
+          color: Colors.black,
+          child: Center(
+            child: _changingCameraLens
+                ? const Center(
+                    child: Text(
+                      'Ganti Kamera...',
+                      style: TextStyle(color: Colors.white, fontSize: 24.0),
+                    ),
+                  )
+                : AspectRatio(
+                    aspectRatio: 1 / _controller!.value.aspectRatio,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CameraPreview(_controller!, child: widget.customPaint),
+                      ],
+                    ),
                   ),
-                )
-              : CameraPreview(_controller!, child: widget.customPaint),
+          ),
         ),
-        _zoomControl(),
-        _takePictureButton(),
+
+        // Custom Overlay (e.g. LivenessGuideOverlay)
+        if (widget.overlay != null) widget.overlay!,
+
+        // Optional Zoom control & Shutter button
+        if (widget.showShutterButton) ...[
+          _zoomControl(),
+          _takePictureButton(),
+        ],
       ],
     );
   }

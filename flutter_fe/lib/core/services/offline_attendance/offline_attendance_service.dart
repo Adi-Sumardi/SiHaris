@@ -26,6 +26,12 @@ class OfflineAttendanceService {
   OfflineAttendanceService._();
   static final OfflineAttendanceService instance = OfflineAttendanceService._();
 
+  /// After this many non-network failures, an item is dropped from the
+  /// queue instead of being retried forever — a single "poisoned" entry
+  /// (corrupt photo, unexpected server response, ...) must not block every
+  /// attendance record queued after it.
+  static const int _maxRetries = 3;
+
   final AttendanceQueueDb _db = AttendanceQueueDb.instance;
 
   /// Jumlah absensi yang masih menunggu sinkronisasi (untuk badge UI).
@@ -140,7 +146,17 @@ class OfflineAttendanceService {
           // Masih offline → hentikan, sisakan entri untuk percobaan berikutnya.
           break;
         } catch (e) {
-          if (item.id != null) await _db.markFailed(item.id!, e.toString());
+          if (item.id == null) continue;
+          await _db.markFailed(item.id!, e.toString());
+          if (item.retryCount + 1 >= _maxRetries) {
+            // Gagal berulang kali karena error non-jaringan (bukan sekadar
+            // offline) — buang agar tidak menyumbat seluruh antrean di
+            // belakangnya, lalu lanjut ke entri berikutnya.
+            await _deleteWithPhoto(item);
+            continue;
+          }
+          // Masih di bawah batas retry: hentikan sinkronisasi di sini agar
+          // urutan FIFO terjaga, coba lagi dari entri ini di sync berikutnya.
           break;
         }
       }

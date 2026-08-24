@@ -43,6 +43,9 @@ import 'presentation/announcement/bloc/announcement_list/announcement_list_bloc.
 import 'presentation/announcement/bloc/announcement_detail/announcement_detail_bloc.dart';
 import 'presentation/announcement/bloc/announcement_mark_read/announcement_mark_read_bloc.dart';
 import 'presentation/announcement/bloc/announcement_unread_count/announcement_unread_count_bloc.dart';
+import 'data/datasources/notification_remote_datasource.dart';
+import 'presentation/notification/bloc/notification_list/notification_list_bloc.dart';
+import 'presentation/notification/bloc/notification_unread_count/notification_unread_count_bloc.dart';
 import 'data/datasources/approval_remote_datasource.dart';
 import 'presentation/approval/bloc/approval_pending/approval_pending_bloc.dart';
 import 'presentation/approval/bloc/approval_action/approval_action_bloc.dart';
@@ -297,6 +300,29 @@ class GajiProApp extends StatelessWidget {
               authLocal,
             );
             return AnnouncementUnreadCountBloc(announcementDatasource);
+          },
+        ),
+        // Notification BLoCs
+        BlocProvider(
+          create: (context) {
+            final client = http.Client();
+            final authLocal = AuthLocalDatasource();
+            final notificationDatasource = NotificationRemoteDatasource(
+              client,
+              authLocal,
+            );
+            return NotificationListBloc(notificationDatasource);
+          },
+        ),
+        BlocProvider(
+          create: (context) {
+            final client = http.Client();
+            final authLocal = AuthLocalDatasource();
+            final notificationDatasource = NotificationRemoteDatasource(
+              client,
+              authLocal,
+            );
+            return NotificationUnreadCountBloc(notificationDatasource);
           },
         ),
         // Approval BLoCs

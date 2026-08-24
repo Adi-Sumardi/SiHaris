@@ -5,8 +5,10 @@ import '../../../core/constants/colors.dart';
 import '../../../core/constants/text_styles.dart';
 import '../../../core/constants/spacing.dart';
 import '../../../core/components/widgets.dart';
+import '../../../data/models/responses/reimbursement_model.dart';
 import '../bloc/reimbursement_list/reimbursement_list_bloc.dart';
 import '../bloc/reimbursement_summary/reimbursement_summary_bloc.dart';
+import 'reimbursement_form_screen.dart';
 
 class ReimbursementScreen extends StatefulWidget {
   const ReimbursementScreen({super.key});
@@ -45,7 +47,15 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       appBar: const JagoAppBar(title: 'Reimbursement'),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'reimbursement_fab',
-        onPressed: () => Navigator.pushNamed(context, '/reimbursement/request'),
+        onPressed: () async {
+          final submitted = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(builder: (_) => const ReimbursementFormScreen()),
+          );
+          if (submitted == true) {
+            _loadData();
+          }
+        },
         icon: const Icon(Icons.add_rounded),
         label: const Text('Ajukan'),
         backgroundColor: AppColors.primary600,
@@ -383,7 +393,75 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
     );
   }
 
-  Widget _buildHistoryCard(dynamic item) {
+  void _showDetailSheet(ReimbursementModel item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.category, style: AppTextStyles.titleSmall),
+            const SizedBox(height: AppSpacing.sm),
+            Text(item.description, style: AppTextStyles.bodyMedium),
+            const SizedBox(height: AppSpacing.md),
+            _buildDetailRow('Tanggal Pengeluaran', _formatDate(item.expenseDate)),
+            _buildDetailRow('Nominal', item.formattedAmount),
+            _buildDetailRow('Status', item.statusLabel),
+            if (item.approvedBy != null)
+              _buildDetailRow('Disetujui Oleh', item.approvedBy!),
+            if (item.rejectionReason != null)
+              _buildDetailRow('Alasan Ditolak', item.rejectionReason!),
+            if (item.paymentMethod != null)
+              _buildDetailRow('Metode Pembayaran', item.paymentMethod!),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Tutup'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(ReimbursementModel item) {
     final status = item.status;
     Color statusColor;
     switch (status) {
@@ -415,14 +493,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
         ],
       ),
       child: InkWell(
-        onTap: () {
-          // Navigate to detail
-          Navigator.pushNamed(
-            context,
-            '/reimbursement/detail',
-            arguments: item.id,
-          );
-        },
+        onTap: () => _showDetailSheet(item),
         borderRadius: AppSpacing.borderRadiusCard,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

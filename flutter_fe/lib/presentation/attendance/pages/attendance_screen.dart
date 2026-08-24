@@ -337,6 +337,8 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               office: office,
               faceConfidence: result.confidence ?? 0.0,
               faceDescriptors: result.embedding ?? [],
+              facePhoto: result.image,
+              livenessPassed: result.livenessPassed,
             ),
           ),
         ),

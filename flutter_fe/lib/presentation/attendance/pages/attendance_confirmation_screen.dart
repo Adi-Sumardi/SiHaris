@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -28,6 +31,8 @@ class AttendanceConfirmationScreen extends StatelessWidget {
     required this.office,
     required this.faceConfidence,
     required this.faceDescriptors,
+    this.facePhoto,
+    required this.livenessPassed,
     this.notes,
   });
 
@@ -37,6 +42,12 @@ class AttendanceConfirmationScreen extends StatelessWidget {
   final OfficeLocationModel office;
   final double faceConfidence;
   final List<double> faceDescriptors;
+  final XFile? facePhoto;
+
+  /// Whether a live blink was observed during face verification (see
+  /// [FaceVerificationResult.livenessPassed]). Forwarded to the backend as
+  /// `liveness_passed` instead of blindly claiming `true`.
+  final bool livenessPassed;
   final String? notes;
 
   bool get _isWithinRadius {
@@ -77,6 +88,8 @@ class AttendanceConfirmationScreen extends StatelessWidget {
   void _submit(BuildContext context) {
     final withinRadius = _isWithinRadius;
 
+    final photo = facePhoto != null ? File(facePhoto!.path) : null;
+
     if (type == AttendanceType.clockIn) {
       context.read<AttendanceBloc>().add(
         AttendanceClockIn(
@@ -89,6 +102,7 @@ class AttendanceConfirmationScreen extends StatelessWidget {
             faceConfidence: faceConfidence,
             faceDescriptors:
                 faceDescriptors.length == 128 ? faceDescriptors : null,
+            photo: photo,
             notes: notes,
           ),
         ),
@@ -105,6 +119,7 @@ class AttendanceConfirmationScreen extends StatelessWidget {
             faceConfidence: faceConfidence,
             faceDescriptors:
                 faceDescriptors.length == 128 ? faceDescriptors : null,
+            photo: photo,
             notes: notes,
           ),
         ),

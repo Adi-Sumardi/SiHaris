@@ -135,6 +135,7 @@ void main() {
                             office: _testOffice,
                             faceConfidence: 0.9,
                             faceDescriptors: [],
+                            livenessPassed: true,
                           ),
                         ),
                       ),
@@ -168,6 +169,7 @@ void main() {
         office: _testOffice,
         faceConfidence: 0.87,
         faceDescriptors: [],
+        livenessPassed: true,
       );
       expect(screen, isA<AttendanceConfirmationScreen>());
     });
@@ -193,6 +195,7 @@ void main() {
                 office: _testOffice,
                 faceConfidence: 0.9,
                 faceDescriptors: [],
+                livenessPassed: true,
               ),
             ),
           ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/services/session_service.dart';
 import '../../../data/datasources/auth_local_datasource.dart';
 import '../../../data/datasources/auth_remote_datasource.dart';
 import '../../home/pages/main_screen.dart';
@@ -101,6 +102,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       },
       (response) async {
         await AuthLocalDatasource().saveAuthData(response);
+        SessionService.instance.reset();
 
         if (!mounted) return;
 

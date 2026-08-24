@@ -204,6 +204,7 @@ describe('GET /api/v1/auth/profile', function () {
                         'last_name',
                         'phone',
                         'photo',
+                        'address',
                         'department',
                         'position',
                         'hire_date',
@@ -224,6 +225,17 @@ describe('GET /api/v1/auth/profile', function () {
         $response = $this->getJson('/api/v1/auth/profile');
 
         $response->assertStatus(401);
+    });
+
+    it('includes the employee address when set', function () {
+        Sanctum::actingAs($this->user);
+        $this->employee->update(['address' => 'Jl. Merdeka No. 10, Jakarta']);
+
+        $response = $this->getJson('/api/v1/auth/profile');
+
+        $response->assertOk();
+        expect($response->json('data.employee.address'))
+            ->toBe('Jl. Merdeka No. 10, Jakarta');
     });
 });
 

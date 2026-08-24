@@ -37,7 +37,7 @@ class ReimbursementModel {
     return ReimbursementModel(
       id: json['id'] as int,
       category: json['category'] as String,
-      amount: json['amount'] as int,
+      amount: (json['amount'] as num).toInt(),
       formattedAmount: json['formatted_amount'] as String,
       description: json['description'] as String,
       expenseDate: json['expense_date'] as String,

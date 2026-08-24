@@ -86,13 +86,20 @@
 
             @forelse($employees as $employee)
                 @php
-                    $isEnrolled = $employee->faceEmbedding && $employee->faceEmbedding->is_active;
+                    $isFullyEnrolled = $employee->hasFaceEnrolled();
+                    $hasPhotoOnly = $employee->faceEmbedding && $employee->faceEmbedding->is_active && ! $isFullyEnrolled;
                 @endphp
                 <tr>
                     <td>
                         <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-medium text-xs flex-shrink-0">
-                                {{ strtoupper(substr($employee->first_name, 0, 1)) }}
+                            <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-medium text-xs flex-shrink-0 overflow-hidden">
+                                @if($employee->photo && Storage::disk('public')->exists($employee->photo))
+                                    <img src="{{ Storage::url($employee->photo) }}" alt="{{ $employee->full_name }}" class="w-full h-full object-cover">
+                                @elseif($employee->faceEmbedding?->enrollment_photo && $employee->faceEmbedding->enrollment_photo !== 'no-photo' && Storage::disk('public')->exists($employee->faceEmbedding->enrollment_photo))
+                                    <img src="{{ Storage::url($employee->faceEmbedding->enrollment_photo) }}" alt="{{ $employee->full_name }}" class="w-full h-full object-cover">
+                                @else
+                                    {{ strtoupper(substr($employee->first_name, 0, 1)) }}
+                                @endif
                             </div>
                             <div class="min-w-0">
                                 <span class="font-medium text-secondary-900 block truncate">
@@ -109,12 +116,19 @@
                     </td>
                     <td class="text-secondary-600">{{ $employee->department?->name ?? '-' }}</td>
                     <td>
-                        @if($isEnrolled)
+                        @if($isFullyEnrolled)
                             <x-badge type="success">
                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                 </svg>
-                                Terdaftar
+                                Terdaftar (Biometrik)
+                            </x-badge>
+                        @elseif($hasPhotoOnly)
+                            <x-badge type="warning">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                Perlu Scan Mobile
                             </x-badge>
                         @else
                             <x-badge type="secondary">
@@ -126,7 +140,7 @@
                         @endif
                     </td>
                     <td class="text-secondary-600">
-                        @if($isEnrolled)
+                        @if($employee->faceEmbedding?->enrolled_at)
                             {{ $employee->faceEmbedding->enrolled_at->format('d M Y H:i') }}
                         @else
                             -
@@ -135,7 +149,7 @@
                     <td>
                         <div class="flex items-center justify-end gap-1">
                             <a href="{{ route('face-recognition.show', $employee) }}" class="btn btn-ghost btn-sm">
-                                @if($isEnrolled)
+                                @if($isFullyEnrolled || $hasPhotoOnly)
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>

@@ -181,24 +181,42 @@ class _CameraViewState extends State<CameraView> {
           style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () {
-            if (frame != null) {
-              widget.onTakePicture(frame!);
-            }
-          },
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary,
-              border: Border.all(color: Colors.white54, width: 3),
-            ),
-            child: const Icon(
-              Icons.camera_alt_rounded,
-              size: 32,
-              color: Colors.white,
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(40),
+            onTap: () {
+              if (frame != null) {
+                widget.onTakePicture(frame!);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Kamera sedang memuat, silakan coba lagi...'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                size: 32,
+                color: Colors.white,
+              ),
             ),
           ),
         ),

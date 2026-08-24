@@ -167,8 +167,12 @@ class FaceRecognitionService
             ];
         }
 
+        $data = $embedding->embedding_data;
+        $descriptors = is_array($data) ? ($data['descriptors'] ?? $data['embedding'] ?? []) : [];
+        $hasValidDescriptors = is_array($descriptors) && count($descriptors) >= 128;
+
         return [
-            'enrolled' => true,
+            'enrolled' => $hasValidDescriptors,
             'enrolled_at' => $embedding->enrolled_at?->toIso8601String(),
             'quality_score' => $embedding->quality_score,
         ];

@@ -61,22 +61,35 @@
                     <div class="card-header">
                         <h3 class="card-title">Status Pendaftaran</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 bg-success-100 rounded-full flex items-center justify-center">
-                                <svg class="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-success-600">Wajah Terdaftar</p>
-                                <p class="text-xs text-secondary-500">{{ $embedding->enrolled_at ? $embedding->enrolled_at->format('d M Y H:i') : '-' }}</p>
-                            </div>
-                        </div>
-
                         @php
+                            $descriptors = is_array($embedding->embedding_data) ? ($embedding->embedding_data['descriptors'] ?? $embedding->embedding_data['embedding'] ?? []) : [];
+                            $hasBiometrics = is_array($descriptors) && count($descriptors) >= 128;
                             $hasValidPhoto = $embedding->enrollment_photo && $embedding->enrollment_photo !== 'no-photo' && Storage::disk('public')->exists($embedding->enrollment_photo);
                         @endphp
+
+                        <div class="flex items-center gap-3 mb-4">
+                            @if($hasBiometrics)
+                                <div class="w-10 h-10 bg-success-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-success-600">Biometrik Wajah Aktif</p>
+                                    <p class="text-xs text-secondary-500">{{ $embedding->enrolled_at ? $embedding->enrolled_at->format('d M Y H:i') : '-' }}</p>
+                                </div>
+                            @else
+                                <div class="w-10 h-10 bg-warning-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-warning-600">Perlu Scan di Mobile</p>
+                                    <p class="text-xs text-secondary-500">Foto ada, biometrik belum ada</p>
+                                </div>
+                            @endif
+                        </div>
 
                         @if($hasValidPhoto)
                             <div class="mb-4">
@@ -90,8 +103,14 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <p class="text-xs text-secondary-800 font-semibold">Wajah Terdaftar via Aplikasi Mobile</p>
-                                <p class="text-xs text-secondary-500 mt-1">Biometrik embedding (vektor descriptor TFLite) aktif untuk presensi.</p>
+                                <p class="text-xs text-secondary-800 font-semibold">Wajah Terdaftar via Mobile</p>
+                                <p class="text-xs text-secondary-500 mt-1">Biometrik embedding (vektor TFLite) aktif untuk presensi.</p>
+                            </div>
+                        @endif
+
+                        @if(! $hasBiometrics)
+                            <div class="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-800">
+                                <strong>Perhatian:</strong> Foto wajah telah tersimpan, tetapi sensor biometrik (vektor kecocokan wajah) belum di-scan dari kamera ponsel. Silakan login ke akun <strong>{{ $employee->full_name }}</strong> di aplikasi Android dan buka menu <strong>Pendaftaran Wajah</strong>.
                             </div>
                         @endif
 

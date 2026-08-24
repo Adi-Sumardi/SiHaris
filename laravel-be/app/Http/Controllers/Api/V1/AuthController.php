@@ -433,10 +433,11 @@ class AuthController extends Controller
         $faceEmbedding = null;
         if ($company->enable_face_recognition) {
             $faceEmbeddingRecord = $employee->faceEmbedding()->where('is_active', true)->first();
-            $faceEnrolled = $faceEmbeddingRecord !== null;
-            if ($faceEnrolled) {
+            if ($faceEmbeddingRecord) {
                 $embeddingData = $faceEmbeddingRecord->embedding_data;
-                $faceEmbedding = ! empty($embeddingData) && is_array($embeddingData) ? $embeddingData : null;
+                $descriptors = is_array($embeddingData) ? ($embeddingData['descriptors'] ?? $embeddingData['embedding'] ?? []) : [];
+                $faceEnrolled = is_array($descriptors) && count($descriptors) >= 128;
+                $faceEmbedding = $faceEnrolled ? $embeddingData : null;
             }
         }
 
@@ -621,10 +622,11 @@ class AuthController extends Controller
         $faceEmbedding = null;
         if ($company->enable_face_recognition) {
             $faceEmbeddingRecord = $employee->faceEmbedding()->where('is_active', true)->first();
-            $faceEnrolled = $faceEmbeddingRecord !== null;
-            if ($faceEnrolled) {
+            if ($faceEmbeddingRecord) {
                 $embeddingData = $faceEmbeddingRecord->embedding_data;
-                $faceEmbedding = ! empty($embeddingData) && is_array($embeddingData) ? $embeddingData : null;
+                $descriptors = is_array($embeddingData) ? ($embeddingData['descriptors'] ?? $embeddingData['embedding'] ?? []) : [];
+                $faceEnrolled = is_array($descriptors) && count($descriptors) >= 128;
+                $faceEmbedding = $faceEnrolled ? $embeddingData : null;
             }
         }
 
@@ -1010,10 +1012,11 @@ class AuthController extends Controller
         $faceEmbedding = null;
         if ($company->enable_face_recognition) {
             $faceEmbeddingRecord = $employee->faceEmbedding()->where('is_active', true)->first();
-            $faceEnrolled = $faceEmbeddingRecord !== null;
-            if ($faceEnrolled) {
+            if ($faceEmbeddingRecord) {
                 $embeddingData = $faceEmbeddingRecord->embedding_data;
-                $faceEmbedding = ! empty($embeddingData) && is_array($embeddingData) ? $embeddingData : null;
+                $descriptors = is_array($embeddingData) ? ($embeddingData['descriptors'] ?? $embeddingData['embedding'] ?? []) : [];
+                $faceEnrolled = is_array($descriptors) && count($descriptors) >= 128;
+                $faceEmbedding = $faceEnrolled ? $embeddingData : null;
             }
         }
 

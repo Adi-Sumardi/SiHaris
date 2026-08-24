@@ -330,8 +330,21 @@ class Employee extends Model
 
     public function hasFaceEnrolled(): bool
     {
-        return $this->faceEmbedding()
+        $embedding = $this->faceEmbedding()
             ->where('is_active', true)
-            ->exists();
+            ->first();
+
+        if (! $embedding) {
+            return false;
+        }
+
+        $data = $embedding->embedding_data;
+        if (empty($data) || ! is_array($data)) {
+            return false;
+        }
+
+        $descriptors = $data['descriptors'] ?? $data['embedding'] ?? [];
+
+        return is_array($descriptors) && count($descriptors) >= 128;
     }
 }

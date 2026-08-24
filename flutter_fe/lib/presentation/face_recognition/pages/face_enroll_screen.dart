@@ -29,9 +29,10 @@ class FaceEnrollScreen extends StatefulWidget {
 class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
   final FaceDetector _faceDetector = FaceDetector(
     options: FaceDetectorOptions(
-      performanceMode: FaceDetectorMode.fast,
-      enableContours: true,
-      enableLandmarks: true,
+      performanceMode: FaceDetectorMode.accurate,
+      minFaceSize: 0.15,
+      enableContours: false,
+      enableLandmarks: false,
       enableTracking: true,
     ),
   );
@@ -45,6 +46,9 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
   CameraImage? frame;
   late Recognizer recognizer;
   bool register = false;
+
+  List<Face>? _latestFaces;
+  InputImage? _latestInputImage;
 
   int _frameCount = 0;
   int _faceDetectedCount = 0;
@@ -64,10 +68,28 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
 
   void _takePicture(CameraImage cameraImage) async {
     log("📸 Taking picture with camera image: ${cameraImage.width}x${cameraImage.height}");
+    frame = cameraImage;
+
+    // If we already have detected faces from recent frames, process immediately!
+    if (_latestFaces != null && _latestFaces!.isNotEmpty && _latestInputImage != null) {
+      log("⚡ Instant capture with ${_latestFaces!.length} detected face(s)");
+      register = false;
+      await _performFaceRecognition(_latestFaces!, _latestInputImage!);
+      return;
+    }
+
     setState(() {
-      frame = cameraImage;
       register = true;
     });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Sedang mendeteksi wajah, harap tetap menghadap kamera..."),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   img.Image? image;
@@ -405,6 +427,8 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
       }
 
       _faceDetectedCount++;
+      _latestFaces = faces;
+      _latestInputImage = inputImage;
 
       if (inputImage.metadata?.size != null && inputImage.metadata?.rotation != null) {
         final painter = FaceDetectorPainter(
@@ -416,6 +440,7 @@ class _FaceEnrollScreenState extends State<FaceEnrollScreen> {
 
         if (register) {
           log('🎯 Starting face recognition for ${faces.length} face(s)');
+          register = false;
           await _performFaceRecognition(faces, inputImage);
         }
 

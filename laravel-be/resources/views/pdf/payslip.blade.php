@@ -5,6 +5,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Slip Gaji - {{ $employee->full_name }} - {{ $payroll->period_label }}</title>
     <style>
+        @page {
+            size: a4 portrait;
+            margin: 12mm 15mm 12mm 15mm;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -12,410 +16,365 @@
         }
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #333;
+            font-size: 8.5pt;
+            line-height: 1.3;
+            color: #1e293b;
             background: #fff;
         }
-        .container {
-            padding: 30px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        .header {
-            border-bottom: 3px solid #3B82F6;
-            padding-bottom: 20px;
-            margin-bottom: 25px;
-        }
-        .header-content {
-            display: table;
-            width: 100%;
-        }
-        .company-info {
-            display: table-cell;
-            vertical-align: top;
-            width: 70%;
-        }
-        .company-name {
-            font-size: 22px;
-            font-weight: bold;
-            color: #1E3A8A;
-            margin-bottom: 5px;
-        }
-        .company-address {
-            font-size: 10px;
-            color: #666;
-            line-height: 1.5;
-        }
-        .slip-info {
-            display: table-cell;
-            vertical-align: top;
-            text-align: right;
-            width: 30%;
-        }
-        .slip-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #3B82F6;
-            margin-bottom: 8px;
-        }
-        .slip-period {
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
-        }
-        .slip-date {
-            font-size: 10px;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        /* Employee Info */
-        .employee-section {
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .employee-grid {
-            display: table;
-            width: 100%;
-        }
-        .employee-col {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-        }
-        .info-row {
-            margin-bottom: 8px;
-        }
-        .info-label {
-            font-size: 9px;
-            color: #64748B;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .info-value {
-            font-size: 12px;
-            font-weight: 600;
-            color: #1E293B;
-        }
-
-        /* Tables */
-        .section {
-            margin-bottom: 20px;
-        }
-        .section-title {
-            font-size: 12px;
-            font-weight: bold;
-            color: #1E3A8A;
-            padding: 8px 12px;
-            background: #EFF6FF;
-            border-left: 4px solid #3B82F6;
-            margin-bottom: 10px;
-        }
-        table {
+        table.layout-table {
             width: 100%;
             border-collapse: collapse;
         }
-        th, td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid #E2E8F0;
+        table.layout-table td {
+            border: none;
+            padding: 0;
+            vertical-align: top;
         }
-        th {
-            background: #F8FAFC;
-            font-size: 10px;
-            font-weight: 600;
-            color: #64748B;
+
+        /* Header */
+        table.header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #0284c7;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        table.header-table td {
+            border: none;
+            padding-bottom: 6px;
+            vertical-align: middle;
+        }
+        .company-name {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #0369a1;
             text-transform: uppercase;
         }
-        td {
-            font-size: 11px;
+        .company-address {
+            font-size: 7pt;
+            color: #64748b;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+        .slip-title {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #0284c7;
+        }
+        .slip-period {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-top: 1px;
+        }
+        .slip-date {
+            font-size: 6.5pt;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* Employee Info */
+        table.employee-card {
+            width: 100%;
+            border-collapse: collapse;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+        }
+        table.employee-card td {
+            border: none;
+            padding: 4px 8px;
+            font-size: 7.5pt;
+            vertical-align: middle;
+        }
+        .info-label {
+            color: #64748b;
+            font-size: 7pt;
+            width: 15%;
+        }
+        .info-val {
+            color: #0f172a;
+            font-weight: 600;
+            width: 35%;
+        }
+
+        /* Tables */
+        .section-title {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #0369a1;
+            padding: 3px 6px;
+            background: #f0f9ff;
+            border-left: 3px solid #0284c7;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        table.data-table th, table.data-table td {
+            padding: 4px 6px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 7.5pt;
+        }
+        table.data-table th {
+            background: #f8fafc;
+            font-size: 7pt;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
         }
         .amount {
             text-align: right;
             font-family: 'DejaVu Sans Mono', monospace;
         }
-        .earning {
-            color: #059669;
-        }
-        .deduction {
-            color: #DC2626;
-        }
-        .subtotal-row {
-            background: #F8FAFC;
-            font-weight: bold;
-        }
+        .earning { color: #166534; }
+        .deduction { color: #dc2626; }
         .subtotal-row td {
-            border-top: 2px solid #E2E8F0;
+            background: #f8fafc;
+            font-weight: bold;
+            border-top: 1.5px solid #cbd5e1;
         }
 
-        /* Summary */
-        .summary-section {
-            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
-            border-radius: 8px;
-            padding: 20px;
-            color: white;
-            margin-top: 25px;
-        }
-        .summary-grid {
-            display: table;
+        /* Summary Banner */
+        table.summary-card {
             width: 100%;
+            border-collapse: collapse;
+            background-color: #0369a1;
+            color: #ffffff;
+            margin-bottom: 14px;
         }
-        .summary-col {
-            display: table-cell;
-            width: 33.33%;
+        table.summary-card td {
+            border: none;
+            padding: 8px 6px;
             text-align: center;
-            padding: 10px;
+            vertical-align: middle;
         }
-        .summary-col.main {
-            border-left: 1px solid rgba(255,255,255,0.2);
-            border-right: 1px solid rgba(255,255,255,0.2);
+        table.summary-card td.divider {
+            border-left: 1px solid rgba(255,255,255,0.25);
+            border-right: 1px solid rgba(255,255,255,0.25);
         }
         .summary-label {
-            font-size: 9px;
+            font-size: 6.5pt;
             text-transform: uppercase;
-            opacity: 0.8;
-            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+            color: #bae6fd;
+            margin-bottom: 2px;
         }
-        .summary-value {
-            font-size: 16px;
+        .summary-val {
+            font-size: 10pt;
             font-weight: bold;
+            color: #ffffff;
         }
-        .summary-value.large {
-            font-size: 22px;
+        .summary-val.large {
+            font-size: 13pt;
+            color: #ffffff;
         }
 
-        /* Footer */
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #E2E8F0;
-        }
-        .footer-grid {
-            display: table;
+        /* Signatures */
+        table.signature-table {
             width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
         }
-        .footer-col {
-            display: table-cell;
+        table.signature-table td {
+            border: none;
             width: 50%;
-            vertical-align: top;
-        }
-        .signature-box {
             text-align: center;
-            padding: 20px;
+            vertical-align: top;
+            padding: 0 20px;
         }
         .signature-line {
-            border-bottom: 1px solid #333;
-            width: 150px;
-            margin: 40px auto 10px;
+            border-bottom: 1px solid #334155;
+            width: 140px;
+            margin: 35px auto 4px;
         }
         .signature-name {
-            font-size: 11px;
+            font-size: 7.5pt;
             font-weight: bold;
+            color: #0f172a;
         }
         .signature-title {
-            font-size: 9px;
-            color: #666;
+            font-size: 6.5pt;
+            color: #64748b;
         }
 
-        /* Notes */
+        /* Notes & Footer */
         .notes {
-            margin-top: 20px;
-            padding: 12px;
-            background: #FFFBEB;
-            border: 1px solid #FCD34D;
-            border-radius: 6px;
-            font-size: 9px;
-            color: #92400E;
+            padding: 5px 8px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            font-size: 6.5pt;
+            color: #92400e;
+            margin-bottom: 8px;
         }
-        .notes-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        /* Watermark */
         .confidential {
             text-align: center;
-            font-size: 8px;
-            color: #94A3B8;
-            margin-top: 20px;
+            font-size: 6pt;
+            color: #94a3b8;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-content">
-                <div class="company-info">
-                    <div class="company-name">{{ $company->name }}</div>
-                    <div class="company-address">
-                        @if($company->address){{ $company->address }}<br>@endif
-                        @if($company->phone)Telp: {{ $company->phone }}@endif
-                        @if($company->email) | Email: {{ $company->email }}@endif
-                    </div>
-                </div>
-                <div class="slip-info">
-                    <div class="slip-title">SLIP GAJI</div>
-                    <div class="slip-period">{{ $payroll->period_label }}</div>
-                    <div class="slip-date">
-                        Tanggal Cetak: {{ now()->format('d M Y') }}
-                    </div>
-                </div>
-            </div>
-        </div>
+    @php
+        $totalGross = $payslip->gross_salary ?? $payslip->total_earnings ?? ($payslip->basic_salary + collect($earnings)->sum('amount'));
+        $totalDeductions = $payslip->total_deductions ?? collect($deductions)->sum('amount');
+        $netSalary = $payslip->net_salary ?? ($totalGross - $totalDeductions);
+    @endphp
 
-        <!-- Employee Info -->
-        <div class="employee-section">
-            <div class="employee-grid">
-                <div class="employee-col">
-                    <div class="info-row">
-                        <div class="info-label">Nama Karyawan</div>
-                        <div class="info-value">{{ $employee->full_name }}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">ID Karyawan</div>
-                        <div class="info-value">{{ $employee->employee_id }}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">Departemen</div>
-                        <div class="info-value">{{ $employee->department?->name ?? '-' }}</div>
-                    </div>
+    <!-- Header -->
+    <table class="header-table">
+        <tr>
+            <td style="width: 60%;">
+                <div class="company-name">{{ $company->name ?? 'SiHaris HRMS' }}</div>
+                <div class="company-address">
+                    {{ $company->address ?? 'Sistem Informasi Manajemen SDM & Kepegawaian' }}<br>
+                    @if($company->phone)Telp: {{ $company->phone }}@endif
+                    @if($company->email) | Email: {{ $company->email }}@endif
                 </div>
-                <div class="employee-col">
-                    <div class="info-row">
-                        <div class="info-label">Jabatan</div>
-                        <div class="info-value">{{ $employee->position?->name ?? '-' }}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">Status Karyawan</div>
-                        <div class="info-value">{{ ucfirst($employee->employment_status ?? 'Permanent') }}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">Tanggal Pembayaran</div>
-                        <div class="info-value">{{ $payroll->payment_date?->format('d M Y') ?? '-' }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </td>
+            <td style="width: 40%; text-align: right;">
+                <div class="slip-title">SLIP GAJI</div>
+                <div class="slip-period">{{ $payroll->period_label }}</div>
+                <div class="slip-date">Tgl Cetak: {{ now()->translatedFormat('d F Y, H:i') }} WIB</div>
+            </td>
+        </tr>
+    </table>
 
-        <!-- Earnings -->
-        <div class="section">
-            <div class="section-title">PENDAPATAN</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 60%">Komponen</th>
-                        <th style="width: 40%" class="amount">Jumlah</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Gaji Pokok</td>
-                        <td class="amount earning">Rp {{ number_format($payslip->basic_salary, 0, ',', '.') }}</td>
-                    </tr>
-                    @foreach($earnings as $item)
-                    <tr>
-                        <td>{{ $item['name'] }}</td>
-                        <td class="amount earning">Rp {{ number_format($item['amount'], 0, ',', '.') }}</td>
-                    </tr>
-                    @endforeach
-                    <tr class="subtotal-row">
-                        <td><strong>Total Pendapatan</strong></td>
-                        <td class="amount earning"><strong>Rp {{ number_format($payslip->total_earnings, 0, ',', '.') }}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <!-- Employee Info Card -->
+    <table class="employee-card">
+        <tr>
+            <td class="info-label">Nama Pegawai</td>
+            <td class="info-val">: {{ $employee->full_name }}</td>
+            <td class="info-label">Jabatan</td>
+            <td class="info-val">: {{ $employee->position?->name ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td class="info-label">ID / NIK</td>
+            <td class="info-val">: {{ $employee->employee_id }} @if($employee->nik) / {{ $employee->nik }} @endif</td>
+            <td class="info-label">Status Kerja</td>
+            <td class="info-val">: {{ ucfirst($employee->employment_status ?? 'Permanent') }} @if($employee->employment_type) ({{ $employee->employment_type }}) @endif</td>
+        </tr>
+        <tr>
+            <td class="info-label">Departemen</td>
+            <td class="info-val">: {{ $employee->department?->name ?? '-' }}</td>
+            <td class="info-label">Tgl Bayar</td>
+            <td class="info-val">: {{ $payroll->payment_date?->format('d/m/Y') ?? now()->format('d/m/Y') }}</td>
+        </tr>
+    </table>
 
-        <!-- Deductions -->
-        <div class="section">
-            <div class="section-title">POTONGAN</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 60%">Komponen</th>
-                        <th style="width: 40%" class="amount">Jumlah</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($deductions as $item)
-                    <tr>
-                        <td>{{ $item['name'] }}</td>
-                        <td class="amount deduction">Rp {{ number_format($item['amount'], 0, ',', '.') }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="2" style="text-align: center; color: #666;">Tidak ada potongan</td>
-                    </tr>
-                    @endforelse
-                    <tr class="subtotal-row">
-                        <td><strong>Total Potongan</strong></td>
-                        <td class="amount deduction"><strong>Rp {{ number_format($payslip->total_deductions, 0, ',', '.') }}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <!-- Two-column Earnings and Deductions Table -->
+    <table class="layout-table" style="margin-bottom: 8px;">
+        <tr>
+            <!-- Earnings (Left Column) -->
+            <td style="width: 49%; vertical-align: top; padding-right: 6px;">
+                <div class="section-title">A. Penerimaan (Earnings)</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Komponen</th>
+                            <th class="amount" style="width: 45%;">Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Gaji Pokok</td>
+                            <td class="amount earning">Rp {{ number_format($payslip->basic_salary, 0, ',', '.') }}</td>
+                        </tr>
+                        @foreach($earnings as $item)
+                        <tr>
+                            <td>{{ $item['name'] }}</td>
+                            <td class="amount earning">Rp {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                        </tr>
+                        @endforeach
+                        <tr class="subtotal-row">
+                            <td><strong>Total Penerimaan (A)</strong></td>
+                            <td class="amount earning"><strong>Rp {{ number_format($totalGross, 0, ',', '.') }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
 
-        <!-- Summary -->
-        <div class="summary-section">
-            <div class="summary-grid">
-                <div class="summary-col">
-                    <div class="summary-label">Total Pendapatan</div>
-                    <div class="summary-value">Rp {{ number_format($payslip->total_earnings, 0, ',', '.') }}</div>
-                </div>
-                <div class="summary-col main">
-                    <div class="summary-label">Take Home Pay</div>
-                    <div class="summary-value large">Rp {{ number_format($payslip->net_salary, 0, ',', '.') }}</div>
-                </div>
-                <div class="summary-col">
-                    <div class="summary-label">Total Potongan</div>
-                    <div class="summary-value">Rp {{ number_format($payslip->total_deductions, 0, ',', '.') }}</div>
-                </div>
-            </div>
-        </div>
+            <!-- Deductions (Right Column) -->
+            <td style="width: 49%; vertical-align: top; padding-left: 6px;">
+                <div class="section-title">B. Potongan (Deductions)</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Komponen</th>
+                            <th class="amount" style="width: 45%;">Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($deductions as $item)
+                        <tr>
+                            <td>{{ $item['name'] }}</td>
+                            <td class="amount deduction">Rp {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="2" style="text-align: center; color: #94a3b8; font-style: italic;">Tidak ada potongan</td>
+                        </tr>
+                        @endforelse
+                        <tr class="subtotal-row">
+                            <td><strong>Total Potongan (B)</strong></td>
+                            <td class="amount deduction"><strong>Rp {{ number_format($totalDeductions, 0, ',', '.') }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
 
-        <!-- Footer with Signatures -->
-        <div class="footer">
-            <div class="footer-grid">
-                <div class="footer-col">
-                    <div class="signature-box">
-                        <div class="signature-line"></div>
-                        <div class="signature-name">HRD Manager</div>
-                        <div class="signature-title">Human Resources</div>
-                    </div>
-                </div>
-                <div class="footer-col">
-                    <div class="signature-box">
-                        <div class="signature-line"></div>
-                        <div class="signature-name">{{ $employee->full_name }}</div>
-                        <div class="signature-title">Karyawan</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Summary Banner -->
+    <table class="summary-card">
+        <tr>
+            <td style="width: 32%;">
+                <div class="summary-label">Total Penerimaan (A)</div>
+                <div class="summary-val">Rp {{ number_format($totalGross, 0, ',', '.') }}</div>
+            </td>
+            <td style="width: 36%;" class="divider">
+                <div class="summary-label">Gaji Bersih (Take Home Pay = A - B)</div>
+                <div class="summary-val large">Rp {{ number_format($netSalary, 0, ',', '.') }}</div>
+            </td>
+            <td style="width: 32%;">
+                <div class="summary-label">Total Potongan (B)</div>
+                <div class="summary-val">Rp {{ number_format($totalDeductions, 0, ',', '.') }}</div>
+            </td>
+        </tr>
+    </table>
 
-        <!-- Notes -->
-        <div class="notes">
-            <div class="notes-title">Catatan:</div>
-            <ul style="margin-left: 15px; margin-top: 5px;">
-                <li>Slip gaji ini diterbitkan secara elektronik dan sah tanpa tanda tangan basah.</li>
-                <li>Jika ada pertanyaan mengenai slip gaji ini, silakan hubungi HRD.</li>
-                <li>Slip gaji bersifat rahasia dan hanya untuk kepentingan karyawan yang bersangkutan.</li>
-            </ul>
-        </div>
+    <!-- Signatures -->
+    <table class="signature-table">
+        <tr>
+            <td>
+                <div class="signature-title">Mengetahui,</div>
+                <div class="signature-line"></div>
+                <div class="signature-name">HRD / Finance Manager</div>
+                <div class="signature-title">{{ $company->name ?? 'Perusahaan' }}</div>
+            </td>
+            <td>
+                <div class="signature-title">Penerima,</div>
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ $employee->full_name }}</div>
+                <div class="signature-title">Karyawan</div>
+            </td>
+        </tr>
+    </table>
 
-        <!-- Confidential -->
-        <div class="confidential">
-            Dokumen ini bersifat rahasia - {{ $company->name }} - {{ now()->format('Y') }}
-        </div>
+    <!-- Notes & Disclaimer -->
+    <div class="notes">
+        <strong>Catatan:</strong> Slip gaji ini diterbitkan secara elektronik oleh sistem SiHaris HRMS dan sah tanpa tanda tangan basah.
+    </div>
+
+    <!-- Confidential -->
+    <div class="confidential">
+        DOKUMEN INI BERSIFAT RAHASIA (CONFIDENTIAL) - {{ $company->name ?? 'SiHaris' }} - {{ now()->format('Y') }}
     </div>
 </body>
 </html>

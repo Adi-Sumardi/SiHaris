@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AppDownloadController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\GoogleAuthController;
@@ -133,6 +134,10 @@ Route::get('/terms', function () {
 Route::get('/privacy', function () {
     return view('pages.privacy');
 })->name('privacy');
+
+Route::get('/download', [AppDownloadController::class, 'index'])->name('app.download');
+Route::get('/download/android', [AppDownloadController::class, 'downloadAndroid'])->name('app.download.android');
+Route::get('/download/ios', [AppDownloadController::class, 'downloadIos'])->name('app.download.ios');
 
 Route::get('/subscription-expired', function () {
     return view('pages.subscription-expired');

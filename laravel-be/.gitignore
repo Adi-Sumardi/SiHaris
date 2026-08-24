@@ -16,6 +16,8 @@
 /vendor
 /public/hot
 /public/storage
+/public/downloads/*.apk
+/public/downloads/*.ipa
 /storage/*.key
 /storage/pail
 /storage/api-docs

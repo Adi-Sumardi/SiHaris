@@ -32,40 +32,19 @@
     <div class="card mb-4" x-data="attendanceLiveFilter()">
         <div class="card-body-sm">
             <form id="attendance-filter-form" action="{{ route('attendances.index') }}" method="GET" class="flex flex-wrap items-end gap-3" @submit.prevent="fetchData()">
-                {{-- Search Employee --}}
-                <div class="flex-1 min-w-[220px]">
+                {{-- Search --}}
+                <div class="flex-1 min-w-[200px]">
                     <label for="search" class="block text-xs font-medium text-secondary-500 mb-1">Cari Karyawan</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </div>
-                        <input
-                            type="text"
-                            name="search"
-                            id="search"
-                            value="{{ request('search') }}"
-                            placeholder="Ketik nama, NIK, atau email..."
-                            class="input w-full pl-9 pr-8"
-                            autocomplete="off"
-                            x-ref="searchInput"
-                            @input="onSearchInput($event)"
-                        >
-                        {{-- Clear Button --}}
-                        <button
-                            type="button"
-                            x-show="searchQuery.length > 0"
-                            @click="clearSearch()"
-                            class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
-                            style="display: none;"
-                            title="Hapus pencarian"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+                    <input
+                        type="text"
+                        name="search"
+                        id="search"
+                        value="{{ request('search') }}"
+                        placeholder="Nama, ID, atau email..."
+                        class="input w-full"
+                        autocomplete="off"
+                        @input="onSearchInput($event)"
+                    >
                 </div>
 
                 {{-- Date --}}
@@ -84,7 +63,7 @@
                 <div class="w-36">
                     <label for="status" class="block text-xs font-medium text-secondary-500 mb-1">Status</label>
                     <select name="status" id="status" class="input w-full" @change="fetchData()">
-                        <option value="">Semua Status</option>
+                        <option value="">Semua</option>
                         <option value="present" {{ request('status') === 'present' ? 'selected' : '' }}>Hadir</option>
                         <option value="absent" {{ request('status') === 'absent' ? 'selected' : '' }}>Tidak Hadir</option>
                         <option value="late" {{ request('status') === 'late' ? 'selected' : '' }}>Terlambat</option>
@@ -94,11 +73,15 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button type="button" @click="resetFilters()" class="btn btn-ghost btn-sm" x-show="hasActiveFilters" style="display: none;">
+                    <button type="button" @click="resetFilters()" class="btn btn-ghost btn-sm" id="reset-btn" style="{{ request()->hasAny(['search', 'date', 'month', 'status']) ? '' : 'display: none;' }}">
                         Reset
                     </button>
+                    <button type="submit" class="btn btn-primary btn-sm flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <span>Cari</span>
+                    </button>
                     <div class="h-8 flex items-center px-1" x-show="loading" style="display: none;">
-                        <svg class="animate-spin w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24">
+                        <svg class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
@@ -110,17 +93,6 @@
 
     {{-- Attendance List Card --}}
     <div class="card relative" id="attendance-table-card">
-        {{-- Loading Overlay --}}
-        <div id="table-loading-overlay" class="hidden absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl transition-all duration-200">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow-md border border-slate-200 text-xs font-medium text-slate-600">
-                <svg class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                Memuat data...
-            </div>
-        </div>
-
         <x-table>
             <x-slot name="header">
                 <th>Tanggal</th>
@@ -234,51 +206,41 @@
     <script>
         function attendanceLiveFilter() {
             return {
-                searchQuery: '{{ addslashes(request('search', '')) }}',
                 loading: false,
                 debounceTimer: null,
 
-                get hasActiveFilters() {
-                    return this.searchQuery.length > 0 ||
-                        (document.getElementById('date') && document.getElementById('date').value !== '') ||
-                        (document.getElementById('month') && document.getElementById('month').value !== '') ||
-                        (document.getElementById('status') && document.getElementById('status').value !== '');
+                updateResetVisibility() {
+                    const searchVal = document.getElementById('search')?.value || '';
+                    const dateVal = document.getElementById('date')?.value || '';
+                    const monthVal = document.getElementById('month')?.value || '';
+                    const statusVal = document.getElementById('status')?.value || '';
+                    const resetBtn = document.getElementById('reset-btn');
+                    if (resetBtn) {
+                        resetBtn.style.display = (searchVal || dateVal || monthVal || statusVal) ? '' : 'none';
+                    }
                 },
 
                 onSearchInput(event) {
-                    this.searchQuery = event.target.value;
+                    this.updateResetVisibility();
                     clearTimeout(this.debounceTimer);
                     this.debounceTimer = setTimeout(() => {
                         this.fetchData();
                     }, 300);
                 },
 
-                clearSearch() {
-                    this.searchQuery = '';
-                    const searchInput = document.getElementById('search');
-                    if (searchInput) {
-                        searchInput.value = '';
-                        searchInput.focus();
-                    }
-                    this.fetchData();
-                },
-
                 resetFilters() {
-                    const form = document.getElementById('attendance-filter-form');
-                    if (form) {
-                        const dateInput = document.getElementById('date');
-                        const monthInput = document.getElementById('month');
-                        const statusInput = document.getElementById('status');
-                        const searchInput = document.getElementById('search');
+                    const searchInput = document.getElementById('search');
+                    const dateInput = document.getElementById('date');
+                    const monthInput = document.getElementById('month');
+                    const statusInput = document.getElementById('status');
 
-                        if (dateInput) dateInput.value = '';
-                        if (monthInput) monthInput.value = '';
-                        if (statusInput) statusInput.value = '';
-                        if (searchInput) searchInput.value = '';
+                    if (searchInput) searchInput.value = '';
+                    if (dateInput) dateInput.value = '';
+                    if (monthInput) monthInput.value = '';
+                    if (statusInput) statusInput.value = '';
 
-                        this.searchQuery = '';
-                        this.fetchData(true);
-                    }
+                    this.updateResetVisibility();
+                    this.fetchData(true);
                 },
 
                 fetchData(isReset = false) {
@@ -296,8 +258,6 @@
                     }
 
                     this.loading = true;
-                    const overlay = document.getElementById('table-loading-overlay');
-                    if (overlay) overlay.classList.remove('hidden');
 
                     fetch(url.toString(), {
                         headers: {
@@ -317,14 +277,13 @@
                             currentTable.innerHTML = newTable.innerHTML;
                         }
                         window.history.replaceState({}, '', url.toString());
+                        this.updateResetVisibility();
                     })
                     .catch(err => {
                         console.error('Live search error:', err);
                     })
                     .finally(() => {
                         this.loading = false;
-                        const ov = document.getElementById('table-loading-overlay');
-                        if (ov) ov.classList.add('hidden');
                     });
                 }
             };
@@ -335,8 +294,6 @@
             const pageLink = e.target.closest('#attendance-table-card .pagination a, #attendance-table-card nav a');
             if (pageLink && pageLink.href && !pageLink.href.includes('#')) {
                 e.preventDefault();
-                const overlay = document.getElementById('table-loading-overlay');
-                if (overlay) overlay.classList.remove('hidden');
 
                 fetch(pageLink.href, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -354,10 +311,6 @@
                 })
                 .catch(err => {
                     window.location.href = pageLink.href;
-                })
-                .finally(() => {
-                    const ov = document.getElementById('table-loading-overlay');
-                    if (ov) ov.classList.add('hidden');
                 });
             }
         });

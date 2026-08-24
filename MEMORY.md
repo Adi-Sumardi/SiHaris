@@ -111,3 +111,17 @@
   - `PositionImport`: Pengecekan kode existing difilter berdasarkan `company_id` dan `department_id`.
   - `EmployeeImport`: Resolusi `getPositionId` mendukung preferensi pencarian berbasis `department_id` karyawan untuk membedakan jabatan dengan kode/nama identik di departemen lain.
 
+---
+
+## 9. Employee Salary Bulk Import (Import Gaji Karyawan)
+- **Halaman Import**: `/imports/employee-salaries` (`EmployeeSalaryImportController`)
+- **Template Excel**: `GET /imports/employee-salaries/template` (`EmployeeSalaryTemplateExport`)
+  - Kolom: `ID Karyawan`, `Gaji Pokok`, `Tanggal Berlaku`, `Tanggal Berakhir`, `Metode Pembayaran` (`Transfer`/`Tunai`), `Nama Bank`, `Nomor Rekening`, `Nama Rekening`, `Aktif` (`Ya`/`Tidak`), `Catatan`.
+- **Fitur Import (`EmployeeSalaryImport`)**:
+  - Resolusi Karyawan multi-identifier: `employee_id`, `nik`, `pin`, `email`, atau `nama`.
+  - Otomatis menonaktifkan pengaturan gaji lama karyawan jika record baru berstatus Aktif.
+  - Otomatis membuat komponen gaji `BASIC` sesuai nominal gaji pokok.
+  - Mendukung komponen gaji tambahan dinamis jika nama kolom di Excel cocok dengan kode/nama komponen pada `salary_components`.
+  - Memperbarui data rekening bank dan `base_salary` pada profil karyawan (`Employee`).
+
+

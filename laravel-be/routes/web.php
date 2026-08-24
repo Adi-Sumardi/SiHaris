@@ -29,6 +29,7 @@ use App\Http\Controllers\FingerprintDeviceController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\Import\DepartmentImportController;
 use App\Http\Controllers\Import\EmployeeImportController;
+use App\Http\Controllers\Import\EmployeeSalaryImportController;
 use App\Http\Controllers\Import\HolidayImportController;
 use App\Http\Controllers\Import\LeaveTypeImportController;
 use App\Http\Controllers\Import\PositionImportController;
@@ -585,6 +586,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('holidays', [HolidayImportController::class, 'index'])->name('holidays.index');
         Route::get('holidays/template', [HolidayImportController::class, 'template'])->name('holidays.template');
         Route::post('holidays', [HolidayImportController::class, 'store'])->name('holidays.store');
+
+        // Employee Salary Import
+        Route::get('employee-salaries', [EmployeeSalaryImportController::class, 'index'])->name('employee-salaries.index');
+        Route::get('employee-salaries/template', [EmployeeSalaryImportController::class, 'template'])->name('employee-salaries.template');
+        Route::post('employee-salaries', [EmployeeSalaryImportController::class, 'store'])->name('employee-salaries.store');
     });
 });
 

@@ -176,6 +176,48 @@ describe('WorkSchedule Model', function () {
 
             expect($schedule->getLateMinutes($clockIn))->toBe(0);
         });
+
+        it('calculates flexi minutes and shifts scheduled end correctly', function () {
+            $schedule = WorkSchedule::factory()->create([
+                'company_id' => $this->company->id,
+                'start_time' => '07:00',
+                'end_time' => '16:00',
+                'late_tolerance' => 60,
+                'early_leave_tolerance' => 5,
+                'is_flexible' => true,
+            ]);
+
+            $shiftDate = Carbon::parse('2026-08-26');
+            $clockInOnTime = Carbon::parse('2026-08-26 07:00');
+            $clockInFlexi = Carbon::parse('2026-08-26 07:25'); // 25 mins flexi
+            $clockInPastTolerance = Carbon::parse('2026-08-26 08:15'); // 75 mins late, capped at 60
+
+            expect($schedule->getFlexiMinutes($clockInOnTime, $shiftDate))->toBe(0);
+            expect($schedule->getFlexiMinutes($clockInFlexi, $shiftDate))->toBe(25);
+            expect($schedule->getFlexiMinutes($clockInPastTolerance, $shiftDate))->toBe(60);
+
+            // Dynamic scheduled end
+            expect($schedule->getScheduledEnd($shiftDate, $clockInOnTime)->format('H:i'))->toBe('16:00');
+            expect($schedule->getScheduledEnd($shiftDate, $clockInFlexi)->format('H:i'))->toBe('16:25');
+            expect($schedule->getScheduledEnd($shiftDate, $clockInPastTolerance)->format('H:i'))->toBe('17:00');
+
+            // Early leave evaluation with dynamic clockIn (arrived at 07:25 -> target 16:25)
+            $clockOutAt1600 = Carbon::parse('2026-08-26 16:00'); // Early by 25 mins
+            $clockOutAt1622 = Carbon::parse('2026-08-26 16:22'); // Within 5 min tolerance (16:20-16:25)
+            $clockOutAt1625 = Carbon::parse('2026-08-26 16:25'); // Exactly on time
+            $clockOutAt1645 = Carbon::parse('2026-08-26 16:45'); // Overtime 20 mins
+
+            expect($schedule->isEarlyLeave($clockOutAt1600, $shiftDate, $clockInFlexi))->toBeTrue();
+            expect($schedule->getEarlyLeaveMinutes($clockOutAt1600, $shiftDate, $clockInFlexi))->toBe(25);
+
+            expect($schedule->isEarlyLeave($clockOutAt1622, $shiftDate, $clockInFlexi))->toBeFalse();
+            expect($schedule->getEarlyLeaveMinutes($clockOutAt1622, $shiftDate, $clockInFlexi))->toBe(3); // 3 mins before 16:25
+
+            expect($schedule->isEarlyLeave($clockOutAt1625, $shiftDate, $clockInFlexi))->toBeFalse();
+            expect($schedule->getEarlyLeaveMinutes($clockOutAt1625, $shiftDate, $clockInFlexi))->toBe(0);
+
+            expect($schedule->getOvertimeMinutes($clockOutAt1645, $shiftDate, $clockInFlexi))->toBe(20);
+        });
     });
 
     describe('casts', function () {

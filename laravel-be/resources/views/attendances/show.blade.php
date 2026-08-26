@@ -98,6 +98,11 @@
                             <p class="text-lg font-semibold text-secondary-900">
                                 {{ $attendance->scheduled_start ?? '-' }} - {{ $attendance->scheduled_end ?? '-' }}
                             </p>
+                            @if($attendance->workSchedule?->is_flexible)
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                                    Fleksibel @if($attendance->clock_in)(Target: {{ $attendance->getDynamicScheduledEndDatetime()?->format('H:i') }})@endif
+                                </span>
+                            @endif
                         </div>
                     </div>
                 </div>

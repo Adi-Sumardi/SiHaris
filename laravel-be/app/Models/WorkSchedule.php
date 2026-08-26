@@ -123,9 +123,9 @@ class WorkSchedule extends Model
     }
 
     /**
-     * Get the scheduled end datetime for a given date, accounting for overnight shifts
+     * Get the scheduled end datetime for a given date, accounting for overnight shifts and flexi time
      */
-    public function getScheduledEnd(Carbon $date): Carbon
+    public function getScheduledEnd(Carbon $date, ?\DateTimeInterface $clockIn = null): Carbon
     {
         $end = $date->copy()->setTimeFromTimeString($this->end_time->format('H:i:s'));
 
@@ -134,7 +134,38 @@ class WorkSchedule extends Model
             $end->addDay();
         }
 
+        // If flexible schedule and clockIn is provided, add flexi minutes (capped at late_tolerance)
+        if ($this->is_flexible && $clockIn) {
+            $flexiMinutes = $this->getFlexiMinutes($clockIn, $date);
+            if ($flexiMinutes > 0) {
+                $end->addMinutes($flexiMinutes);
+            }
+        }
+
         return $end;
+    }
+
+    /**
+     * Get flexi minutes to shift the end time based on clock-in
+     */
+    public function getFlexiMinutes(\DateTimeInterface $clockIn, ?Carbon $shiftDate = null): int
+    {
+        if (! $this->is_flexible) {
+            return 0;
+        }
+
+        $clockInCarbon = Carbon::parse($clockIn);
+        $date = $shiftDate ? $shiftDate->copy() : $clockInCarbon->copy();
+        $scheduledStart = $date->setTimeFromTimeString($this->start_time->format('H:i:s'));
+
+        if ($clockInCarbon <= $scheduledStart) {
+            return 0;
+        }
+
+        $diffMinutes = $scheduledStart->diffInMinutes($clockInCarbon);
+        $maxTolerance = (int) ($this->late_tolerance ?? 0);
+
+        return min($diffMinutes, $maxTolerance);
     }
 
     /**
@@ -204,9 +235,9 @@ class WorkSchedule extends Model
     /**
      * Check if clock-out is early leave
      */
-    public function isEarlyLeave(\DateTime $clockOut, Carbon $shiftDate): bool
+    public function isEarlyLeave(\DateTime $clockOut, Carbon $shiftDate, ?\DateTimeInterface $clockIn = null): bool
     {
-        $scheduledEnd = $this->getScheduledEnd($shiftDate);
+        $scheduledEnd = $this->getScheduledEnd($shiftDate, $clockIn);
         $tolerance = $scheduledEnd->copy()->subMinutes($this->early_leave_tolerance ?? 0);
 
         return Carbon::parse($clockOut) < $tolerance;
@@ -215,10 +246,10 @@ class WorkSchedule extends Model
     /**
      * Get early leave minutes
      */
-    public function getEarlyLeaveMinutes(\DateTime $clockOut, Carbon $shiftDate): int
+    public function getEarlyLeaveMinutes(\DateTime $clockOut, Carbon $shiftDate, ?\DateTimeInterface $clockIn = null): int
     {
         $clockOutCarbon = Carbon::parse($clockOut);
-        $scheduledEnd = $this->getScheduledEnd($shiftDate);
+        $scheduledEnd = $this->getScheduledEnd($shiftDate, $clockIn);
 
         if ($clockOutCarbon >= $scheduledEnd) {
             return 0;
@@ -230,10 +261,10 @@ class WorkSchedule extends Model
     /**
      * Get overtime minutes (clock-out after scheduled end)
      */
-    public function getOvertimeMinutes(\DateTime $clockOut, Carbon $shiftDate): int
+    public function getOvertimeMinutes(\DateTime $clockOut, Carbon $shiftDate, ?\DateTimeInterface $clockIn = null): int
     {
         $clockOutCarbon = Carbon::parse($clockOut);
-        $scheduledEnd = $this->getScheduledEnd($shiftDate);
+        $scheduledEnd = $this->getScheduledEnd($shiftDate, $clockIn);
 
         if ($clockOutCarbon <= $scheduledEnd) {
             return 0;

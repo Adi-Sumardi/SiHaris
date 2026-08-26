@@ -220,6 +220,33 @@ class Attendance extends Model
     }
 
     /**
+     * Get the dynamic scheduled end datetime accounting for overnight shifts and flexible schedule minutes
+     */
+    public function getDynamicScheduledEndDatetime(): ?Carbon
+    {
+        $scheduledEnd = $this->getScheduledEndDatetime();
+        $scheduledStart = $this->getScheduledStartDatetime();
+
+        if (! $scheduledEnd || ! $scheduledStart || ! $this->workSchedule) {
+            return $scheduledEnd;
+        }
+
+        if ($this->workSchedule->is_flexible && $this->clock_in) {
+            $clockIn = $this->clock_in instanceof Carbon ? $this->clock_in : Carbon::parse($this->clock_in);
+            if ($clockIn->gt($scheduledStart)) {
+                $lateTolerance = (int) ($this->workSchedule->late_tolerance ?? 0);
+                $diffMinutes = $scheduledStart->diffInMinutes($clockIn);
+                $flexiMinutes = min($diffMinutes, $lateTolerance);
+                if ($flexiMinutes > 0) {
+                    $scheduledEnd = $scheduledEnd->copy()->addMinutes($flexiMinutes);
+                }
+            }
+        }
+
+        return $scheduledEnd;
+    }
+
+    /**
      * Get the correct scheduled start datetime
      */
     public function getScheduledStartDatetime(): ?Carbon
@@ -273,6 +300,7 @@ class Attendance extends Model
                 $this->clock_in_status = $this->late_minutes > 30 ? 'very_late' : 'late';
                 $this->status = 'late';
             } else {
+                $this->late_minutes = 0;
                 $this->clock_in_status = 'on_time';
                 $this->status = 'present';
             }
@@ -321,18 +349,22 @@ class Attendance extends Model
             $this->working_minutes = max(0, $workingMinutes);
         }
 
-        // Calculate early leave or overtime using correct scheduled end (accounts for overnight)
-        $scheduledEnd = $this->getScheduledEndDatetime();
+        // Calculate early leave or overtime using dynamic scheduled end (accounts for overnight & flexi time)
+        $scheduledEnd = $this->getDynamicScheduledEndDatetime();
         if ($scheduledEnd) {
             $tolerance = $this->workSchedule?->early_leave_tolerance ?? 15;
 
             if ($now->lt($scheduledEnd->copy()->subMinutes($tolerance))) {
                 $this->early_leave_minutes = $now->diffInMinutes($scheduledEnd);
+                $this->overtime_minutes = 0;
                 $this->clock_out_status = 'early';
             } elseif ($now->gt($scheduledEnd)) {
                 $this->overtime_minutes = $scheduledEnd->diffInMinutes($now);
+                $this->early_leave_minutes = 0;
                 $this->clock_out_status = 'overtime';
             } else {
+                $this->early_leave_minutes = 0;
+                $this->overtime_minutes = 0;
                 $this->clock_out_status = 'on_time';
             }
         }
@@ -373,8 +405,8 @@ class Attendance extends Model
             }
         }
 
-        // Recalculate early leave / overtime
-        $scheduledEnd = $this->getScheduledEndDatetime();
+        // Recalculate early leave / overtime using dynamic scheduled end
+        $scheduledEnd = $this->getDynamicScheduledEndDatetime();
         if ($scheduledEnd) {
             $tolerance = $this->workSchedule?->early_leave_tolerance ?? 15;
 

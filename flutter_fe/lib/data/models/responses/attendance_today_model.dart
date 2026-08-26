@@ -6,6 +6,9 @@ class AttendanceTodayModel {
   final String date;
   final String? clockIn;
   final String? clockOut;
+  final String? targetClockOut;
+  final int flexiMinutes;
+  final bool isFlexible;
   final String? clockInSource;
   final String? clockOutSource;
   final String status;
@@ -21,6 +24,9 @@ class AttendanceTodayModel {
     required this.date,
     this.clockIn,
     this.clockOut,
+    this.targetClockOut,
+    this.flexiMinutes = 0,
+    this.isFlexible = false,
     this.clockInSource,
     this.clockOutSource,
     required this.status,
@@ -56,6 +62,9 @@ class AttendanceTodayModel {
       date: json['date']?.toString() ?? '',
       clockIn: json['clock_in']?.toString(),
       clockOut: json['clock_out']?.toString(),
+      targetClockOut: json['target_clock_out']?.toString(),
+      flexiMinutes: _parseInt(json['flexi_minutes']),
+      isFlexible: json['is_flexible'] == true,
       clockInSource: json['clock_in_source']?.toString(),
       clockOutSource: json['clock_out_source']?.toString(),
       status: json['status']?.toString() ?? '',
@@ -99,26 +108,14 @@ class AttendanceTodayModel {
         other.date == date &&
         other.clockIn == clockIn &&
         other.clockOut == clockOut &&
+        other.targetClockOut == targetClockOut &&
+        other.flexiMinutes == flexiMinutes &&
+        other.isFlexible == isFlexible &&
         other.status == status &&
         other.statusLabel == statusLabel &&
         other.lateMinutes == lateMinutes &&
         other.workingMinutes == workingMinutes &&
         other.faceVerified == faceVerified &&
-        // officeLocation comparison might be tricky if it doesn't implement ==.
-        // check if we can rely on standard equality or if references are same.
-        // For now, let's assume we can check if toJson matches or just field by field if needed.
-        // But OfficeLocationModel doesn't have ==.
-        // So I will compare their IDs if available or simple check.
-        // Actually, since I'm controlling the test data, I could check if properties match.
-        // But for production code, relying on recursive == is better.
-        // Since OfficeLocationModel is effectively immutable data, maybe I should check its fields here?
-        // No, that's coupling.
-        // Let's rely on basic equality which might fail if instances are different.
-        // BUT, in the test, I might be constructing new instances.
-        // I will implement a helper to compare OfficeLocationModel for this class or just compare critical fields.
-        // Better: compare toJson() output for deep equality of nested objects that don't implement ==
-        // This is a bit expensive but robust for models.
-        // Or just map comparison?
         mapEquals(other.officeLocation?.toJson(), officeLocation?.toJson()) &&
         other.schedule == schedule;
   }
@@ -129,6 +126,9 @@ class AttendanceTodayModel {
         date.hashCode ^
         clockIn.hashCode ^
         clockOut.hashCode ^
+        targetClockOut.hashCode ^
+        flexiMinutes.hashCode ^
+        isFlexible.hashCode ^
         status.hashCode ^
         statusLabel.hashCode ^
         lateMinutes.hashCode ^
@@ -143,14 +143,27 @@ class Schedule {
   final String? name;
   final String startTime;
   final String endTime;
+  final bool isFlexible;
+  final int lateTolerance;
+  final int earlyLeaveTolerance;
 
-  const Schedule({this.name, required this.startTime, required this.endTime});
+  const Schedule({
+    this.name,
+    required this.startTime,
+    required this.endTime,
+    this.isFlexible = false,
+    this.lateTolerance = 15,
+    this.earlyLeaveTolerance = 15,
+  });
 
   factory Schedule.fromJson(Map<String, dynamic> json) {
     return Schedule(
       name: json['name'],
       startTime: json['start_time'],
       endTime: json['end_time'],
+      isFlexible: json['is_flexible'] == true,
+      lateTolerance: json['late_tolerance'] is int ? json['late_tolerance'] : 15,
+      earlyLeaveTolerance: json['early_leave_tolerance'] is int ? json['early_leave_tolerance'] : 15,
     );
   }
 

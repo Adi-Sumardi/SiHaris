@@ -128,7 +128,7 @@ class AttendanceController extends Controller
             'clock_out' => $request->clock_out ? $date->copy()->setTimeFromTimeString($request->clock_out) : null,
             'status' => $request->status ?? 'present',
             'clock_in_status' => $this->determineClockInStatus($request->clock_in, $resolvedSchedule),
-            'clock_out_status' => $this->determineClockOutStatus($request->clock_out, $resolvedSchedule),
+            'clock_out_status' => $this->determineClockOutStatus($request->clock_out, $resolvedSchedule, $request->clock_in),
             'is_manual_entry' => true,
             'approved_by' => auth()->id(),
             'approved_at' => now(),
@@ -196,7 +196,7 @@ class AttendanceController extends Controller
             'clock_out' => $validated['clock_out'] ? $date->copy()->setTimeFromTimeString($validated['clock_out']) : null,
             'status' => $validated['status'] ?? 'present',
             'clock_in_status' => $this->determineClockInStatus($validated['clock_in'] ?? null, $resolvedSchedule),
-            'clock_out_status' => $this->determineClockOutStatus($validated['clock_out'] ?? null, $resolvedSchedule),
+            'clock_out_status' => $this->determineClockOutStatus($validated['clock_out'] ?? null, $resolvedSchedule, $validated['clock_in'] ?? null),
             'admin_notes' => $validated['admin_notes'] ?? null,
             'late_minutes' => $this->calculateLateMinutes($validated['clock_in'] ?? null, $resolvedSchedule),
             'working_minutes' => $this->calculateWorkingMinutes($validated['clock_in'] ?? null, $validated['clock_out'] ?? null),
@@ -583,7 +583,7 @@ class AttendanceController extends Controller
         return 'on_time';
     }
 
-    private function determineClockOutStatus(?string $clockOut, ?WorkSchedule $schedule): ?string
+    private function determineClockOutStatus(?string $clockOut, ?WorkSchedule $schedule, ?string $clockIn = null): ?string
     {
         if (! $clockOut || ! $schedule) {
             return null;
@@ -591,6 +591,16 @@ class AttendanceController extends Controller
 
         $clockOutTime = Carbon::parse($clockOut);
         $scheduledEnd = Carbon::parse($schedule->end_time->format('H:i'));
+
+        if ($schedule->is_flexible && $clockIn) {
+            $clockInTime = Carbon::parse($clockIn);
+            $scheduledStart = Carbon::parse($schedule->start_time->format('H:i'));
+            if ($clockInTime->gt($scheduledStart)) {
+                $flexiMinutes = min($scheduledStart->diffInMinutes($clockInTime), (int) ($schedule->late_tolerance ?? 0));
+                $scheduledEnd->addMinutes($flexiMinutes);
+            }
+        }
+
         $tolerance = $schedule->early_leave_tolerance ?? 15;
 
         if ($clockOutTime->lt($scheduledEnd->copy()->subMinutes($tolerance))) {

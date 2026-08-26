@@ -131,14 +131,15 @@ class AttendanceController extends Controller
 
         $data = null;
         if ($attendance) {
-            // Recalculate late_minutes if it's 0 but status is 'late' or clock_in is after schedule start
+            // Recalculate late_minutes if it's 0 but status is 'late' or clock_in is after schedule start + tolerance
             $lateMinutes = $attendance->late_minutes ?? 0;
             if ($lateMinutes === 0 && $schedule && $attendance->clock_in) {
                 $clockInTime = $attendance->clock_in->setTimezone($timezone);
                 $scheduleStart = $clockInTime->copy()
                     ->setTimeFromTimeString($schedule->start_time->format('H:i:s'));
+                $tolerance = $schedule->late_tolerance ?? 15;
 
-                if ($clockInTime->gt($scheduleStart)) {
+                if ($clockInTime->gt($scheduleStart->copy()->addMinutes($tolerance))) {
                     $lateMinutes = $scheduleStart->diffInMinutes($clockInTime);
                     // Update the database record for future consistency
                     if ($lateMinutes > 0) {
@@ -150,11 +151,25 @@ class AttendanceController extends Controller
                 }
             }
 
+            $flexiMinutes = 0;
+            $targetClockOut = $schedule ? Carbon::parse($schedule->end_time->format('H:i'))->format('H:i') : null;
+            if ($schedule && $schedule->is_flexible && $attendance->clock_in) {
+                $clockInTime = $attendance->clock_in->setTimezone($timezone);
+                $scheduleStart = $clockInTime->copy()->setTimeFromTimeString($schedule->start_time->format('H:i:s'));
+                if ($clockInTime->gt($scheduleStart)) {
+                    $flexiMinutes = min($scheduleStart->diffInMinutes($clockInTime), (int) ($schedule->late_tolerance ?? 0));
+                    $targetClockOut = Carbon::parse($schedule->end_time->format('H:i'))->addMinutes($flexiMinutes)->format('H:i');
+                }
+            }
+
             $data = [
                 'id' => (int) $attendance->id,
                 'date' => $attendance->date->toDateString(),
                 'clock_in' => $attendance->clock_in?->setTimezone($timezone)->format('H:i'),
                 'clock_out' => $attendance->clock_out?->setTimezone($timezone)->format('H:i'),
+                'target_clock_out' => $targetClockOut,
+                'flexi_minutes' => (int) $flexiMinutes,
+                'is_flexible' => (bool) ($schedule?->is_flexible ?? false),
                 'clock_in_source' => $attendance->clock_in_source,
                 'clock_out_source' => $attendance->clock_out_source,
                 'status' => $attendance->status,
@@ -164,6 +179,9 @@ class AttendanceController extends Controller
                 'schedule' => $schedule ? [
                     'start_time' => Carbon::parse($schedule->start_time)->format('H:i'),
                     'end_time' => Carbon::parse($schedule->end_time)->format('H:i'),
+                    'is_flexible' => (bool) $schedule->is_flexible,
+                    'late_tolerance' => (int) ($schedule->late_tolerance ?? 15),
+                    'early_leave_tolerance' => (int) ($schedule->early_leave_tolerance ?? 15),
                 ] : null,
                 'office_location' => $attendance->officeLocation ? [
                     'id' => (int) $attendance->officeLocation->id,
@@ -177,8 +195,11 @@ class AttendanceController extends Controller
             'data' => $data,
             'schedule' => $schedule ? [
                 'name' => $schedule->name,
+                'is_flexible' => (bool) $schedule->is_flexible,
                 'start_time' => Carbon::parse($schedule->start_time)->format('H:i'),
                 'end_time' => Carbon::parse($schedule->end_time)->format('H:i'),
+                'late_tolerance' => (int) ($schedule->late_tolerance ?? 15),
+                'early_leave_tolerance' => (int) ($schedule->early_leave_tolerance ?? 15),
             ] : null,
             'timezone' => [
                 'name' => $company->timezone,

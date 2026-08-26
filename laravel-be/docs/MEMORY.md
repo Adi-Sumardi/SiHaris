@@ -201,3 +201,21 @@ version: 1.0.2+8  # <-- naikkan PATCH atau MINOR sesuai jenis perubahan
   - Export Excel & PDF memfilter karyawan sesuai query pencarian.
   - Layout PDF berorientasi **A4 Landscape**.
 
+---
+
+## 14. Dynamic Flextime Shift Calculation (Perhitungan Fleksi Time Berbasis Menit Dinamis)
+- **Konsep & Aturan Bisnis**:
+  - Pada jadwal kerja fleksibel (`is_flexible = true`), batas toleransi keterlambatan (`late_tolerance`, misal 60 menit) berlaku sebagai jendela kedatangan fleksibel.
+  - Karyawan yang datang setelah jam masuk standar (misal datang 07:25 dengan patokan 07:00 dan toleransi 60 menit) **tidak dianggap terlambat** selama masih dalam batas toleransi fleksi (`late_minutes = 0`, status `on_time` / `present`).
+  - **Jam Pulang Target Dinamis** (`target_clock_out`) otomatis bergeser sebesar menit kedatangannya (misal $16:00 + 25\text{ menit} = \mathbf{16:25}$).
+  - Karyawan wajib pulang pada atau setelah target jam pulang dinamis ($\ge 16:25$) untuk memenuhi durasi kerja penuh shift.
+  - **Evaluasi Pulang Awal**: Jika karyawan pulang sebelum target jam pulang dinamis (dikurangi `early_leave_tolerance`, misal pulang jam 16:00 dengan target 16:25 dan toleransi 5 menit), dihitung **Pulang Awal** (`early_leave_minutes = 25`, status `early`).
+  - **Kedatangan Melebihi Toleransi Fleksi**: Jika datang melebihi toleransi fleksi (misal 08:15 dengan toleransi 60 menit), menit terlambat dihitung $75 - 60 = 15\text{ menit}$ (status `late`), dan pergeseran jam pulang maksimal mentok di batas toleransi ($16:00 + 60\text{ menit} = 17:00$).
+- **Implementasi Core**:
+  - `WorkSchedule`: Method `getFlexiMinutes()`, `getScheduledEnd($date, $clockIn)`, `isEarlyLeave()`, `getEarlyLeaveMinutes()`, dan `getOvertimeMinutes()` mendukung evaluasi jam masuk fleksibel (`$clockIn`).
+  - `Attendance`: Method `getDynamicScheduledEndDatetime()` menghitung pergeseran target jam pulang dinamis dan digunakan pada `clockOut()` serta `recalculate()`.
+  - `Api/V1/AttendanceController::today`: Mengembalikan field `target_clock_out`, `flexi_minutes`, dan `is_flexible` pada response JSON.
+  - `AttendanceTodayModel` (Flutter): Model mobile diperbarui untuk menerima field target fleksi dinamis.
+  - Web Views: Halaman `/work-schedules/{id}` dan `/attendances/{id}` menampilkan informasi dan target jam pulang dinamis flextime.
+
+

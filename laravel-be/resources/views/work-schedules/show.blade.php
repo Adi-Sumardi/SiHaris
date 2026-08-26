@@ -130,6 +130,16 @@
                             </p>
                         </div>
                     </div>
+
+                    @if($workSchedule->is_flexible)
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 flex items-start gap-2">
+                            <svg class="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <div>
+                                <span class="font-semibold">Mekanisme Fleksi Time Aktif:</span>
+                                Karyawan yang datang setelah {{ $workSchedule->start_time->format('H:i') }} hingga batas toleransi {{ $workSchedule->start_time->copy()->addMinutes($workSchedule->late_tolerance)->format('H:i') }} ({{ $workSchedule->late_tolerance }} menit) tidak dianggap terlambat. Jam pulang target akan bergeser otomatis sesuai jumlah menit kedatangan agar durasi kerja tetap terpenuhi.
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 

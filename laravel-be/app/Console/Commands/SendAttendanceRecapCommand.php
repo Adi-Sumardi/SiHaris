@@ -8,7 +8,6 @@ use App\Models\Employee;
 use App\Services\AttendanceRecapService;
 use App\Services\EmailRecapNotificationService;
 use App\Services\PushNotificationService;
-use App\Services\WhatsAppNotificationService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -17,11 +16,10 @@ class SendAttendanceRecapCommand extends Command
 {
     protected $signature = 'attendance:send-recap';
 
-    protected $description = 'Send each due company\'s automatic attendance recap to employees via WhatsApp and email.';
+    protected $description = 'Send each due company\'s automatic attendance recap to employees via mobile push and email.';
 
     public function __construct(
         protected AttendanceRecapService $recapService,
-        protected WhatsAppNotificationService $whatsAppService,
         protected EmailRecapNotificationService $emailService,
         protected PushNotificationService $pushService,
     ) {
@@ -41,7 +39,8 @@ class SendAttendanceRecapCommand extends Command
 
             [$periodStart, $periodEnd] = $this->recapService->periodFor(
                 $company->attendance_recap_frequency,
-                $company->now()
+                $company->now(),
+                $company
             );
 
             $employees = Employee::where('company_id', $company->id)
@@ -72,7 +71,7 @@ class SendAttendanceRecapCommand extends Command
         return match ($company->attendance_recap_frequency) {
             'daily' => true,
             'weekly' => $now->isoWeekday() === (int) $company->attendance_recap_day_of_week,
-            'monthly' => $now->day === min((int) $company->attendance_recap_day_of_month, $now->daysInMonth),
+            'monthly' => $now->day === min((int) ($company->attendance_recap_day_of_month ?? 1), $now->daysInMonth),
             default => false,
         };
     }
@@ -98,35 +97,26 @@ class SendAttendanceRecapCommand extends Command
                 'frequency' => $company->attendance_recap_frequency,
                 'period_start' => $periodStart->toDateString(),
                 'period_end' => $periodEnd->toDateString(),
-                ...$data,
+                'working_days' => $data['working_days'],
+                'present_days' => $data['present_days'],
+                'absent_days' => $data['absent_days'],
+                'late_days' => $data['late_days'],
+                'leave_days' => $data['leave_days'],
+                'attendance_percentage' => $data['attendance_percentage'],
             ]);
         } catch (UniqueConstraintViolationException) {
             // Lost the race to a concurrent run for the same period.
             return;
         }
 
-        $message = $this->buildMessage($employee, $periodStart, $periodEnd, $data);
+        $title = $this->buildTitle($company);
+        $message = $this->buildMessage($company, $employee, $periodStart, $periodEnd, $data);
 
-        if ($company->attendance_recap_send_whatsapp && $employee->phone) {
-            $result = $this->whatsAppService->sendMessage($employee->phone, $message);
-            $recap->update([
-                'whatsapp_sent_at' => now(),
-                'whatsapp_status' => $result['success'] ? 'sent' : 'failed',
-            ]);
-        }
-
-        if ($company->attendance_recap_send_email && $employee->email) {
-            $result = $this->emailService->sendEmail($employee->email, 'Rekap Kehadiran Anda', $message);
-            $recap->update([
-                'email_sent_at' => now(),
-                'email_status' => $result['success'] ? 'sent' : 'failed',
-            ]);
-        }
-
+        // Attendance recap is routed strictly to mobile application (WhatsApp is used solely for OTP)
         if ($employee->user) {
             $this->pushService->sendToUser(
                 $employee->user,
-                'Rekap Kehadiran Anda',
+                $title,
                 $message,
                 'attendance_recap',
                 [
@@ -136,21 +126,54 @@ class SendAttendanceRecapCommand extends Command
                 ]
             );
         }
+
+        if ($company->attendance_recap_send_email && $employee->email) {
+            $result = $this->emailService->sendEmail($employee->email, $title, $message);
+            $recap->update([
+                'email_sent_at' => now(),
+                'email_status' => $result['success'] ? 'sent' : 'failed',
+            ]);
+        }
+    }
+
+    private function buildTitle(Company $company): string
+    {
+        $freqLabel = match ($company->attendance_recap_frequency) {
+            'daily' => 'HARIAN',
+            'weekly' => 'MINGGUAN',
+            default => 'BULANAN',
+        };
+
+        return "📊 REKAP ABSEN {$freqLabel} {$company->name}";
     }
 
     /**
-     * @param  array{working_days: int, present_days: int, absent_days: int, late_days: int, leave_days: int, attendance_percentage: float}  $data
+     * @param  array{
+     *     working_days: int,
+     *     present_days: int,
+     *     weekday_present_days: int,
+     *     saturday_present_days: int,
+     *     total_present_days: int,
+     *     absent_days: int,
+     *     late_days: int,
+     *     late_gt_5_days: int,
+     *     leave_days: int,
+     *     attendance_percentage: float
+     * }  $data
      */
-    private function buildMessage(Employee $employee, Carbon $periodStart, Carbon $periodEnd, array $data): string
+    private function buildMessage(Company $company, Employee $employee, Carbon $periodStart, Carbon $periodEnd, array $data): string
     {
-        $period = $periodStart->translatedFormat('d M Y').' - '.$periodEnd->translatedFormat('d M Y');
+        $period = $periodStart->format('d/m/Y').' - '.$periodEnd->format('d/m/Y');
+        $title = $this->buildTitle($company);
 
-        return "Halo {$employee->full_name}, berikut rekap kehadiran Anda periode {$period} (hari libur & akhir pekan tidak dihitung):\n"
-            ."Hari kerja: {$data['working_days']} hari\n"
-            ."Hadir: {$data['present_days']} hari\n"
-            ."Terlambat: {$data['late_days']} hari\n"
-            ."Tidak hadir: {$data['absent_days']} hari\n"
-            ."Cuti: {$data['leave_days']} hari\n"
-            ."Persentase kehadiran: {$data['attendance_percentage']}%";
+        return "{$title}\n"
+            ."Nama: {$employee->full_name}\n"
+            ."Periode: {$period}\n"
+            ."=============================\n"
+            ."Hari Kerja (Senin-Jumat): {$data['weekday_present_days']} hari\n"
+            ."Hari Sabtu: {$data['saturday_present_days']} hari\n"
+            ."Total: {$data['total_present_days']} hari\n\n"
+            ."⏰ Datang Terlambat:\n"
+            ."• > 5 menit: {$data['late_gt_5_days']}x";
     }
 }

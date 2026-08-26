@@ -1,4 +1,4 @@
-import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/datasources/notification_remote_datasource.dart';
 import 'notification_list_event.dart';
 import 'notification_list_state.dart';
@@ -7,6 +7,8 @@ class NotificationListBloc
     extends Bloc<NotificationListEvent, NotificationListState> {
   final NotificationRemoteDatasource datasource;
   int _currentPage = 1;
+
+  static const int pageSize = 20;
 
   NotificationListBloc(this.datasource) : super(NotificationListInitial()) {
     on<LoadNotifications>(_onLoadNotifications);
@@ -29,7 +31,7 @@ class NotificationListBloc
       emit(
         NotificationListLoaded(
           notifications,
-          hasReachedMax: notifications.isEmpty,
+          hasReachedMax: notifications.length < pageSize,
         ),
       );
     } catch (e) {
@@ -41,7 +43,6 @@ class NotificationListBloc
     RefreshNotifications event,
     Emitter<NotificationListState> emit,
   ) async {
-    emit(NotificationListLoading());
     try {
       _currentPage = 1;
       final notifications = await datasource.getNotifications(
@@ -50,7 +51,7 @@ class NotificationListBloc
       emit(
         NotificationListLoaded(
           notifications,
-          hasReachedMax: notifications.isEmpty,
+          hasReachedMax: notifications.length < pageSize,
         ),
       );
     } catch (e) {
@@ -74,7 +75,7 @@ class NotificationListBloc
           NotificationListLoaded([
             ...currentState.notifications,
             ...moreNotifications,
-          ], hasReachedMax: moreNotifications.isEmpty),
+          ], hasReachedMax: moreNotifications.length < pageSize),
         );
       } catch (e) {
         // Keep current state on error

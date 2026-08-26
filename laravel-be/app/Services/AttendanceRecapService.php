@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attendance;
+use App\Models\Company;
 use App\Models\Employee;
 use App\Models\Holiday;
 use App\Models\LeaveRequest;
@@ -19,8 +20,12 @@ class AttendanceRecapService
      * @return array{
      *     working_days: int,
      *     present_days: int,
+     *     weekday_present_days: int,
+     *     saturday_present_days: int,
+     *     total_present_days: int,
      *     absent_days: int,
      *     late_days: int,
+     *     late_gt_5_days: int,
      *     leave_days: int,
      *     attendance_percentage: float,
      * }
@@ -55,9 +60,27 @@ class AttendanceRecapService
             ->whereBetween('date', [$periodStart, $periodEnd])
             ->get();
 
-        $presentDays = $attendances->whereIn('status', ['present', 'late'])->count();
+        $presentAttendances = $attendances->whereIn('status', ['present', 'late']);
+        $presentDays = $presentAttendances->count();
+
+        // Separate weekday (Senin-Jumat) vs Saturday (Sabtu)
+        $weekdayPresentDays = $presentAttendances->filter(function ($att) {
+            return Carbon::parse($att->date)->isWeekday();
+        })->count();
+
+        $saturdayPresentDays = $presentAttendances->filter(function ($att) {
+            return Carbon::parse($att->date)->isSaturday();
+        })->count();
+
+        $totalPresentDays = $weekdayPresentDays + $saturdayPresentDays;
+
         $absentDays = $attendances->where('status', 'absent')->count();
         $lateDays = $attendances->where('status', 'late')->count();
+
+        // Late > 5 minutes count
+        $lateGt5Days = $attendances->filter(function ($att) {
+            return ($att->late_minutes ?? 0) > 5;
+        })->count();
 
         $leaveDays = LeaveRequest::where('employee_id', $employee->id)
             ->where('status', 'approved')
@@ -74,8 +97,12 @@ class AttendanceRecapService
         return [
             'working_days' => $workingDays,
             'present_days' => $presentDays,
+            'weekday_present_days' => $weekdayPresentDays,
+            'saturday_present_days' => $saturdayPresentDays,
+            'total_present_days' => $totalPresentDays,
             'absent_days' => $absentDays,
             'late_days' => $lateDays,
+            'late_gt_5_days' => $lateGt5Days,
             'leave_days' => (int) $leaveDays,
             'attendance_percentage' => $workingDays > 0 ? round(($presentDays / $workingDays) * 100, 2) : 0.0,
         ];
@@ -88,21 +115,47 @@ class AttendanceRecapService
      *
      * @return array{0: Carbon, 1: Carbon}
      */
-    public function periodFor(string $frequency, Carbon $reference): array
+    public function periodFor(string $frequency, Carbon $reference, ?Company $company = null): array
     {
         return match ($frequency) {
             'daily' => [
                 $reference->copy()->subDay()->startOfDay(),
-                $reference->copy()->subDay()->startOfDay(),
+                $reference->copy()->subDay()->endOfDay(),
             ],
-            'monthly' => [
-                $reference->copy()->subMonthNoOverflow()->startOfMonth(),
-                $reference->copy()->subMonthNoOverflow()->endOfMonth(),
-            ],
+            'monthly' => $this->resolveMonthlyPeriod($reference, $company),
             default => [
-                $reference->copy()->subWeek()->startOfWeek(Carbon::MONDAY),
-                $reference->copy()->subWeek()->endOfWeek(Carbon::SUNDAY),
+                $reference->copy()->subWeek()->startOfWeek(Carbon::MONDAY)->startOfDay(),
+                $reference->copy()->subWeek()->endOfWeek(Carbon::SUNDAY)->endOfDay(),
             ],
         };
+    }
+
+    /**
+     * Calculate monthly cutoff period.
+     * If cutoff day > 1 (e.g. 21): period runs from 21 of previous month to 20 of current month.
+     * If cutoff day <= 1: period runs from 1st of previous month to last day of previous month.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function resolveMonthlyPeriod(Carbon $reference, ?Company $company = null): array
+    {
+        $cutoffDay = (int) ($company?->attendance_recap_day_of_month ?? 1);
+
+        if ($cutoffDay <= 1) {
+            return [
+                $reference->copy()->subMonthNoOverflow()->startOfMonth()->startOfDay(),
+                $reference->copy()->subMonthNoOverflow()->endOfMonth()->endOfDay(),
+            ];
+        }
+
+        // Custom cutoff > 1 (e.g. 21)
+        $previousMonth = $reference->copy()->subMonthNoOverflow();
+        $startDay = min($cutoffDay, $previousMonth->daysInMonth);
+        $start = Carbon::create($previousMonth->year, $previousMonth->month, $startDay, 0, 0, 0, $reference->timezone);
+
+        $endDay = min($cutoffDay - 1, $reference->daysInMonth);
+        $end = Carbon::create($reference->year, $reference->month, $endDay, 23, 59, 59, $reference->timezone);
+
+        return [$start, $end];
     }
 }

@@ -1,4 +1,4 @@
-import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/datasources/notification_remote_datasource.dart';
 import 'notification_unread_count_event.dart';
 import 'notification_unread_count_state.dart';

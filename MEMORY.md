@@ -210,6 +210,31 @@
   - `NotificationService` (`lib/core/services/notification_service.dart`): Izin notifikasi, registrasi device token ke `POST /api/v1/device-tokens`, `flutter_local_notifications` untuk heads-up banner saat foreground, dan handling tap notifikasi.
   - Feature Flag: `FeatureConfig.enablePushNotification = true`.
 
+---
+
+## 16. Attendance Recap System & Notification Routing Policy
+- **Channel Policy**:
+  - **WhatsApp**: Digunakan **KHUSUS untuk pengiriman OTP** login/verifikasi via `OtpService` & `WhatsAppNotificationService`. **TIDAK** digunakan untuk rekap presensi.
+  - **Mobile Push Notification (In-App)**: Rekap presensi dikirimkan secara langsung ke aplikasi mobile karyawan (`NotificationScreen` & FCM Push) via `SendAttendanceRecapCommand` dan `PushNotificationService`.
+  - **Email**: Opsional jika diaktifkan pada pengaturan perusahaan (`enable_attendance_recap` & `attendance_recap_send_email`).
+- **Template Standar Rekap Presensi**:
+  ```text
+  📊 REKAP ABSEN BULANAN [NAMA_PERUSAHAAN]
+  Nama: [Nama Karyawan]
+  Periode: [dd/mm/yyyy] - [dd/mm/yyyy]
+  =============================
+  Hari Kerja (Senin-Jumat): [X] hari
+  Hari Sabtu: [Y] hari
+  Total: [Z] hari
+
+  ⏰ Datang Terlambat:
+  • > 5 menit: [L]x
+  ```
+- **Kalkulasi Periode Cutoff Bulanan**:
+  - Jika `attendance_recap_day_of_month` > 1 (contoh: 21 pada YAPI), periode dihitung dari tanggal 21 bulan sebelumnya hingga tanggal 20 bulan berjalan (contoh tanggal eksekusi 21 Agustus 2026 -> periode `21/07/2026 - 20/08/2026`).
+  - `AttendanceRecapService` memisahkan presensi hari Senin-Jumat (`weekday_present_days`), hari Sabtu (`saturday_present_days`), serta akumulasi keterlambatan lebih dari 5 menit (`late_gt_5_days`).
+
+
 
 
 

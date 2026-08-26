@@ -59,7 +59,6 @@ describe('attendance:send-recap', function () {
         expect($recap->employee_id)->toBe($employee->id);
         expect($recap->period_start->toDateString())->toBe('2026-02-02');
         expect($recap->period_end->toDateString())->toBe('2026-02-08');
-        expect($recap->whatsapp_status)->toBe('sent');
         expect($recap->email_status)->toBe('sent');
 
         // The inactive employee never gets a recap row.
@@ -84,54 +83,42 @@ describe('attendance:send-recap', function () {
         $this->assertDatabaseCount('attendance_recaps', 1);
     });
 
-    it('skips WhatsApp when the employee has no phone number but still sends email', function () {
+    it('sends mobile notification and email formatted with standard recap template', function () {
         $company = Company::factory()->create([
+            'name' => 'YAPI',
             'timezone' => 'Asia/Jakarta',
             'enable_attendance_recap' => true,
-            'attendance_recap_frequency' => 'weekly',
-            'attendance_recap_day_of_week' => 1,
+            'attendance_recap_frequency' => 'monthly',
+            'attendance_recap_day_of_month' => 21,
             'attendance_recap_send_hour' => 8,
-        ]);
-        Employee::factory()->create([
-            'company_id' => $company->id,
-            'is_active' => true,
-            'phone' => null,
-            'email' => 'noWaPhone@example.com',
-        ]);
-
-        $this->travelTo(Carbon::create(2026, 2, 9, 8, 0, 0, 'Asia/Jakarta'));
-
-        $this->artisan('attendance:send-recap')->assertExitCode(0);
-
-        $recap = AttendanceRecap::first();
-        expect($recap->whatsapp_sent_at)->toBeNull();
-        expect($recap->email_status)->toBe('sent');
-    });
-
-    it('sends a push notification to employees who have a user account', function () {
-        $company = Company::factory()->create([
-            'timezone' => 'Asia/Jakarta',
-            'enable_attendance_recap' => true,
-            'attendance_recap_frequency' => 'weekly',
-            'attendance_recap_day_of_week' => 1,
-            'attendance_recap_send_hour' => 8,
+            'attendance_recap_send_email' => true,
         ]);
         $user = User::factory()->create(['company_id' => $company->id]);
         $employee = Employee::factory()->create([
             'company_id' => $company->id,
             'user_id' => $user->id,
+            'first_name' => 'Adi',
+            'last_name' => 'Sumardi',
+            'email' => 'adi@example.com',
             'is_active' => true,
         ]);
 
-        $this->travelTo(Carbon::create(2026, 2, 9, 8, 0, 0, 'Asia/Jakarta'));
+        $this->travelTo(Carbon::create(2026, 8, 21, 8, 0, 0, 'Asia/Jakarta'));
 
         $this->artisan('attendance:send-recap')->assertExitCode(0);
 
-        $this->assertDatabaseHas('notifications', [
-            'user_id' => $user->id,
-            'type' => 'attendance_recap',
-        ]);
-        expect(Notification::where('user_id', $user->id)->first()->data)
-            ->toHaveKey('period_start');
+        $recap = AttendanceRecap::first();
+        expect($recap->period_start->toDateString())->toBe('2026-07-21');
+        expect($recap->period_end->toDateString())->toBe('2026-08-20');
+        expect($recap->email_status)->toBe('sent');
+
+        $notification = Notification::where('user_id', $user->id)->first();
+        expect($notification)->not->toBeNull();
+        expect($notification->title)->toBe('📊 REKAP ABSEN BULANAN YAPI');
+        expect($notification->message)->toContain('Periode: 21/07/2026 - 20/08/2026');
+        expect($notification->message)->toContain('Hari Kerja (Senin-Jumat):');
+        expect($notification->message)->toContain('Hari Sabtu:');
+        expect($notification->message)->toContain('⏰ Datang Terlambat:');
+        expect($notification->message)->toContain('• > 5 menit:');
     });
 });

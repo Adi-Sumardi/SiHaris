@@ -41,5 +41,9 @@
         <env name="BRAND_PRIMARY_COLOR" value="null" force="true"/>
         <env name="BRAND_ACCENT_COLOR" value="null" force="true"/>
         <env name="BRAND_FOOTER_TEXT" value="null" force="true"/>
+        <env name="SENDAGO_API_KEY" value="" force="true"/>
+        <env name="SENDAGOMAIL_MEMBER_ID" value="" force="true"/>
+        <env name="SENDAGOMAIL_SECRET" value="" force="true"/>
+        <env name="FIREBASE_PROJECT_ID" value="" force="true"/>
     </php>
 </phpunit>

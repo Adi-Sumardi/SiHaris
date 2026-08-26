@@ -34,13 +34,25 @@ void main() {
     ),
   ];
 
+  final tFullPageNotifications = List.generate(
+    20,
+    (i) => NotificationModel(
+      id: i + 1,
+      title: 'Notifikasi $i',
+      message: 'Pesan $i',
+      type: 'approval',
+      isRead: false,
+      createdAt: '2026-02-15T09:30:00Z',
+    ),
+  );
+
   test('initial state should be NotificationListInitial', () {
     expect(bloc.state, equals(NotificationListInitial()));
   });
 
   group('LoadNotifications', () {
     blocTest<NotificationListBloc, NotificationListState>(
-      'emits [Loading, Loaded] when data is fetched successfully',
+      'emits [Loading, Loaded] with hasReachedMax true when fewer than 20 items are fetched',
       build: () {
         when(
           () => mockDatasource.getNotifications(page: any(named: 'page')),
@@ -50,7 +62,22 @@ void main() {
       act: (bloc) => bloc.add(const LoadNotifications()),
       expect: () => [
         NotificationListLoading(),
-        const NotificationListLoaded(tNotifications, hasReachedMax: false),
+        const NotificationListLoaded(tNotifications, hasReachedMax: true),
+      ],
+    );
+
+    blocTest<NotificationListBloc, NotificationListState>(
+      'emits [Loading, Loaded] with hasReachedMax false when a full page of 20 items is fetched',
+      build: () {
+        when(
+          () => mockDatasource.getNotifications(page: any(named: 'page')),
+        ).thenAnswer((_) async => tFullPageNotifications);
+        return bloc;
+      },
+      act: (bloc) => bloc.add(const LoadNotifications()),
+      expect: () => [
+        NotificationListLoading(),
+        NotificationListLoaded(tFullPageNotifications, hasReachedMax: false),
       ],
     );
 
@@ -80,13 +107,13 @@ void main() {
         return bloc;
       },
       seed: () =>
-          const NotificationListLoaded(tNotifications, hasReachedMax: false),
+          NotificationListLoaded(tFullPageNotifications, hasReachedMax: false),
       act: (bloc) => bloc.add(const LoadMoreNotifications()),
       expect: () => [
-        const NotificationListLoaded([
+        NotificationListLoaded([
+          ...tFullPageNotifications,
           ...tNotifications,
-          ...tNotifications,
-        ], hasReachedMax: false),
+        ], hasReachedMax: true),
       ],
     );
   });

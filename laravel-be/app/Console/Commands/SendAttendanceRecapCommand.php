@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Employee;
 use App\Services\AttendanceRecapService;
 use App\Services\EmailRecapNotificationService;
+use App\Services\PushNotificationService;
 use App\Services\WhatsAppNotificationService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -22,6 +23,7 @@ class SendAttendanceRecapCommand extends Command
         protected AttendanceRecapService $recapService,
         protected WhatsAppNotificationService $whatsAppService,
         protected EmailRecapNotificationService $emailService,
+        protected PushNotificationService $pushService,
     ) {
         parent::__construct();
     }
@@ -119,6 +121,20 @@ class SendAttendanceRecapCommand extends Command
                 'email_sent_at' => now(),
                 'email_status' => $result['success'] ? 'sent' : 'failed',
             ]);
+        }
+
+        if ($employee->user) {
+            $this->pushService->sendToUser(
+                $employee->user,
+                'Rekap Kehadiran Anda',
+                $message,
+                'attendance_recap',
+                [
+                    'period_start' => $periodStart->toDateString(),
+                    'period_end' => $periodEnd->toDateString(),
+                    ...$data,
+                ]
+            );
         }
     }
 

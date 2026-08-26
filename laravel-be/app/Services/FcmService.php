@@ -18,7 +18,11 @@ class FcmService
     public function __construct()
     {
         $this->projectId = config('services.firebase.project_id', '');
-        $this->serviceAccountPath = config('services.firebase.credentials');
+        $credentials = config('services.firebase.credentials');
+        if ($credentials && ! file_exists($credentials) && file_exists(base_path($credentials))) {
+            $credentials = base_path($credentials);
+        }
+        $this->serviceAccountPath = $credentials;
         $this->isTestMode = app()->environment('testing') || empty($this->projectId);
     }
 

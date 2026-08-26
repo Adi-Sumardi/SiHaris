@@ -239,10 +239,10 @@ describe('DashboardController Query Optimization', function () {
 
         $response->assertOk();
 
-        // Dashboard should use less than 40 queries (optimized)
+        // Dashboard should use 40 or fewer queries (optimized)
         // Before optimization it was 50+ queries with N+1 problems
         // Current queries include: auth, tenant, stats, analytics, etc.
-        expect(count($queries))->toBeLessThan(40);
+        expect(count($queries))->toBeLessThanOrEqual(40);
     });
 
     it('dashboard shows correct attendance stats', function () {

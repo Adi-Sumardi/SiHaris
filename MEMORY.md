@@ -188,6 +188,29 @@
   - `AttendanceTodayModel` (Flutter): Model mobile diperbarui untuk menerima field target fleksi dinamis.
   - Web Views: Halaman `/work-schedules/{id}` dan `/attendances/{id}` menampilkan informasi dan target jam pulang dinamis flextime.
 
+---
+
+## 15. Push Notification System (Firebase Cloud Messaging / FCM HTTP v1)
+- **Firebase Project**: `siharis-app` (Project Number: `18322324609`, Package: `id.yapinet.siharis`).
+- **Sender (Laravel Backend)**:
+  - Menggunakan **Firebase Cloud Messaging HTTP v1 API** (`POST https://fcm.googleapis.com/v1/projects/{project_id}/messages:send`) dengan autentikasi OAuth2 Bearer token dari Service Account Private Key.
+  - File Service Account Key: `storage/app/firebase/firebase-service-account.json` (dikecualikan dari Git).
+  - `.env` variables:
+    ```env
+    FIREBASE_PROJECT_ID=siharis-app
+    FIREBASE_CREDENTIALS_PATH=storage/app/firebase/firebase-service-account.json
+    ```
+  - `FcmService` (`app/Services/FcmService.php`): Mengelola pengiriman notifikasi ke device token individual maupun bulk, mendeteksi token invalid (`UNREGISTERED`, `NOT_FOUND`, dll) dan otomatis menonaktifkannya di database `device_tokens`.
+  - `PushNotificationService` (`app/Services/PushNotificationService.php`): Hook otomatis untuk event presensi (Clock In/Out), pengajuan cuti & persetujuan cuti, pengumuman perusahaan, ketersediaan slip gaji, dan rekap keterlambatan/pulang awal (`SendAttendanceRecapCommand`).
+- **Receiver (Flutter Mobile App)**:
+  - Konfigurasi Google Services: `flutter_fe/android/app/google-services.json` (dikecualikan dari Git).
+  - Android Gradle: `com.google.gms.google-services` di `settings.gradle.kts` dan `app/build.gradle.kts`.
+  - Android Manifest: Izin `POST_NOTIFICATIONS`, `VIBRATE`, `RECEIVE_BOOT_COMPLETED`, serta metadata `high_importance_channel`.
+  - Inisialisasi: `Firebase.initializeApp()` dan `FirebaseMessaging.onBackgroundMessage` di `main.dart`.
+  - `NotificationService` (`lib/core/services/notification_service.dart`): Izin notifikasi, registrasi device token ke `POST /api/v1/device-tokens`, `flutter_local_notifications` untuk heads-up banner saat foreground, dan handling tap notifikasi.
+  - Feature Flag: `FeatureConfig.enablePushNotification = true`.
+
+
 
 
 

@@ -70,6 +70,10 @@ class PushNotificationService
         $employee = $attendance->employee;
         $user = $employee->user;
 
+        if (! $user) {
+            return ['total' => 0, 'success_count' => 0, 'failure_count' => 0, 'results' => []];
+        }
+
         $status = $attendance->status === 'late' ? 'terlambat' : 'tepat waktu';
         $time = $attendance->clock_in->format('H:i');
 
@@ -105,6 +109,10 @@ class PushNotificationService
     {
         $employee = $attendance->employee;
         $user = $employee->user;
+
+        if (! $user) {
+            return ['total' => 0, 'success_count' => 0, 'failure_count' => 0, 'results' => []];
+        }
 
         $clockOut = $attendance->clock_out->format('H:i');
         $hours = floor($attendance->working_minutes / 60);

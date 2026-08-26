@@ -73,10 +73,23 @@ import 'presentation/profile/bloc/update_profile/update_profile_bloc.dart';
 import 'data/datasources/tax_form_remote_datasource.dart';
 import 'presentation/tax_form/bloc/tax_form_list/tax_form_list_bloc.dart';
 import 'presentation/tax_form/bloc/tax_form_detail/tax_form_detail_bloc.dart';
+import 'core/config/feature_config.dart';
+import 'core/services/notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
+
+  if (FeatureConfig.enablePushNotification) {
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    } catch (e) {
+      debugPrint('Firebase initialization failed: $e');
+    }
+  }
 
   // Sinkronkan absensi offline yang tertunda saat aplikasi dibuka (fire-and-forget).
   OfflineAttendanceService.instance.refreshCount();

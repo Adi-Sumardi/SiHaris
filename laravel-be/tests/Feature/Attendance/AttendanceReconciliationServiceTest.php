@@ -1,12 +1,14 @@
 <?php
 
+use App\Events\AttendanceClockIn;
+use App\Events\AttendanceClockOut;
 use App\Models\Company;
 use App\Models\Employee;
 use App\Models\FingerprintDevice;
-use App\Models\RawAttendanceLog;
 use App\Models\WorkSchedule;
 use App\Services\AttendanceReconciliationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 
 uses(RefreshDatabase::class);
 
@@ -204,5 +206,29 @@ describe('AttendanceReconciliationService', function () {
         expect($outResult['attendance']->date->toDateString())->toBe($yesterday->toDateString());
 
         $this->assertDatabaseCount('attendances', 1);
+    });
+
+    it('dispatches AttendanceClockIn/ClockOut for a fingerprint (ADMS) channel event, not just app_face', function () {
+        Event::fake([AttendanceClockIn::class, AttendanceClockOut::class]);
+
+        $clockIn = jakartaTime($this->company, '08:00');
+        $clockOut = jakartaTime($this->company, '17:00');
+
+        $this->service->record($this->employee, 'clock_in', $clockIn, 'fingerprint');
+        $this->service->record($this->employee, 'clock_out', $clockOut, 'fingerprint');
+
+        Event::assertDispatchedTimes(AttendanceClockIn::class, 1);
+        Event::assertDispatchedTimes(AttendanceClockOut::class, 1);
+    });
+
+    it('does not dispatch a duplicate AttendanceClockIn when the same event is replayed', function () {
+        Event::fake([AttendanceClockIn::class]);
+
+        $eventTime = jakartaTime($this->company, '08:05');
+
+        $this->service->record($this->employee, 'clock_in', $eventTime, 'app_face');
+        $this->service->record($this->employee, 'clock_in', $eventTime, 'app_face');
+
+        Event::assertDispatchedTimes(AttendanceClockIn::class, 1);
     });
 });

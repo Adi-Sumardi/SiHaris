@@ -3,6 +3,8 @@
 use App\Models\AttendanceRecap;
 use App\Models\Company;
 use App\Models\Employee;
+use App\Models\Notification;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -104,5 +106,32 @@ describe('attendance:send-recap', function () {
         $recap = AttendanceRecap::first();
         expect($recap->whatsapp_sent_at)->toBeNull();
         expect($recap->email_status)->toBe('sent');
+    });
+
+    it('sends a push notification to employees who have a user account', function () {
+        $company = Company::factory()->create([
+            'timezone' => 'Asia/Jakarta',
+            'enable_attendance_recap' => true,
+            'attendance_recap_frequency' => 'weekly',
+            'attendance_recap_day_of_week' => 1,
+            'attendance_recap_send_hour' => 8,
+        ]);
+        $user = User::factory()->create(['company_id' => $company->id]);
+        $employee = Employee::factory()->create([
+            'company_id' => $company->id,
+            'user_id' => $user->id,
+            'is_active' => true,
+        ]);
+
+        $this->travelTo(Carbon::create(2026, 2, 9, 8, 0, 0, 'Asia/Jakarta'));
+
+        $this->artisan('attendance:send-recap')->assertExitCode(0);
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $user->id,
+            'type' => 'attendance_recap',
+        ]);
+        expect(Notification::where('user_id', $user->id)->first()->data)
+            ->toHaveKey('period_start');
     });
 });

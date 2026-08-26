@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../data/datasources/auth_local_datasource.dart';
@@ -23,10 +24,12 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  String _version = 'v1.0.7';
 
   @override
   void initState() {
     super.initState();
+    _loadVersion();
 
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -58,6 +61,17 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigate after splash
     _checkAuthAndNavigate();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _version = 'v${info.version}';
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkAuthAndNavigate() async {
@@ -222,7 +236,7 @@ class _SplashScreenState extends State<SplashScreen>
               const SizedBox(height: 48),
               // Version
               Text(
-                'v1.0.0',
+                _version,
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textOnDark.withValues(alpha: 0.5),

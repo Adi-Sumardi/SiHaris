@@ -88,6 +88,26 @@ describe('PushNotificationService', function () {
             expect($notification->data)->toHaveKey('late_minutes');
             expect($notification->data['late_minutes'])->toBe(30);
         });
+
+        it('does not throw and sends nothing when the employee has no user account', function () {
+            $pushService = app(PushNotificationService::class);
+
+            $employeeWithoutUser = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'user_id' => null,
+                'work_schedule_id' => $this->workSchedule->id,
+            ]);
+            $attendance = Attendance::factory()->clockedInOnly()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $employeeWithoutUser->id,
+                'date' => today(),
+                'status' => 'present',
+            ]);
+
+            $result = $pushService->notifyAttendanceClockIn($attendance);
+
+            expect($result['total'])->toBe(0);
+        });
     });
 
     describe('notifyAttendanceClockOut', function () {
@@ -126,6 +146,26 @@ describe('PushNotificationService', function () {
 
             expect($notification)->not->toBeNull();
             expect($notification->data['working_minutes'])->toBe(510);
+        });
+
+        it('does not throw and sends nothing when the employee has no user account', function () {
+            $pushService = app(PushNotificationService::class);
+
+            $employeeWithoutUser = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'user_id' => null,
+                'work_schedule_id' => $this->workSchedule->id,
+            ]);
+            $attendance = Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $employeeWithoutUser->id,
+                'date' => today(),
+                'working_minutes' => 480,
+            ]);
+
+            $result = $pushService->notifyAttendanceClockOut($attendance);
+
+            expect($result['total'])->toBe(0);
         });
     });
 

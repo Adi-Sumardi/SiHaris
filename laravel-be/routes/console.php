@@ -8,8 +8,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Note: Attendance recap scheduler is disabled because attendance recap is handled directly by ADMS YAPI.
-// Schedule::command('attendance:send-recap')->hourly();
+// Send attendance recap (WhatsApp & Email) per company, based on each company's
+// enable_attendance_recap / attendance_recap_* settings. ADMS only supplies raw
+// attendance logs (see sync-adms-attendance below); GajiPro computes and sends the recap.
+Schedule::command('attendance:send-recap')->hourly();
 
 // Automatically pull attendance logs from ADMS Cloud for all active companies
 Schedule::call(function () {

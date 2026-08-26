@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Events\AttendanceClockIn;
-use App\Events\AttendanceClockOut;
 use App\Jobs\PushAttendanceToAdmsJob;
 use App\Models\Attendance;
 use App\Models\FaceVerificationLog;
@@ -527,9 +525,6 @@ class AttendanceController extends Controller
             ]);
         }
 
-        // Dispatch event for push notification
-        AttendanceClockIn::dispatch($attendance);
-
         // Dispatch job to relay clock in log to ADMS Cloud
         $employeePin = $employee->pin
             ?? \App\Models\FingerprintUserMapping::where('employee_id', $employee->id)->value('device_user_pin')
@@ -877,9 +872,6 @@ class AttendanceController extends Controller
                 'created_at' => now(),
             ]);
         }
-
-        // Dispatch event for push notification
-        AttendanceClockOut::dispatch($attendance);
 
         // Dispatch job to relay clock out log to ADMS Cloud
         $employeePin = $employee->pin

@@ -4,9 +4,8 @@ class FeatureConfig {
   FeatureConfig._();
 
   /// Enable/disable push notification feature.
-  /// Set to false to disable Firebase push notifications.
-  /// This is useful when Firebase is not yet configured or during testing.
-  static const bool _enablePushNotificationDefault = false;
+  /// Set to true for production with Firebase configured.
+  static const bool _enablePushNotificationDefault = true;
 
   /// Override value for testing purposes.
   /// Set to null to use default value.

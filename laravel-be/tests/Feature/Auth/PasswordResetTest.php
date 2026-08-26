@@ -37,7 +37,7 @@ describe('Forgot Password', function () {
 
         $response->assertSessionHas('status');
 
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, \App\Notifications\ResetPasswordNotification::class);
     });
 
     it('does not send reset link to invalid email', function () {

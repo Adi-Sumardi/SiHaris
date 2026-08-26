@@ -64,36 +64,6 @@
   - **Alias**: `siharis`
   - **Password**: `siharis2026.`
   - **Package ID**: `id.yapinet.siharis`
-- **Download APK**: `https://siharis.yapinet.id/download/android`
-
-### ⚠️ Aturan Versioning Mobile App
-> **WAJIB**: Setiap kali ada perubahan kode pada `flutter_fe/` yang akan di-build ulang dan di-release ke production, **versi di `flutter_fe/pubspec.yaml` HARUS dinaikkan** agar APK yang tersedia di server tidak rancu dengan versi sebelumnya.
-
-**Format versi**: `MAJOR.MINOR.PATCH+BUILD`
-- **MAJOR**: Breaking change besar / redesign total
-- **MINOR**: Fitur baru (`1.1.0`, `1.2.0`, dst.)
-- **PATCH**: Bug fix / hotfix (`1.0.1`, `1.0.2`, dst.)
-- **BUILD**: Auto-increment setiap build (tidak perlu diubah manual)
-
-**Cara update versi**:
-```yaml
-# flutter_fe/pubspec.yaml
-version: 1.0.2+8  # <-- naikkan PATCH atau MINOR sesuai jenis perubahan
-```
-
-### 📱 Riwayat Versi Mobile App
-
-| Versi | Build | Tanggal | Perubahan |
-|-------|-------|---------|----------|
-| 1.0.0 | +1 | 2026-08 | Initial release |
-| 1.0.1 | +6 | 2026-08-24 | Fix pengumuman real-time, notifikasi push, face enroll photo base64 |
-| 1.0.1 | +7 | 2026-08-24 | Optimasi FaceDetector, instant capture shutter, perbaikan status biometrik |
-| 1.0.2 | +8 | 2026-08-24 | Fix tombol kamera (IgnorePointer — partial fix) |
-| 1.0.2 | +9 | 2026-08-24 | Fix tombol kamera definitif: pindah tombol ke luar CameraPreview (Column layout) |
-| 1.0.3 | +10 | 2026-08-24 | Fix preview kamera gepeng/distorsi: AspectRatio dari controller |
-| 1.0.4 | +11 | 2026-08-24 | Async device-specific FaceDetector config, FaceGuideOverlay, faceDetected flag |
-| 1.0.5 | +12 | 2026-08-24 | Fitur Active Liveness Detection sungguhan (multi-step randomized challenge: blink, turn left/right, smile, auto-capture) |
-| **1.0.6** | **+13** | **2026-08-24** | **Fix Null check operator on null value during liveness verification (CameraImage stream binding, safe uvPixelStride, safe face crop bounds)** |
 
 ---
 
@@ -217,5 +187,34 @@ version: 1.0.2+8  # <-- naikkan PATCH atau MINOR sesuai jenis perubahan
   - `Api/V1/AttendanceController::today`: Mengembalikan field `target_clock_out`, `flexi_minutes`, dan `is_flexible` pada response JSON.
   - `AttendanceTodayModel` (Flutter): Model mobile diperbarui untuk menerima field target fleksi dinamis.
   - Web Views: Halaman `/work-schedules/{id}` dan `/attendances/{id}` menampilkan informasi dan target jam pulang dinamis flextime.
+
+---
+
+## 15. Push Notification System (Firebase Cloud Messaging / FCM HTTP v1)
+- **Firebase Project**: `siharis-app` (Project Number: `18322324609`, Package: `id.yapinet.siharis`).
+- **Sender (Laravel Backend)**:
+  - Menggunakan **Firebase Cloud Messaging HTTP v1 API** (`POST https://fcm.googleapis.com/v1/projects/{project_id}/messages:send`) dengan autentikasi OAuth2 Bearer token dari Service Account Private Key.
+  - File Service Account Key: `storage/app/firebase/firebase-service-account.json` (dikecualikan dari Git).
+  - `.env` variables:
+    ```env
+    FIREBASE_PROJECT_ID=siharis-app
+    FIREBASE_CREDENTIALS_PATH=storage/app/firebase/firebase-service-account.json
+    ```
+  - `FcmService` (`app/Services/FcmService.php`): Mengelola pengiriman notifikasi ke device token individual maupun bulk, mendeteksi token invalid (`UNREGISTERED`, `NOT_FOUND`, dll) dan otomatis menonaktifkannya di database `device_tokens`.
+  - `PushNotificationService` (`app/Services/PushNotificationService.php`): Hook otomatis untuk event presensi (Clock In/Out), pengajuan cuti & persetujuan cuti, pengumuman perusahaan, ketersediaan slip gaji, dan rekap keterlambatan/pulang awal (`SendAttendanceRecapCommand`).
+- **Receiver (Flutter Mobile App)**:
+  - Konfigurasi Google Services: `flutter_fe/android/app/google-services.json` (dikecualikan dari Git).
+  - Android Gradle: `com.google.gms.google-services` di `settings.gradle.kts` dan `app/build.gradle.kts`.
+  - Android Manifest: Izin `POST_NOTIFICATIONS`, `VIBRATE`, `RECEIVE_BOOT_COMPLETED`, serta metadata `high_importance_channel`.
+  - Inisialisasi: `Firebase.initializeApp()` dan `FirebaseMessaging.onBackgroundMessage` di `main.dart`.
+  - `NotificationService` (`lib/core/services/notification_service.dart`): Izin notifikasi, registrasi device token ke `POST /api/v1/device-tokens`, `flutter_local_notifications` untuk heads-up banner saat foreground, dan handling tap notifikasi.
+  - Feature Flag: `FeatureConfig.enablePushNotification = true`.
+
+
+
+
+
+
+
 
 

@@ -24,6 +24,7 @@ import '../../../data/datasources/face_recognition_datasource.dart';
 import '../../approval/pages/approval_screen.dart';
 import '../../face_recognition/pages/face_enroll_screen.dart';
 import '../../reimbursement/pages/reimbursement_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'edit_profile_screen.dart';
 
 /// Profile Screen - Dynamic from API
@@ -35,10 +36,24 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String _appVersion = 'v1.0.7';
+
   @override
   void initState() {
     super.initState();
     context.read<ProfileBloc>().add(GetProfile());
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = 'v${info.version}';
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -997,7 +1012,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(builder: (_) => const AboutScreen()),
               );
             },
-            trailing: _buildTrailingText('v1.0.0'),
+            trailing: _buildTrailingText(_appVersion),
             isLast: true,
           ),
         ],

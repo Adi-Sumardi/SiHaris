@@ -61,4 +61,11 @@ return [
         'base_url' => env('ADMS_BASE_URL', 'http://adms.alazhar-rm.com/api/v1/face'),
         'api_key' => env('ADMS_API_KEY', 'adms-face-token-2026'),
     ],
+
+    // Firebase Cloud Messaging for Android/iOS push notifications.
+    // 'credentials' must point to a Firebase service-account JSON file (not committed to git).
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID', 'siharis-app'),
+        'credentials' => env('FIREBASE_CREDENTIALS_PATH', storage_path('app/firebase/firebase-service-account.json')),
+    ],
 ];

@@ -205,6 +205,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     'leave_requested': Icons.event_available_outlined,
     'payroll': Icons.account_balance_wallet_outlined,
     'attendance': Icons.access_time_rounded,
+    'attendance_clock_in': Icons.login_rounded,
+    'attendance_clock_out': Icons.logout_rounded,
+    'attendance_recap': Icons.summarize_outlined,
     'employee': Icons.person_outline_rounded,
     'approval': Icons.check_circle_outline_rounded,
     'warning': Icons.warning_amber_rounded,
@@ -217,6 +220,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     'error': AppColors.danger,
     'success': AppColors.success,
     'approval': AppColors.success,
+    'attendance_clock_in': AppColors.success,
+    'attendance_clock_out': AppColors.info,
+    'attendance_recap': AppColors.info,
   };
 
   Widget _buildNotificationItem(NotificationModel notification) {

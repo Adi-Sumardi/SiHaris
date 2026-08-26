@@ -133,7 +133,7 @@ describe('Authentication', function () {
 
         $response = $this->post('/logout');
 
-        $response->assertRedirect('/');
+        $response->assertRedirect('/login');
         $this->assertGuest();
     });
 

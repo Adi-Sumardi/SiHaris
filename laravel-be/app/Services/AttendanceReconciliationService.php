@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Events\AttendanceClockIn;
+use App\Events\AttendanceClockOut;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\RawAttendanceLog;
@@ -167,12 +169,14 @@ class AttendanceReconciliationService
 
         if ($isNew || ! $attendance->clock_in) {
             $attendance->clockIn($data);
+            AttendanceClockIn::dispatch($attendance);
 
             return [$attendance, 'applied'];
         }
 
         if ($eventTime->lt($attendance->clock_in->copy()->subMinutes(self::SKEW_MINUTES))) {
             $attendance->clockIn($data);
+            AttendanceClockIn::dispatch($attendance);
 
             return [$attendance, 'superseded'];
         }
@@ -190,18 +194,21 @@ class AttendanceReconciliationService
         if ($isNew) {
             $attendance->needs_review = true;
             $attendance->clockOut($data);
+            AttendanceClockOut::dispatch($attendance);
 
             return [$attendance, 'applied'];
         }
 
         if (! $attendance->clock_out) {
             $attendance->clockOut($data);
+            AttendanceClockOut::dispatch($attendance);
 
             return [$attendance, 'applied'];
         }
 
         if ($eventTime->gt($attendance->clock_out)) {
             $attendance->clockOut($data);
+            AttendanceClockOut::dispatch($attendance);
 
             return [$attendance, 'applied'];
         }

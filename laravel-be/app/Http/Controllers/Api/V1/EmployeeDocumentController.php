@@ -217,31 +217,50 @@ class EmployeeDocumentController extends Controller
             'file.mimes' => 'Format file yang didukung hanya PDF, JPG, JPEG, dan PNG.',
         ]);
 
-        $file = $request->file('file');
-        $companyId = $employee->company_id;
-        $path = $file->store("documents/{$companyId}/{$employee->id}", 'public');
+        try {
+            $file = $request->file('file');
+            $companyId = $employee->company_id;
+            $targetDir = "documents/{$companyId}/{$employee->id}";
 
-        $document = EmployeeDocument::create([
-            'company_id' => $companyId,
-            'employee_id' => $employee->id,
-            'document_type' => $validated['document_type'],
-            'document_name' => $validated['document_name'],
-            'document_number' => $validated['document_number'] ?? null,
-            'file_path' => $path,
-            'file_name' => $file->getClientOriginalName(),
-            'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
-            'issue_date' => $validated['issue_date'] ?? null,
-            'expiry_date' => $validated['expiry_date'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-            'uploaded_by' => $request->user()->id,
-        ]);
+            if (! Storage::disk('public')->exists($targetDir)) {
+                Storage::disk('public')->makeDirectory($targetDir);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Berkas berhasil disimpan.',
-            'data' => $this->formatDocument($document),
-        ], 201);
+            $path = $file->store($targetDir, 'public');
+
+            $document = EmployeeDocument::create([
+                'company_id' => $companyId,
+                'employee_id' => $employee->id,
+                'document_type' => $validated['document_type'],
+                'document_name' => $validated['document_name'],
+                'document_number' => $validated['document_number'] ?? null,
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'issue_date' => $validated['issue_date'] ?? null,
+                'expiry_date' => $validated['expiry_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'uploaded_by' => $request->user()->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Berkas berhasil disimpan.',
+                'data' => $this->formatDocument($document),
+            ], 201);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to store employee document: '.$e->getMessage(), [
+                'user_id' => $request->user()?->id,
+                'employee_id' => $employee->id,
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan berkas: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     #[OA\Get(

@@ -273,9 +273,14 @@
     - `GET /api/v1/documents/{id}/download`: Mengunduh berkas fisik asli dengan validasi signature token.
     - `DELETE /api/v1/documents/{id}`: Soft delete berkas milik pegawai yang sedang login.
   - Web Admin Central Explorer (`/documents` via `DocumentController`):
-    - 4 Statistik ringkasan (*Total Berkas*, *Pegawai Terdata*, *Total SK*, *Total Sertifikat*).
-    - Filter berdasarkan divisi/unit dan kategori berkas, serta input pencarian global (nama karyawan, NIP, atau judul berkas).
-    - Tabel interaktif dengan pratinjau modal in-browser untuk file PDF (iframe viewer) dan gambar (zoom modal) tanpa perlu keluar halaman.
+    - **Header & Quick Action**: Tombol **"Upload Dokumen"** (membuka modal unggah langsung di halaman) dan tombol **"Daftar Karyawan"**.
+    - **Statistik Ringkasan (`.stat-card`)**: 4 kartu statistik visual modern (*Total Berkas*, *Pegawai Terdata*, *Total SK*, *Total Sertifikat*) dengan hover elevation dan badge status.
+    - **Form Filter & Pencarian Rapi**: Flex layout inline proporsional (Search bar, dropdown Departemen, dropdown Jenis Dokumen, tombol Filter & Reset) menggantikan grid yang sebelumnya pecah.
+    - **Quick Category Pills**: Tab kategori cepat horizontal (*Semua*, *SK*, *Sertifikat*, *KTP*, *KK*, *Ijazah*) dengan counter badge jumlah berkas aktif.
+    - **Tabel Standar (`<x-table>`)**: Avatar pegawai bergradien, NIP & departemen, badge jenis dokumen tematik, indikator tipe file (PDF/IMG) & ukuran file (*human-readable*), tanggal unggah, serta tombol aksi Pratinjau, Unduh, dan Hapus.
+    - **Modal Upload Dokumen**: Rute `POST /documents` (`documents.store`) memvalidasi dan menyimpan berkas pegawai langsung dari modal admin.
+    - **Modal Preview In-Browser**: Pratinjau dokumen PDF (iframe viewer) dan gambar langsung dengan header info dan shortcut tombol `Esc`.
+    - **Empty State Informatif**: Ilustrasi dan tombol call-to-action saat belum ada berkas atau saat filter pencarian tidak menemukan hasil.
     - Menu `Dokumen Pegawai` terintegrasi pada navigasi sidebar Admin HR (`resources/views/layouts/admin.blade.php`).
 - **Aplikasi Mobile (Flutter FE v1.1.0+17)**:
   - **Menu Cepat Home Screen**: Menu cepat `Slip Gaji` digantikan oleh `Berkas` (`/documents`) dengan icon `Icons.folder_shared_outlined` dan tema warna modern Indigo (`0xFF4F46E5`), karena Slip Gaji sudah tersedia secara permanen di Bottom Navigation Bar.

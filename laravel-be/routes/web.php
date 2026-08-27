@@ -273,6 +273,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Centralized Documents Explorer (Global)
     Route::prefix('documents')->name('documents.')->group(function () {
         Route::get('/', [DocumentController::class, 'index'])->name('index');
+        Route::post('/', [DocumentController::class, 'store'])->name('store');
         Route::get('/{document}/preview', [DocumentController::class, 'preview'])->name('preview');
         Route::get('/{document}/download', [DocumentController::class, 'download'])->name('download');
         Route::delete('/{document}', [DocumentController::class, 'destroy'])->name('destroy');

@@ -98,105 +98,92 @@
 ## 7. National Holidays Generation ("Generate Nasional")
 - **Konfirmasi Modal**: `resources/views/components/confirm-dialog.blade.php` mendukung injeksi parameter dinamis dari objek `formData` ke dalam form submit POST saat tombol konfirmasi ditekan.
 - **Controller Backend**: `HolidayController::generate()` memvalidasi field `year` secara nullable dengan fallback otomatis ke tahun berjalan (`now()->year`).
-- **Data Generator**: Menghasilkan hari libur nasional Indonesia, hari raya keagamaan (Islam, Kristen via algoritma Computus/Easter, Hindu, Buddha, Imlek), serta Cuti Bersama sesuai SKB 3 Menteri.
+- **Pembersihan Cache**: Menghapus `holiday_calendar_*` dan `national_holidays_*` setelah generate sukses.
 
 ---
 
-## 8. Position Code Uniqueness per Department (Keunikan Kode Jabatan per Departemen)
-- **Aturan Unik Jabatan**: Kode jabatan (`code`) bersifat unik per **Departemen** dalam suatu perusahaan (`company_id + department_id + code`), bukan unik global seluruh perusahaan.
-  - Memungkinkan perusahaan menggunakan kode jabatan yang sama (misal: `MGR`, `STF`, `SPV`) untuk beberapa departemen yang berbeda.
-  - Database schema: Unique index `['company_id', 'department_id', 'code']` (`positions_company_dept_code_unique`).
-- **Form Request (`PositionRequest`)**: Validasi `Rule::unique('positions', 'code')->where('company_id', $tenant->id)->where('department_id', $this->department_id)->whereNull('deleted_at')->ignore($positionId)`.
-- **Import Data**:
-  - `PositionImport`: Pengecekan kode existing difilter berdasarkan `company_id` dan `department_id`.
-  - `EmployeeImport`: Resolusi `getPositionId` mendukung preferensi pencarian berbasis `department_id` karyawan untuk membedakan jabatan dengan kode/nama identik di departemen lain.
+## 8. Multi-Tenant Company Scope Filter
+- Penambahan filter `WHERE company_id = ?` pada query builder yang belum terscope untuk mencegah kebocoran data antar tenant (terutama pada modul Leave, Holiday, dan Attendance).
 
 ---
 
-## 9. Employee Salary Bulk Import (Import Gaji Karyawan)
-- **Halaman Import**: `/imports/employee-salaries` (`EmployeeSalaryImportController`)
-- **Template Excel**: `GET /imports/employee-salaries/template` (`EmployeeSalaryTemplateExport`)
-  - Kolom: `ID Karyawan`, `Gaji Pokok`, `Tanggal Berlaku`, `Tanggal Berakhir`, `Metode Pembayaran` (`Transfer`/`Tunai`), `Nama Bank`, `Nomor Rekening`, `Nama Rekening`, `Aktif` (`Ya`/`Tidak`), `Catatan`.
-- **Fitur Import (`EmployeeSalaryImport`)**:
-  - Resolusi Karyawan multi-identifier: `employee_id`, `nik`, `pin`, `email`, atau `nama`.
-  - Otomatis menonaktifkan pengaturan gaji lama karyawan jika record baru berstatus Aktif.
-  - Otomatis membuat komponen gaji `BASIC` sesuai nominal gaji pokok.
-  - Mendukung komponen gaji tambahan dinamis jika nama kolom di Excel cocok dengan kode/nama komponen pada `salary_components`.
-  - Memperbarui data rekening bank dan `base_salary` pada profil karyawan (`Employee`).
+## 9. Employee Bulk Status Kepegawaian (Bulk Update)
+- **Halaman**: `resources/views/employees/index.blade.php`
+- **Fitur**: Checkbox pemilihan massal karyawan dengan floating solid blue action bar untuk mengubah status kepegawaian (`employment_type`) menjadi:
+  - `YPI Al Azhar`
+  - `YAPI`
+  - `Kosongkan (-)`
+- **Endpoint**: `POST /employees/bulk-employment-type`
+- **Controller**: `EmployeeController::bulkUpdateEmploymentType()`
 
 ---
 
-## 10. Attendance Live Search Filter (Pencarian Kehadiran Live Data)
-- **Menu Kehadiran**: `/attendances` (`AttendanceController::index`)
-- **Filter Live Search**: Dropdown static employee diganti dengan input live search (`search`) dengan debounce 300ms, clear button, dan live asynchronous data fetch.
-- **Dukungan Pencarian**: Mencari karyawan berdasarkan `first_name`, `last_name`, `employee_id`, `nik`, `email`, atau nama lengkap secara real-time tanpa full page reload.
+## 10. Multi-Location Attendance Assignment
+- **Relasi Database**:
+  - Tabel pivot `employee_office_locations` (`employee_id`, `office_location_id`, `is_primary`).
+  - Relasi `Employee::officeLocations()` (Many-to-Many) dan `Employee::primaryOfficeLocation()`.
+  - Relasi `OfficeLocation::employees()` (Many-to-Many).
+- **Web Admin CRUD**:
+  - `resources/views/employees/create.blade.php` & `edit.blade.php`: Checkbox multi-lokasi penugasan kantor dengan radio button untuk memilih lokasi utama (*Primary Location*).
+  - `EmployeeController`: Menyimpan sinkronisasi pivot table `employee_office_locations`.
+- **API Mobile**:
+  - `GET /api/v1/office-locations/assigned`: Mengembalikan daftar semua lokasi kantor yang ditugaskan ke karyawan yang sedang login.
+  - `AttendanceController::clockIn()`: Memvalidasi radius geofence GPS karyawan terhadap **SEMUA** lokasi kantor yang ditugaskan (bukan hanya 1 lokasi). Jika berada dalam radius salah satu kantor yang ditugaskan, clock-in diizinkan dan dicatat `office_location_id` yang sesuai.
 
 ---
 
-## 11. Employee Live Search Filter (Pencarian Karyawan Live Data)
-- **Menu Karyawan**: `/employees` (`EmployeeController::index`)
-- **Filter Live Search**: Input pencarian real-time (debounce 300ms) untuk nama depan/belakang/lengkap, NIK, ID Karyawan, PIN, dan email secara asinkron tanpa reload halaman.
+## 11. Custom Flexible Working Hours (Shift Fleksibel Jam Masuk & Pulang)
+- **Model & Database**:
+  - `work_schedules.is_flexible_hours`: Flag boolean penanda shift fleksibel.
+  - `work_schedules.flexible_arrival_start`: Batas awal jam masuk (contoh: `07:30`).
+  - `work_schedules.flexible_arrival_end`: Batas akhir jam masuk (contoh: `08:30`).
+  - `work_schedules.required_work_minutes`: Total durasi kerja wajib dalam menit (contoh: `480` menit = 8 jam).
+- **Web Admin UI**:
+  - `resources/views/work-schedules/create.blade.php` & `edit.blade.php`: Form input shift fleksibel dengan kalkulator durasi jam kerja otomatis.
+- **Logika Perhitungan & Rekonsiliasi**:
+  - Jika masuk di antara `07:30` dan `08:30` (misal `08:15`), jam pulang yang diharapkan dihitung: `08:15 + required_work_minutes` (misal `16:15`).
+  - Jika clock out dilakukan sebelum jam pulang yang diharapkan, selisih waktu dicatat sebagai `early_leave_minutes`.
+  - Jika masuk lewat dari `flexible_arrival_end` (misal `08:45`), dicatat `late_minutes = 15` menit dan jam pulang target dihitung dari `flexible_arrival_end + required_work_minutes`.
 
 ---
 
-## 12. Employee Employment Type (Status Kepegawaian YPI Al Azhar / YAPI)
-- **Penggantian Kolom**: Kolom NIK Manajer digantikan dengan **Status Kepegawaian** (`employment_type`) dengan opsi `YPI Al Azhar` dan `YAPI`.
-- **Database Schema**: Kolom `employment_type` (string 50, nullable) pada tabel `employees` dengan index `['company_id', 'employment_type']`.
-- **Bulk Select pada Daftar Karyawan**:
-  - Terdapat checkbox Select All di header tabel dan checkbox di setiap baris karyawan.
-  - Floating action bar memungkinkan memilih banyak karyawan dan mengubah status kepegawaiannya sekaligus menjadi `YPI Al Azhar`, `YAPI`, atau dikosongkan.
-- **Filter & Export/Import**:
-  - Filter `Kepegawaian` tersedia di header filter `/employees`.
-  - Form Tambah & Edit Karyawan (`employees/create.blade.php`, `employees/edit.blade.php`) dan halaman detail (`employees/show.blade.php`) telah disesuaikan.
-  - Template Excel Karyawan (`EmployeeTemplateExport`) dan Import (`EmployeeImport`) serta panduan pada halaman `/imports/employees` telah diperbarui dengan kolom `Status Kepegawaian` (`YPI Al Azhar` / `YAPI`).
+## 12. Overtime Management (Pengajuan & Perhitungan Lembur)
+- **Alur Pengajuan (Mobile App & Web)**:
+  - Karyawan mengajukan lembur via Mobile (`POST /api/v1/overtime-requests`) atau Web Admin (`/overtime-requests`).
+  - Mendukung jenis hari: **Hari Kerja (Workday)** atau **Hari Libur/Istirahat (Day Off / Holiday)**.
+  - Perhitungan jam lembur riil: `real_hours = end_time - start_time - break_minutes`.
+- **Formula Pengali Upah Lembur (Depnaker)**:
+  - `OvertimeSetting`: Mengatur rate upah lembur per jam dasar (`base_salary / 173`).
+  - Hari Kerja: Jam ke-1 = 1.5x upah per jam, Jam ke-2 dst = 2.0x upah per jam.
+  - Hari Libur: Jam 1-7 = 2.0x, Jam ke-8 = 3.0x, Jam ke-9 dst = 4.0x.
+- **Integrasi Payroll**:
+  - Nilai lembur yang disetujui (`status = approved`) otomatis masuk ke kalkulasi komponen slip gaji bulanan karyawan (`Overtime` payroll component).
 
 ---
 
-## 13. Reports System Live Search & Landscape PDF Export
-- **Laporan Karyawan (`/reports/employees`)**:
-  - Input Live Search (debounced 300ms) untuk nama, ID, NIK, PIN, dan email.
-  - Filter `Kepegawaian` (`YPI Al Azhar` / `YAPI`).
-  - Export PDF & Excel dinamis mengikuti kata kunci pencarian dan filter aktif.
-  - Layout PDF didesain ulang dengan orientasi **A4 Landscape**, header perusahaan formal, styling tabel modern dan rapi.
-- **Laporan Kehadiran (`/reports/attendance`)**:
-  - Dropdown statis karyawan dihilangkan dan diganti dengan input Live Search karyawan.
-  - Perbaikan bug export: filter pencarian, karyawan tertentu, departemen, dan rentang tanggal kini terfilter secara presisi pada hasil export Excel maupun PDF.
-  - Layout PDF berorientasi **A4 Landscape**.
-- **Laporan Cuti (`/reports/leave`)**:
-  - Input Live Search karyawan (debounced 300ms).
-  - Export Excel & PDF menerapkan semua filter aktif (`search`, `department_id`, `leave_type_id`, `status`, `start_date`, `end_date`).
-  - Layout PDF berorientasi **A4 Landscape**.
-- **Laporan Penggajian (`/reports/payroll`)**:
-  - Input Live Search karyawan (debounced 300ms).
-  - Export Excel & PDF memfilter karyawan sesuai query pencarian.
-  - Layout PDF berorientasi **A4 Landscape**.
+## 13. Exit Management (Offboarding & Handover)
+- **Alur Resign / Pemutusan Hubungan Kerja**:
+  - Pengajuan exit (`EmployeeExit`): `resignation`, `termination`, `end_of_contract`, `retirement`, `other`.
+  - Status alur: `pending` -> `approved` / `rejected` -> `in_progress` -> `completed`.
+- **Checklist Serah Terima (Handover Tasks)**:
+  - Pengembalian aset (laptop, ID card, kendaraan, kunci), clearance finance, serah terima berkas/tugas.
+  - Saat status diubah menjadi `completed`, sistem otomatis mengupdate `employees.is_active = false` dan mengisi `employees.resignation_date`.
 
 ---
 
-## 14. Dynamic Flextime Shift Calculation (Perhitungan Fleksi Time Berbasis Menit Dinamis)
-- **Konsep & Aturan Bisnis**:
-  - Pada jadwal kerja fleksibel (`is_flexible = true`), batas toleransi keterlambatan (`late_tolerance`, misal 60 menit) berlaku sebagai jendela kedatangan fleksibel.
-  - Karyawan yang datang setelah jam masuk standar (misal datang 07:25 dengan patokan 07:00 dan toleransi 60 menit) **tidak dianggap terlambat** selama masih dalam batas toleransi fleksi (`late_minutes = 0`, status `on_time` / `present`).
-  - **Jam Pulang Target Dinamis** (`target_clock_out`) otomatis bergeser sebesar menit kedatangannya (misal $16:00 + 25\text{ menit} = \mathbf{16:25}$).
-  - Karyawan wajib pulang pada atau setelah target jam pulang dinamis ($\ge 16:25$) untuk memenuhi durasi kerja penuh shift.
-  - **Evaluasi Pulang Awal**: Jika karyawan pulang sebelum target jam pulang dinamis (dikurangi `early_leave_tolerance`, misal pulang jam 16:00 dengan target 16:25 dan toleransi 5 menit), dihitung **Pulang Awal** (`early_leave_minutes = 25`, status `early`).
-  - **Kedatangan Melebihi Toleransi Fleksi**: Jika datang melebihi toleransi fleksi (misal 08:15 dengan toleransi 60 menit), menit terlambat dihitung $75 - 60 = 15\text{ menit}$ (status `late`), dan pergeseran jam pulang maksimal mentok di batas toleransi ($16:00 + 60\text{ menit} = 17:00$).
-- **Implementasi Core**:
-  - `WorkSchedule`: Method `getFlexiMinutes()`, `getScheduledEnd($date, $clockIn)`, `isEarlyLeave()`, `getEarlyLeaveMinutes()`, dan `getOvertimeMinutes()` mendukung evaluasi jam masuk fleksibel (`$clockIn`).
-  - `Attendance`: Method `getDynamicScheduledEndDatetime()` menghitung pergeseran target jam pulang dinamis dan digunakan pada `clockOut()` serta `recalculate()`.
-  - `Api/V1/AttendanceController::today`: Mengembalikan field `target_clock_out`, `flexi_minutes`, dan `is_flexible` pada response JSON.
-  - `AttendanceTodayModel` (Flutter): Model mobile diperbarui untuk menerima field target fleksi dinamis.
-  - Web Views: Halaman `/work-schedules/{id}` dan `/attendances/{id}` menampilkan informasi dan target jam pulang dinamis flextime.
+## 14. Organization Structure Chart (Interactive Org Chart)
+- **Halaman**: `/organization-chart` (`resources/views/organization-chart/index.blade.php`)
+- **Fitur**: Bagan hierarki organisasi interaktif berbasis relasi `manager_id` pada model `Employee`.
+- **Komponen**: Menampilkan avatar, nama lengkap, jabatan, departemen, jumlah bawahan langsung, dan expandable node tree.
 
 ---
 
-## 15. Push Notification System (Firebase Cloud Messaging / FCM HTTP v1)
-- **Firebase Project**: `siharis-app` (Project Number: `18322324609`, Package: `id.yapinet.siharis`).
+## 15. Push Notification Infrastructure (Firebase Cloud Messaging - FCM HTTP v1 API)
 - **Sender (Laravel Backend)**:
-  - Menggunakan **Firebase Cloud Messaging HTTP v1 API** (`POST https://fcm.googleapis.com/v1/projects/{project_id}/messages:send`) dengan autentikasi OAuth2 Bearer token dari Service Account Private Key.
-  - File Service Account Key: `storage/app/firebase/firebase-service-account.json` (dikecualikan dari Git).
-  - `.env` variables:
-    ```env
+  - Protokol: **FCM HTTP v1 API** (OAuth2 JWT Service Account) menggunakan endpoint:
+    `https://fcm.googleapis.com/v1/projects/{project_id}/messages:send`
+  - Konfigurasi `.env`:
+    ```dotenv
     FIREBASE_PROJECT_ID=siharis-app
     FIREBASE_CREDENTIALS_PATH=storage/app/firebase/firebase-service-account.json
     ```
@@ -234,12 +221,70 @@
   - Jika `attendance_recap_day_of_month` > 1 (contoh: 21 pada YAPI), periode dihitung dari tanggal 21 bulan sebelumnya hingga tanggal 20 bulan berjalan (contoh tanggal eksekusi 21 Agustus 2026 -> periode `21/07/2026 - 20/08/2026`).
   - `AttendanceRecapService` memisahkan presensi hari Senin-Jumat (`weekday_present_days`), hari Sabtu (`saturday_present_days`), serta akumulasi keterlambatan lebih dari 5 menit (`late_gt_5_days`).
 
+---
 
+## 17. Timezone Synchronization & Mobile Screen Fixes (v1.0.9+16)
+- **Eliminasi Duplicate Push Notifications**:
+  - Pada Laravel 11, Event Listener di `app/Listeners` terdaftar secara otomatis via Event Discovery. Panggilan manual `Event::listen` di `AppServiceProvider.php` dihapus agar listener `AttendanceClockIn`, `AttendanceClockOut`, `LeaveRequestApproved`, dan `LeaveRequestRejected` tidak terduplikasi (mengatasi notifikasi masuk 2x).
+- **Sinkronisasi Waktu WIB pada Notifikasi & Pesan**:
+  - `PushNotificationService` mengonversi waktu presensi ke timezone perusahaan (`$attendance->company?->timezone ?? 'Asia/Jakarta'`) sebelum memformat string pesan notifikasi ("pukul 16:32" bukan "09:32").
+  - `NotificationScreen` pada aplikasi Flutter memanggil `.toLocal()` pada parsing `createdAt` (`DateTime.parse(notification.createdAt).toLocal()`) di list item, header grouping, dan modal detail bottom sheet.
+- **Kalkulasi Jam Kerja Aktif & Keterlambatan Real-time (Screen Clock)**:
+  - `AttendanceController::today()` dan Flutter `AttendanceScreen` menghitung durasi jam kerja berjalan secara dinamis saat karyawan sedang aktif bekerja (`clock_in` ada dan `clock_out` belum dilakukan), sehingga tidak lagi tampil `0m`.
+  - Field `schedule.name` disertakan dalam response API `/attendance/today` agar badge shift kerja (mis. *Fleksi Time*) tampil pada kartu jadwal.
+  - Tampilan *Jadwal Pulang* pada shift fleksibel menampilkan jam target dinamis (mis. `16:00 (Fleksi 16:30)`).
+  - Sanitasi time string pada `Attendance::getScheduledStartDatetime()` dan `getScheduledEndDatetime()` untuk mencegah error parsing datetime ganda.
+- **Redesain Kartu Riwayat Kehadiran (Attendance History Screen)**:
+  - Layout `_buildHistoryItem` dirombak menjadi kartu modern 2-tier (Baris atas: Pill Tanggal, Hari, Badge Status, Chevron; Baris bawah: Waktu Masuk, Waktu Pulang, dan Badge Durasi Jam Kerja) untuk menghilangkan masalah tampilan yang berdempetan (*overlapping*).
+- **Rilis Mobile App v1.0.9+16**:
+  - Bump versi di `pubspec.yaml` ke `1.0.9+16`.
+  - Update fallback version string di `splash_screen.dart` dan `profile_screen.dart` ke `v1.0.9`.
+  - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, dan `VERSION` (`1.0.9+16`).
 
+---
 
-
-
-
-
-
-
+## 18. Employee Document Management & Digital Archive (v1.1.0+17)
+- **Konsep & Workflow**:
+  - Berfungsi sebagai **Arsip Dokumen Digital Mandiri (Self-Service Digital Archive)** bagi setiap pegawai untuk mengunggah dan menyimpan berkas penting (SK, Sertifikat, KTP, KK, Ijazah, NPWP, BPJS Kesehatan, BPJS Ketenagakerjaan, Kontrak Kerja, dan Berkas Lainnya).
+  - *Direct Management*: Tidak memerlukan alur verifikasi/approval bertingkat dari HR. Karyawan bebas mengunggah, melihat pratinjau, mengunduh, dan menghapus dokumen miliknya sendiri kapan saja.
+- **Backend & REST API (Laravel)**:
+  - Model: `app/Models/EmployeeDocument.php` dengan tipe dokumen terstandarisasi (`sk`, `ktp`, `kk`, `npwp`, `bpjs_kesehatan`, `bpjs_ketenagakerjaan`, `ijazah`, `sertifikat`, `kontrak_kerja`, `other`).
+  - **Storage & Security**: Berkas fisik disimpan di disk `local` privat (`storage/app/documents/{company_id}/{employee_id}/`) demi keamanan data pribadi pegawai (NIK, KTP, KK, SK), bukan di public web root yang dapat ditebak.
+  - **Signed Temporary URLs**: `preview_url` dan `download_url` dibuat secara dinamis menggunakan HMAC SHA-256 token bertanda tangan dengan masa berlaku sementara (`URL::temporarySignedRoute`), sehingga file aman dibuka di external browser / PDF viewer tanpa membocorkan Sanctum Bearer token.
+  - Endpoint API (`/api/v1/documents`):
+    - `GET /api/v1/documents`: Mengambil daftar berkas milik pegawai login (mendukung filter `type` dan query pencarian `search`).
+    - `GET /api/v1/documents/types`: Metadata kategori berkas beserta label dan icon helper.
+    - `POST /api/v1/documents`: Unggah berkas baru (multipart file: PDF/JPG/PNG max 10MB, nomor dokumen, tanggal terbit, masa berlaku, catatan).
+    - `GET /api/v1/documents/{id}`: Detail metadata dokumen.
+    - `GET /api/v1/documents/{id}/preview`: Stream binary file inline dengan validasi signature token.
+    - `GET /api/v1/documents/{id}/download`: Mengunduh berkas fisik asli dengan validasi signature token.
+    - `DELETE /api/v1/documents/{id}`: Soft delete berkas milik pegawai yang sedang login.
+  - Web Admin Central Explorer (`/documents` via `DocumentController`):
+    - **Header & Quick Action**: Tombol **"Upload Dokumen"** (membuka modal unggah langsung di halaman) dan tombol **"Daftar Karyawan"**.
+    - **Statistik Ringkasan (`.stat-card`)**: 4 kartu statistik visual modern (*Total Berkas*, *Pegawai Terdata*, *Total SK*, *Total Sertifikat*) dengan hover elevation dan badge status.
+    - **Form Filter & Pencarian Rapi**: Flex layout inline proporsional (Search bar, dropdown Departemen, dropdown Jenis Dokumen, tombol Filter & Reset) menggantikan grid yang sebelumnya pecah.
+    - **Quick Category Pills**: Tab kategori cepat horizontal (*Semua*, *SK*, *Sertifikat*, *KTP*, *KK*, *Ijazah*) dengan counter badge jumlah berkas aktif.
+    - **Tabel Standar (`<x-table>`)**: Avatar pegawai bergradien, NIP & departemen, badge jenis dokumen tematik, indikator tipe file (PDF/IMG) & ukuran file (*human-readable*), tanggal unggah, serta tombol aksi Pratinjau, Unduh, dan Hapus.
+    - **Modal Upload Dokumen**: Rute `POST /documents` (`documents.store`) memvalidasi dan menyimpan berkas pegawai langsung dari modal admin.
+    - **Modal Preview In-Browser**: Pratinjau dokumen PDF (iframe viewer) dan gambar langsung dengan header info dan shortcut tombol `Esc`.
+    - **Empty State Informatif**: Ilustrasi dan tombol call-to-action saat belum ada berkas atau saat filter pencarian tidak menemukan hasil.
+    - Menu `Dokumen Pegawai` terintegrasi pada navigasi sidebar Admin HR (`resources/views/layouts/admin.blade.php`).
+- **Aplikasi Mobile (Flutter FE v1.1.0+17)**:
+  - **Menu Cepat Home Screen**: Menu cepat `Slip Gaji` digantikan oleh `Berkas` (`/documents`) dengan icon `Icons.folder_shared_outlined` dan tema warna modern Indigo (`0xFF4F46E5`), karena Slip Gaji sudah tersedia secara permanen di Bottom Navigation Bar.
+  - **Menu Profil**: Ditambahkan section dedicated **"Dokumen & Berkas Pegawai"** (`Berkas & Dokumen Saya`).
+  - **Layar Berkas (`DocumentListScreen`)**:
+    - Filter kategori berbasis horizontal scrollable chips (`Semua`, `SK`, `KTP`, `KK`, `Sertifikat`, dll).
+    - Search bar real-time untuk mencari berkas berdasarkan nama/nomor.
+    - Kartu berkas modern dengan badge kategori warna-warni, penanda tipe file (PDF / Gambar), badge tanggal berlaku / kadaluarsa, dan dropdown quick action (Pratinjau, Unduh, Hapus).
+    - Floating Action Button (+ Tambah Berkas) dengan animasi modern.
+  - **Layar Unggah (`DocumentUploadScreen`)**:
+    - Pemilihan kategori via bottom sheet modal yang elegan.
+    - Pilihan sumber berkas: Kamera langsung, Galeri foto, atau File Dokumen PDF (menggunakan `file_picker` & `image_picker`).
+    - Form metadata lengkap: Nomor Dokumen, Tanggal Terbit, Masa Berlaku (dengan opsi *Berlaku Seumur Hidup*), dan Catatan Tambahan.
+  - **Layar Detail (`DocumentDetailScreen`)**:
+    - Pratinjau interaktif zoomable untuk gambar (`InteractiveViewer` + `CachedNetworkImage`) dan dokumen PDF.
+    - Ringkasan metadata lengkap (Format, Ukuran File, Waktu Unggah, dll) dan tombol unduh/buka file asli.
+- **Rilis Mobile App v1.1.0+17**:
+  - `pubspec.yaml`: `version: 1.1.0+17`.
+  - `splash_screen.dart` fallback version string di-update ke `v1.1.0`.
+  - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, `SiHaris-v1.1.0.apk`, `SiHaris-v1.1.0.aab`, `SiHaris-v1.1.0.ipa`, dan `VERSION` (`v1.1.0`).

@@ -190,4 +190,29 @@ describe('Central Document Explorer - Preview, Download & Delete', function () {
         $response->assertRedirect();
         $this->assertSoftDeleted('employee_documents', ['id' => $doc->id]);
     });
+
+    it('allows admin to upload document directly from central documents page', function () {
+        $file = UploadedFile::fake()->create('sk_pengangkatan.pdf', 500, 'application/pdf');
+
+        $response = $this->actingAs($this->admin)->post(route('documents.store'), [
+            'employee_id' => $this->employeeA->id,
+            'document_type' => 'sk',
+            'document_name' => 'SK Pengangkatan 2025',
+            'document_number' => '001/SK/2025',
+            'file' => $file,
+            'issue_date' => '2025-01-01',
+            'notes' => 'SK guru tetap yayasan',
+        ]);
+
+        $response->assertRedirect(route('documents.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('employee_documents', [
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employeeA->id,
+            'document_type' => 'sk',
+            'document_name' => 'SK Pengangkatan 2025',
+            'document_number' => '001/SK/2025',
+        ]);
+    });
 });

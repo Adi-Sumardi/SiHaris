@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,7 +70,56 @@ class DocumentController extends Controller
             'total_ijazah' => EmployeeDocument::where('company_id', $tenant->id)->where('document_type', EmployeeDocument::TYPE_IJAZAH)->count(),
         ];
 
-        return view('documents.index', compact('documents', 'departments', 'documentTypes', 'stats'));
+        $employees = Employee::where('company_id', $tenant->id)
+            ->where('is_active', true)
+            ->orderBy('first_name')
+            ->get();
+
+        return view('documents.index', compact('documents', 'departments', 'documentTypes', 'stats', 'employees'));
+    }
+
+    /**
+     * Store a newly created employee document.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $tenant = app('tenant');
+
+        $validated = $request->validate([
+            'employee_id' => ['required', 'exists:employees,id'],
+            'document_type' => ['required', 'string', 'in:'.implode(',', array_keys(EmployeeDocument::DOCUMENT_TYPES))],
+            'document_number' => ['nullable', 'string', 'max:100'],
+            'document_name' => ['nullable', 'string', 'max:255'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
+            'issue_date' => ['nullable', 'date'],
+            'expiry_date' => ['nullable', 'date', 'after_or_equal:issue_date'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $employee = Employee::where('company_id', $tenant->id)->findOrFail($validated['employee_id']);
+
+        $file = $request->file('file');
+        $path = $file->store("documents/{$tenant->id}/{$employee->id}", 'local');
+
+        EmployeeDocument::create([
+            'company_id' => $tenant->id,
+            'employee_id' => $employee->id,
+            'document_type' => $validated['document_type'],
+            'document_number' => $validated['document_number'] ?? null,
+            'document_name' => $validated['document_name'] ?? null,
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'issue_date' => $validated['issue_date'] ?? null,
+            'expiry_date' => $validated['expiry_date'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'uploaded_by' => $request->user()->id,
+        ]);
+
+        return redirect()
+            ->route('documents.index')
+            ->with('success', 'Dokumen berkas pegawai berhasil diunggah.');
     }
 
     /**

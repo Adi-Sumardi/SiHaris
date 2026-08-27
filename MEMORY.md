@@ -254,6 +254,47 @@
   - Update fallback version string di `splash_screen.dart` dan `profile_screen.dart` ke `v1.0.9`.
   - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, dan `VERSION` (`1.0.9+16`).
 
+---
+
+## 18. Employee Document Management & Digital Archive (v1.1.0+17)
+- **Konsep & Workflow**:
+  - Berfungsi sebagai **Arsip Dokumen Digital Mandiri (Self-Service Digital Archive)** bagi setiap pegawai untuk mengunggah dan menyimpan berkas penting (SK, Sertifikat, KTP, KK, Ijazah, NPWP, BPJS Kesehatan, BPJS Ketenagakerjaan, Kontrak Kerja, dan Berkas Lainnya).
+  - *Direct Management*: Tidak memerlukan alur verifikasi/approval bertingkat dari HR. Karyawan bebas mengunggah, melihat pratinjau, mengunduh, dan menghapus dokumen miliknya sendiri kapan saja.
+- **Backend & REST API (Laravel)**:
+  - Model: `app/Models/EmployeeDocument.php` dengan tipe dokumen terstandarisasi (`sk`, `ktp`, `kk`, `npwp`, `bpjs_kesehatan`, `bpjs_ketenagakerjaan`, `ijazah`, `sertifikat`, `kontrak_kerja`, `other`).
+  - Endpoint API (`/api/v1/documents`):
+    - `GET /api/v1/documents`: Mengambil daftar berkas milik pegawai login (mendukung filter `type` dan query pencarian `search`).
+    - `GET /api/v1/documents/types`: Metadata kategori berkas beserta label dan icon helper.
+    - `POST /api/v1/documents`: Unggah berkas baru (multipart file: PDF/JPG/PNG max 10MB, nomor dokumen, tanggal terbit, masa berlaku, catatan). Disimpan pada path `documents/{company_id}/{employee_id}/`.
+    - `GET /api/v1/documents/{id}`: Detail metadata dokumen.
+    - `GET /api/v1/documents/{id}/preview`: Stream binary file inline untuk pratinjau dokumen / gambar di browser maupun aplikasi mobile.
+    - `GET /api/v1/documents/{id}/download`: Mengunduh berkas fisik asli dengan nama file original.
+    - `DELETE /api/v1/documents/{id}`: Soft delete berkas milik pegawai yang sedang login.
+  - Web Admin Central Explorer (`/documents` via `DocumentController`):
+    - 4 Statistik ringkasan (*Total Berkas*, *Pegawai Terdata*, *Total SK*, *Total Sertifikat*).
+    - Filter berdasarkan divisi/unit dan kategori berkas, serta input pencarian global (nama karyawan, NIP, atau judul berkas).
+    - Tabel interaktif dengan pratinjau modal in-browser untuk file PDF (iframe viewer) dan gambar (zoom modal) tanpa perlu keluar halaman.
+    - Menu `Dokumen Pegawai` terintegrasi pada navigasi sidebar Admin HR (`resources/views/layouts/admin.blade.php`).
+- **Aplikasi Mobile (Flutter FE v1.1.0+17)**:
+  - **Menu Cepat Home Screen**: Menu cepat `Slip Gaji` digantikan oleh `Berkas` (`/documents`) dengan icon `Icons.folder_shared_outlined` dan tema warna modern Indigo (`0xFF4F46E5`), karena Slip Gaji sudah tersedia secara permanen di Bottom Navigation Bar.
+  - **Menu Profil**: Ditambahkan section dedicated **"Dokumen & Berkas Pegawai"** (`Berkas & Dokumen Saya`).
+  - **Layar Berkas (`DocumentListScreen`)**:
+    - Filter kategori berbasis horizontal scrollable chips (`Semua`, `SK`, `KTP`, `KK`, `Sertifikat`, dll).
+    - Search bar real-time untuk mencari berkas berdasarkan nama/nomor.
+    - Kartu berkas modern dengan badge kategori warna-warni, penanda tipe file (PDF / Gambar), badge tanggal berlaku / kadaluarsa, dan dropdown quick action (Pratinjau, Unduh, Hapus).
+    - Floating Action Button (+ Tambah Berkas) dengan animasi modern.
+  - **Layar Unggah (`DocumentUploadScreen`)**:
+    - Pemilihan kategori via bottom sheet modal yang elegan.
+    - Pilihan sumber berkas: Kamera langsung, Galeri foto, atau File Dokumen PDF (menggunakan `file_picker` & `image_picker`).
+    - Form metadata lengkap: Nomor Dokumen, Tanggal Terbit, Masa Berlaku (dengan opsi *Berlaku Seumur Hidup*), dan Catatan Tambahan.
+  - **Layar Detail (`DocumentDetailScreen`)**:
+    - Pratinjau interaktif zoomable untuk gambar (`InteractiveViewer` + `CachedNetworkImage`) dan dokumen PDF.
+    - Ringkasan metadata lengkap (Format, Ukuran File, Waktu Unggah, dll) dan tombol unduh/buka file asli.
+- **Rilis Mobile App v1.1.0+17**:
+  - `pubspec.yaml`: `version: 1.1.0+17`.
+  - `splash_screen.dart` fallback version string di-update ke `v1.1.0`.
+  - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, `SiHaris-v1.1.0.apk`, `SiHaris-v1.1.0.aab`, `SiHaris-v1.1.0.ipa`, dan `VERSION` (`v1.1.0`).
+
 
 
 

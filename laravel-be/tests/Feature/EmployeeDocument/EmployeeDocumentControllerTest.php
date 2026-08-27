@@ -85,7 +85,7 @@ describe('EmployeeDocument - Create', function () {
 
 describe('EmployeeDocument - Store', function () {
     it('uploads and stores a new document', function () {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $response = $this->actingAs($this->admin)
             ->post(route('employees.documents.store', $this->employee), [
@@ -105,7 +105,7 @@ describe('EmployeeDocument - Store', function () {
     });
 
     it('requires document type', function () {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $response = $this->actingAs($this->admin)
             ->post(route('employees.documents.store', $this->employee), [
@@ -125,7 +125,7 @@ describe('EmployeeDocument - Store', function () {
     });
 
     it('validates file size max 10MB', function () {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $response = $this->actingAs($this->admin)
             ->post(route('employees.documents.store', $this->employee), [
@@ -137,7 +137,7 @@ describe('EmployeeDocument - Store', function () {
     });
 
     it('validates allowed file types', function () {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $response = $this->actingAs($this->admin)
             ->post(route('employees.documents.store', $this->employee), [
@@ -149,7 +149,7 @@ describe('EmployeeDocument - Store', function () {
     });
 
     it('stores uploaded by user', function () {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $this->actingAs($this->admin)
             ->post(route('employees.documents.store', $this->employee), [
@@ -180,9 +180,9 @@ describe('EmployeeDocument - Show', function () {
 
 describe('EmployeeDocument - Download', function () {
     it('downloads the document file', function () {
-        Storage::fake('public');
+        Storage::fake('local');
         $file = UploadedFile::fake()->create('ktp.pdf', 1024, 'application/pdf');
-        $path = $file->store('documents', 'public');
+        $path = $file->store('documents', 'local');
 
         $document = EmployeeDocument::factory()->create([
             'company_id' => $this->company->id,
@@ -202,7 +202,7 @@ describe('EmployeeDocument - Download', function () {
 
 describe('EmployeeDocument - Destroy', function () {
     it('deletes a document', function () {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $document = EmployeeDocument::factory()->create([
             'company_id' => $this->company->id,

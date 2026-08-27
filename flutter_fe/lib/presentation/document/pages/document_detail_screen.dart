@@ -36,7 +36,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   Future<void> _openOrDownloadFile() async {
-    final urlStr = widget.document.downloadUrl ?? widget.document.fileUrl;
+    final urlStr = widget.document.downloadUrl;
     if (urlStr == null || urlStr.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('URL file tidak tersedia')),

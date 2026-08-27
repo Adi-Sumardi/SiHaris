@@ -405,11 +405,23 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     }
   }
 
+  static const int _maxFileSizeBytes = 10 * 1024 * 1024;
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedFile == null) {
       _showErrorSnackBar('Harap pilih file dokumen terlebih dahulu');
+      return;
+    }
+
+    if ((_selectedFileSize ?? 0) > _maxFileSizeBytes) {
+      _showErrorSnackBar('Ukuran file melebihi 10 MB. Silakan pilih file lain.');
+      return;
+    }
+
+    if (_issueDate != null && _expiryDate != null && _expiryDate!.isBefore(_issueDate!)) {
+      _showErrorSnackBar('Masa berlaku tidak boleh sebelum tanggal terbit');
       return;
     }
 

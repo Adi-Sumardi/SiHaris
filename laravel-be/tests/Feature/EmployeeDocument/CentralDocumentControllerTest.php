@@ -14,7 +14,7 @@ use Spatie\Permission\Models\Role;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $this->company = Company::factory()->create();
     setPermissionsTeamId($this->company->id);
@@ -153,7 +153,7 @@ describe('Central Document Explorer - Index', function () {
 describe('Central Document Explorer - Preview, Download & Delete', function () {
     it('allows admin to preview and download document', function () {
         $file = UploadedFile::fake()->create('dokumen.pdf', 200, 'application/pdf');
-        $path = $file->store("documents/{$this->company->id}/{$this->employeeA->id}", 'public');
+        $path = $file->store("documents/{$this->company->id}/{$this->employeeA->id}", 'local');
 
         $doc = EmployeeDocument::create([
             'company_id' => $this->company->id,

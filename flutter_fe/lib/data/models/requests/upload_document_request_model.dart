@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class UploadDocumentRequestModel {
   final String documentType;
@@ -53,7 +54,21 @@ class UploadDocumentRequestModel {
         'file',
         bytes,
         filename: filename,
+        contentType: _contentTypeFor(filename),
       ),
     );
+  }
+
+  /// Server-side MIME sniffing (finfo) is the source of truth for validation,
+  /// but a correct Content-Type header keeps this in sync with what the file
+  /// actually is instead of always defaulting to application/octet-stream.
+  MediaType _contentTypeFor(String filename) {
+    final ext = filename.toLowerCase().split('.').last;
+    return switch (ext) {
+      'pdf' => MediaType('application', 'pdf'),
+      'jpg' || 'jpeg' => MediaType('image', 'jpeg'),
+      'png' => MediaType('image', 'png'),
+      _ => MediaType('application', 'octet-stream'),
+    };
   }
 }

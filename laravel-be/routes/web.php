@@ -263,6 +263,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/create', [EmployeeDocumentController::class, 'create'])->name('create');
         Route::post('/', [EmployeeDocumentController::class, 'store'])->name('store');
         Route::get('/{document}', [EmployeeDocumentController::class, 'show'])->name('show');
+        Route::get('/{document}/preview', [EmployeeDocumentController::class, 'preview'])->name('preview');
         Route::get('/{document}/download', [EmployeeDocumentController::class, 'download'])->name('download');
         Route::delete('/{document}', [EmployeeDocumentController::class, 'destroy'])->name('destroy');
         Route::post('/{document}/verify', [EmployeeDocumentController::class, 'verify'])->name('verify');

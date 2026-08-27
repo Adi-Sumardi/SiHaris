@@ -16,7 +16,6 @@ void main() {
       'mime_type': 'application/pdf',
       'is_image': false,
       'is_pdf': true,
-      'file_url': 'https://siharis.yapinet.id/storage/documents/1/1/sk.pdf',
       'preview_url': 'https://siharis.yapinet.id/api/v1/documents/1/preview',
       'download_url': 'https://siharis.yapinet.id/api/v1/documents/1/download',
       'issue_date': '2026-01-10',

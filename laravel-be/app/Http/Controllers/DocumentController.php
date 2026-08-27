@@ -83,11 +83,11 @@ class DocumentController extends Controller
             abort(404);
         }
 
-        if (! Storage::disk('public')->exists($document->file_path)) {
+        if (! Storage::disk('local')->exists($document->file_path)) {
             abort(404, 'File dokumen tidak ditemukan.');
         }
 
-        $fullPath = Storage::disk('public')->path($document->file_path);
+        $fullPath = Storage::disk('local')->path($document->file_path);
 
         return response()->file($fullPath, [
             'Content-Type' => $document->mime_type ?? 'application/octet-stream',
@@ -106,11 +106,11 @@ class DocumentController extends Controller
             abort(404);
         }
 
-        if (! Storage::disk('public')->exists($document->file_path)) {
+        if (! Storage::disk('local')->exists($document->file_path)) {
             abort(404, 'File dokumen tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download(
+        return Storage::disk('local')->download(
             $document->file_path,
             $document->file_name,
             ['Content-Type' => $document->mime_type ?? 'application/octet-stream']

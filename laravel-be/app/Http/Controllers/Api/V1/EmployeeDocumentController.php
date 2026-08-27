@@ -128,7 +128,7 @@ class EmployeeDocumentController extends Controller
                         new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object')),
                     ]
                 )
-            )
+            ),
         ]
     )]
     public function types(): JsonResponse
@@ -222,11 +222,11 @@ class EmployeeDocumentController extends Controller
             $companyId = $employee->company_id;
             $targetDir = "documents/{$companyId}/{$employee->id}";
 
-            if (! Storage::disk('public')->exists($targetDir)) {
-                Storage::disk('public')->makeDirectory($targetDir);
+            if (! Storage::disk('local')->exists($targetDir)) {
+                Storage::disk('local')->makeDirectory($targetDir);
             }
 
-            $path = $file->store($targetDir, 'public');
+            $path = $file->store($targetDir, 'local');
 
             $document = EmployeeDocument::create([
                 'company_id' => $companyId,
@@ -306,32 +306,27 @@ class EmployeeDocumentController extends Controller
     #[OA\Get(
         path: '/documents/{id}/preview',
         summary: 'Preview File Berkas (In-App / Browser)',
-        description: 'Menampilkan stream file dokumen (PDF atau Gambar) secara inline untuk preview.',
+        description: 'Menampilkan stream file dokumen (PDF atau Gambar) secara inline untuk preview. Diakses via signed token (lihat field `preview_url` pada response dokumen), TIDAK memerlukan header Authorization, sehingga bisa dibuka langsung di browser/PDF viewer eksternal.',
         tags: ['Employee Documents'],
-        security: [['sanctum' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Stream file dokumen'),
+            new OA\Response(response: 403, description: 'Token tidak valid atau sudah kadaluarsa'),
             new OA\Response(response: 404, description: 'File tidak ditemukan'),
         ]
     )]
     public function preview(Request $request, int $id): BinaryFileResponse|JsonResponse
     {
-        $employee = $request->user()->employee;
+        $document = EmployeeDocument::find($id);
 
-        if (! $employee) {
-            return response()->json(['success' => false, 'message' => 'Data karyawan tidak ditemukan.'], 404);
+        if (! $document || ! $this->hasValidFileToken($document, $request)) {
+            return response()->json(['success' => false, 'message' => 'Tautan tidak valid atau sudah kadaluarsa.'], 403);
         }
 
-        $document = EmployeeDocument::where('id', $id)
-            ->where('employee_id', $employee->id)
-            ->where('company_id', $employee->company_id)
-            ->first();
-
-        if (! $document || ! Storage::disk('public')->exists($document->file_path)) {
+        if (! Storage::disk('local')->exists($document->file_path)) {
             return response()->json(['success' => false, 'message' => 'File tidak ditemukan.'], 404);
         }
 
-        $fullPath = Storage::disk('public')->path($document->file_path);
+        $fullPath = Storage::disk('local')->path($document->file_path);
 
         return response()->file($fullPath, [
             'Content-Type' => $document->mime_type ?? 'application/octet-stream',
@@ -342,32 +337,27 @@ class EmployeeDocumentController extends Controller
     #[OA\Get(
         path: '/documents/{id}/download',
         summary: 'Unduh File Berkas',
-        description: 'Mengunduh file dokumen asli milik karyawan.',
+        description: 'Mengunduh file dokumen asli milik karyawan. Diakses via signed token (lihat field `download_url` pada response dokumen), TIDAK memerlukan header Authorization, sehingga bisa dibuka langsung di browser/PDF viewer eksternal.',
         tags: ['Employee Documents'],
-        security: [['sanctum' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Download file'),
+            new OA\Response(response: 403, description: 'Token tidak valid atau sudah kadaluarsa'),
             new OA\Response(response: 404, description: 'File tidak ditemukan'),
         ]
     )]
     public function download(Request $request, int $id): StreamedResponse|JsonResponse
     {
-        $employee = $request->user()->employee;
+        $document = EmployeeDocument::find($id);
 
-        if (! $employee) {
-            return response()->json(['success' => false, 'message' => 'Data karyawan tidak ditemukan.'], 404);
+        if (! $document || ! $this->hasValidFileToken($document, $request)) {
+            return response()->json(['success' => false, 'message' => 'Tautan tidak valid atau sudah kadaluarsa.'], 403);
         }
 
-        $document = EmployeeDocument::where('id', $id)
-            ->where('employee_id', $employee->id)
-            ->where('company_id', $employee->company_id)
-            ->first();
-
-        if (! $document || ! Storage::disk('public')->exists($document->file_path)) {
+        if (! Storage::disk('local')->exists($document->file_path)) {
             return response()->json(['success' => false, 'message' => 'File tidak ditemukan.'], 404);
         }
 
-        return Storage::disk('public')->download(
+        return Storage::disk('local')->download(
             $document->file_path,
             $document->file_name,
             ['Content-Type' => $document->mime_type ?? 'application/octet-stream']
@@ -430,9 +420,8 @@ class EmployeeDocumentController extends Controller
             'mime_type' => $doc->mime_type,
             'is_image' => $isImage,
             'is_pdf' => $isPdf,
-            'file_url' => Storage::disk('public')->url($doc->file_path),
-            'preview_url' => url("/api/v1/documents/{$doc->id}/preview"),
-            'download_url' => url("/api/v1/documents/{$doc->id}/download"),
+            'preview_url' => $this->signedFileUrl($doc, 'preview'),
+            'download_url' => $this->signedFileUrl($doc, 'download'),
             'issue_date' => $doc->issue_date?->toDateString(),
             'expiry_date' => $doc->expiry_date?->toDateString(),
             'is_expired' => $doc->is_expired,
@@ -440,5 +429,29 @@ class EmployeeDocumentController extends Controller
             'notes' => $doc->notes,
             'created_at' => $doc->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Build a short-lived signed URL for previewing/downloading a document's file.
+     *
+     * Intentionally NOT protected by auth:sanctum (see routes/api.php) so the
+     * URL can be opened directly in an external browser/PDF viewer, which does
+     * not send the mobile app's Bearer token — same pattern as PayslipController.
+     */
+    private function signedFileUrl(EmployeeDocument $doc, string $action): string
+    {
+        $expires = now()->addMinutes(15)->timestamp;
+        $token = hash('sha256', $doc->id.'-'.$doc->employee_id.'-'.$expires.'-'.config('app.key'));
+
+        return url("/api/v1/documents/{$doc->id}/{$action}?token={$token}&expires={$expires}");
+    }
+
+    private function hasValidFileToken(EmployeeDocument $document, Request $request): bool
+    {
+        $providedToken = (string) $request->query('token');
+        $expires = (int) $request->query('expires');
+        $expectedToken = hash('sha256', $document->id.'-'.$document->employee_id.'-'.$expires.'-'.config('app.key'));
+
+        return $expires >= now()->timestamp && $providedToken !== '' && hash_equals($expectedToken, $providedToken);
     }
 }

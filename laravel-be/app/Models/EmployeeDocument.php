@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class EmployeeDocument extends Model
 {
@@ -74,6 +75,13 @@ class EmployeeDocument extends Model
             'is_verified' => 'boolean',
             'verified_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::forceDeleting(function (self $document) {
+            Storage::disk('local')->delete($document->file_path);
+        });
     }
 
     // Relationships
@@ -158,16 +166,16 @@ class EmployeeDocument extends Model
             return false;
         }
 
-        return $this->expiry_date->isPast();
+        return $this->expiry_date->lt(now()->startOfDay());
     }
 
     public function getIsExpiringSoonAttribute(): bool
     {
-        if (! $this->expiry_date) {
+        if (! $this->expiry_date || $this->is_expired) {
             return false;
         }
 
-        return $this->expiry_date->isBetween(now(), now()->addDays(30));
+        return $this->expiry_date->lte(now()->addDays(30)->endOfDay());
     }
 
     // Methods

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $this->company = Company::factory()->create([
         'name' => 'Yayasan Pendidikan Islam',
@@ -245,11 +245,11 @@ describe('POST /api/v1/documents', function () {
 });
 
 describe('GET /api/v1/documents/{id}/preview and download', function () {
-    it('previews and downloads file successfully for owner', function () {
+    it('previews and downloads file successfully using the signed URL from the document payload', function () {
         Sanctum::actingAs($this->user);
 
         $file = UploadedFile::fake()->create('sertifikat.pdf', 300, 'application/pdf');
-        $path = $file->store("documents/{$this->company->id}/{$this->employee->id}", 'public');
+        $path = $file->store("documents/{$this->company->id}/{$this->employee->id}", 'local');
 
         $doc = EmployeeDocument::create([
             'company_id' => $this->company->id,
@@ -263,11 +263,58 @@ describe('GET /api/v1/documents/{id}/preview and download', function () {
             'uploaded_by' => $this->user->id,
         ]);
 
-        $previewRes = $this->get("/api/v1/documents/{$doc->id}/preview");
-        $previewRes->assertOk();
+        // preview_url/download_url carry their own signed token so they can be
+        // opened directly (e.g. by an external browser/PDF viewer) without the
+        // mobile app's Bearer token.
+        $body = $this->getJson("/api/v1/documents/{$doc->id}")->json('data');
 
-        $downloadRes = $this->get("/api/v1/documents/{$doc->id}/download");
-        $downloadRes->assertOk();
+        $this->get($body['preview_url'])->assertOk();
+        $this->get($body['download_url'])->assertOk();
+    });
+
+    it('rejects preview/download requests with a missing or invalid token', function () {
+        Sanctum::actingAs($this->user);
+
+        $doc = EmployeeDocument::create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'document_type' => 'sertifikat',
+            'document_name' => 'Sertifikat Guru Penggerak',
+            'file_path' => 'documents/1/1/sertifikat.pdf',
+            'file_name' => 'sertifikat.pdf',
+            'file_size' => 307200,
+            'mime_type' => 'application/pdf',
+            'uploaded_by' => $this->user->id,
+        ]);
+
+        $this->get("/api/v1/documents/{$doc->id}/preview")->assertForbidden();
+        $this->get("/api/v1/documents/{$doc->id}/download?token=invalid&expires=".now()->addMinutes(5)->timestamp)
+            ->assertForbidden();
+    });
+
+    it('rejects the signed URL once it has expired', function () {
+        Sanctum::actingAs($this->user);
+
+        $file = UploadedFile::fake()->create('sertifikat.pdf', 300, 'application/pdf');
+        $path = $file->store("documents/{$this->company->id}/{$this->employee->id}", 'local');
+
+        $doc = EmployeeDocument::create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'document_type' => 'sertifikat',
+            'document_name' => 'Sertifikat Guru Penggerak',
+            'file_path' => $path,
+            'file_name' => 'sertifikat.pdf',
+            'file_size' => 307200,
+            'mime_type' => 'application/pdf',
+            'uploaded_by' => $this->user->id,
+        ]);
+
+        $previewUrl = $this->getJson("/api/v1/documents/{$doc->id}")->json('data.preview_url');
+
+        $this->travel(20)->minutes();
+
+        $this->get($previewUrl)->assertForbidden();
     });
 
     it('returns 404 when accessing document belonging to another employee', function () {
@@ -286,7 +333,6 @@ describe('GET /api/v1/documents/{id}/preview and download', function () {
         ]);
 
         $this->getJson("/api/v1/documents/{$doc->id}")->assertNotFound();
-        $this->get("/api/v1/documents/{$doc->id}/preview")->assertNotFound();
         $this->deleteJson("/api/v1/documents/{$doc->id}")->assertNotFound();
     });
 });

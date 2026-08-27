@@ -68,6 +68,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/payslips/{payslip}/pdf', [PayslipController::class, 'pdf'])->name('payslips.pdf');
     Route::get('/tax-forms/{id}/pdf', [TaxFormController::class, 'pdf'])->name('tax-forms.pdf');
 
+    // Employee Document preview/download — intentionally OUTSIDE auth:sanctum.
+    // These URLs carry their own short-lived signed token (see
+    // EmployeeDocumentController::signedFileUrl()) so they can be opened
+    // directly in an external browser/PDF viewer, which does not send the
+    // mobile app's Bearer token.
+    Route::get('/documents/{id}/preview', [EmployeeDocumentController::class, 'preview'])->name('documents.preview');
+    Route::get('/documents/{id}/download', [EmployeeDocumentController::class, 'download'])->name('documents.download');
+
     // Authentication (public) - with strict rate limiting
     Route::prefix('auth')->name('auth.')->group(function () {
         // Login: 5 attempts per minute per IP in production (brute-force protection),
@@ -240,8 +248,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/types', [EmployeeDocumentController::class, 'types'])->name('types');
             Route::post('/', [EmployeeDocumentController::class, 'store'])->name('store');
             Route::get('/{id}', [EmployeeDocumentController::class, 'show'])->name('show');
-            Route::get('/{id}/preview', [EmployeeDocumentController::class, 'preview'])->name('preview');
-            Route::get('/{id}/download', [EmployeeDocumentController::class, 'download'])->name('download');
             Route::delete('/{id}', [EmployeeDocumentController::class, 'destroy'])->name('destroy');
         });
     });

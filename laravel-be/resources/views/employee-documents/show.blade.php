@@ -51,7 +51,7 @@
                         <h3 class="card-title">Preview Dokumen</h3>
                     </div>
                     <div class="card-body">
-                        <img src="{{ Storage::disk('public')->url($document->file_path) }}" alt="{{ $document->document_type_label }}" class="max-w-full h-auto rounded-lg shadow-sm">
+                        <img src="{{ route('employees.documents.preview', [$employee, $document]) }}" alt="{{ $document->document_type_label }}" class="max-w-full h-auto rounded-lg shadow-sm">
                     </div>
                 </div>
             @elseif($document->mime_type === 'application/pdf')
@@ -60,7 +60,7 @@
                         <h3 class="card-title">Preview PDF</h3>
                     </div>
                     <div class="card-body p-0">
-                        <iframe src="{{ Storage::disk('public')->url($document->file_path) }}" class="w-full h-[600px] rounded-b-lg"></iframe>
+                        <iframe src="{{ route('employees.documents.preview', [$employee, $document]) }}" class="w-full h-[600px] rounded-b-lg"></iframe>
                     </div>
                 </div>
             @endif

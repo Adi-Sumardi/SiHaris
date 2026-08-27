@@ -262,13 +262,15 @@
   - *Direct Management*: Tidak memerlukan alur verifikasi/approval bertingkat dari HR. Karyawan bebas mengunggah, melihat pratinjau, mengunduh, dan menghapus dokumen miliknya sendiri kapan saja.
 - **Backend & REST API (Laravel)**:
   - Model: `app/Models/EmployeeDocument.php` dengan tipe dokumen terstandarisasi (`sk`, `ktp`, `kk`, `npwp`, `bpjs_kesehatan`, `bpjs_ketenagakerjaan`, `ijazah`, `sertifikat`, `kontrak_kerja`, `other`).
+  - **Storage & Security**: Berkas fisik disimpan di disk `local` privat (`storage/app/documents/{company_id}/{employee_id}/`) demi keamanan data pribadi pegawai (NIK, KTP, KK, SK), bukan di public web root yang dapat ditebak.
+  - **Signed Temporary URLs**: `preview_url` dan `download_url` dibuat secara dinamis menggunakan HMAC SHA-256 token bertanda tangan dengan masa berlaku sementara (`URL::temporarySignedRoute`), sehingga file aman dibuka di external browser / PDF viewer tanpa membocorkan Sanctum Bearer token.
   - Endpoint API (`/api/v1/documents`):
     - `GET /api/v1/documents`: Mengambil daftar berkas milik pegawai login (mendukung filter `type` dan query pencarian `search`).
     - `GET /api/v1/documents/types`: Metadata kategori berkas beserta label dan icon helper.
-    - `POST /api/v1/documents`: Unggah berkas baru (multipart file: PDF/JPG/PNG max 10MB, nomor dokumen, tanggal terbit, masa berlaku, catatan). Disimpan pada path `documents/{company_id}/{employee_id}/`.
+    - `POST /api/v1/documents`: Unggah berkas baru (multipart file: PDF/JPG/PNG max 10MB, nomor dokumen, tanggal terbit, masa berlaku, catatan).
     - `GET /api/v1/documents/{id}`: Detail metadata dokumen.
-    - `GET /api/v1/documents/{id}/preview`: Stream binary file inline untuk pratinjau dokumen / gambar di browser maupun aplikasi mobile.
-    - `GET /api/v1/documents/{id}/download`: Mengunduh berkas fisik asli dengan nama file original.
+    - `GET /api/v1/documents/{id}/preview`: Stream binary file inline dengan validasi signature token.
+    - `GET /api/v1/documents/{id}/download`: Mengunduh berkas fisik asli dengan validasi signature token.
     - `DELETE /api/v1/documents/{id}`: Soft delete berkas milik pegawai yang sedang login.
   - Web Admin Central Explorer (`/documents` via `DocumentController`):
     - 4 Statistik ringkasan (*Total Berkas*, *Pegawai Terdata*, *Total SK*, *Total Sertifikat*).

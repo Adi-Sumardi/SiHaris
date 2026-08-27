@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeDocumentController extends Controller
@@ -64,13 +65,13 @@ class EmployeeDocumentController extends Controller
             'document_name' => ['nullable', 'string', 'max:255'],
             'file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
             'issue_date' => ['nullable', 'date'],
-            'expiry_date' => ['nullable', 'date', 'after:issue_date'],
+            'expiry_date' => ['nullable', 'date', 'after_or_equal:issue_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         // Store the file
         $file = $request->file('file');
-        $path = $file->store("documents/{$tenant->id}/{$employee->id}", 'public');
+        $path = $file->store("documents/{$tenant->id}/{$employee->id}", 'local');
 
         EmployeeDocument::create([
             'company_id' => $tenant->id,
@@ -108,6 +109,29 @@ class EmployeeDocumentController extends Controller
     }
 
     /**
+     * Preview the document file directly in browser.
+     */
+    public function preview(Employee $employee, EmployeeDocument $document): BinaryFileResponse
+    {
+        $tenant = app('tenant');
+
+        if ($employee->company_id !== $tenant->id || $document->employee_id !== $employee->id) {
+            abort(404);
+        }
+
+        if (! Storage::disk('local')->exists($document->file_path)) {
+            abort(404, 'File tidak ditemukan.');
+        }
+
+        $fullPath = Storage::disk('local')->path($document->file_path);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $document->mime_type ?? 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.$document->file_name.'"',
+        ]);
+    }
+
+    /**
      * Download the document file.
      */
     public function download(Employee $employee, EmployeeDocument $document): StreamedResponse
@@ -118,11 +142,11 @@ class EmployeeDocumentController extends Controller
             abort(404);
         }
 
-        if (! Storage::disk('public')->exists($document->file_path)) {
+        if (! Storage::disk('local')->exists($document->file_path)) {
             abort(404, 'File tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download(
+        return Storage::disk('local')->download(
             $document->file_path,
             $document->file_name,
             ['Content-Type' => $document->mime_type]

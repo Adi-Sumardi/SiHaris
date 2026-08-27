@@ -13,7 +13,6 @@ class EmployeeDocumentModel {
   final String mimeType;
   final bool isImage;
   final bool isPdf;
-  final String? fileUrl;
   final String? previewUrl;
   final String? downloadUrl;
   final String? issueDate;
@@ -35,7 +34,6 @@ class EmployeeDocumentModel {
     required this.mimeType,
     required this.isImage,
     required this.isPdf,
-    this.fileUrl,
     this.previewUrl,
     this.downloadUrl,
     this.issueDate,
@@ -59,7 +57,6 @@ class EmployeeDocumentModel {
       mimeType: json['mime_type'] ?? 'application/octet-stream',
       isImage: json['is_image'] ?? false,
       isPdf: json['is_pdf'] ?? false,
-      fileUrl: json['file_url'],
       previewUrl: json['preview_url'],
       downloadUrl: json['download_url'],
       issueDate: json['issue_date'],
@@ -84,7 +81,6 @@ class EmployeeDocumentModel {
       'mime_type': mimeType,
       'is_image': isImage,
       'is_pdf': isPdf,
-      'file_url': fileUrl,
       'preview_url': previewUrl,
       'download_url': downloadUrl,
       'issue_date': issueDate,

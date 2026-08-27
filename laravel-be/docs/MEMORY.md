@@ -1,7 +1,8 @@
 # SiHaris (GajiPro) — Project Memory & Architecture Notes
 
 ## 1. Production Server Details
-- **IP Address**: `172.16.5.204`
+- **IP Address (Local LAN)**: `172.16.5.204`
+- **Tailscale IP**: `100.96.106.57` (Host: `aplikasi2`)
 - **SSH User**: `yapiar1`
 - **SSH Password**: `Adalah123`
 - **Backend Directory**: `/var/www/siharis/laravel-be`

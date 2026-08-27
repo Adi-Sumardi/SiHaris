@@ -62,7 +62,7 @@
                 </div>
 
                 {{-- Karyawan --}}
-                <div x-data="{ open: {{ request()->routeIs('employees.*') || request()->routeIs('departments.*') || request()->routeIs('positions.*') || request()->routeIs('office-locations.*') || request()->routeIs('employee-exits.*') || request()->routeIs('organization-chart.*') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('employees.*') || request()->routeIs('documents.*') || request()->routeIs('departments.*') || request()->routeIs('positions.*') || request()->routeIs('office-locations.*') || request()->routeIs('employee-exits.*') || request()->routeIs('organization-chart.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open" class="sidebar-link-light w-full justify-between">
                         <span class="flex items-center gap-3">
                             <svg class="sidebar-icon-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -72,6 +72,7 @@
                     </button>
                     <div x-show="open && !sidebarCollapsed" x-collapse class="mt-2 sidebar-submenu-light">
                         <a href="{{ route('employees.index') }}" class="sidebar-sublink-light {{ request()->routeIs('employees.*') ? 'active' : '' }}">Daftar Karyawan</a>
+                        <a href="{{ route('documents.index') }}" class="sidebar-sublink-light {{ request()->routeIs('documents.*') ? 'active' : '' }}">Dokumen Pegawai</a>
                         <a href="{{ route('departments.index') }}" class="sidebar-sublink-light {{ request()->routeIs('departments.*') ? 'active' : '' }}">Departemen</a>
                         <a href="{{ route('positions.index') }}" class="sidebar-sublink-light {{ request()->routeIs('positions.*') ? 'active' : '' }}">Jabatan</a>
                         <a href="{{ route('office-locations.index') }}" class="sidebar-sublink-light {{ request()->routeIs('office-locations.*') ? 'active' : '' }}">Lokasi Kantor</a>

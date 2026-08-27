@@ -77,6 +77,16 @@ class Variables {
   static String taxFormDownload(int id) => '$apiBaseUrl/tax-forms/$id/download';
 
   // ============================================
+  // Employee Documents (Berkas Digital Pegawai)
+  // ============================================
+  static const String documents = '$apiBaseUrl/documents';
+  static const String documentTypes = '$apiBaseUrl/documents/types';
+  static String documentDetail(int id) => '$apiBaseUrl/documents/$id';
+  static String documentPreview(int id) => '$apiBaseUrl/documents/$id/preview';
+  static String documentDownload(int id) => '$apiBaseUrl/documents/$id/download';
+  static String documentDelete(int id) => '$apiBaseUrl/documents/$id';
+
+  // ============================================
   // Reimbursement
   // ============================================
   static const String reimbursements = '$apiBaseUrl/reimbursements';

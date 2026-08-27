@@ -12,6 +12,7 @@ import '../../leave/pages/leave_list_screen.dart';
 import '../../overtime/pages/overtime_screen.dart';
 import '../../schedule/pages/schedule_screen.dart';
 import '../../notification/pages/notification_screen.dart';
+import '../../document/pages/document_list_screen.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_bloc.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_event.dart';
 import '../../announcement/bloc/announcement_list/announcement_list_state.dart';
@@ -600,12 +601,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'bg': AppColors.accent50,
       },
       {
-        'icon': Icons.receipt_long_outlined,
+        'icon': Icons.folder_shared_outlined,
         'svgAsset': null,
-        'label': 'Slip Gaji',
-        'route': '/payslip',
-        'color': AppColors.success,
-        'bg': AppColors.successLight,
+        'label': 'Berkas',
+        'route': '/documents',
+        'color': const Color(0xFF4F46E5),
+        'bg': const Color(0xFFEEF2FF),
       },
       {
         'icon': Icons.schedule_rounded,
@@ -684,6 +685,11 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const LeaveListScreen()),
+          );
+        } else if (route == '/documents') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DocumentListScreen()),
           );
         } else if (route == '/payslip') {
           Navigator.push(

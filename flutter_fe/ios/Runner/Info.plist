@@ -45,13 +45,13 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Aplikasi ini memerlukan akses kamera untuk face recognition absensi.</string>
+	<string>Aplikasi ini memerlukan akses kamera untuk face recognition absensi dan pengambilan foto dokumen kepegawaian.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Aplikasi ini menggunakan Face ID untuk membuka aplikasi secara aman.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Aplikasi ini memerlukan lokasi untuk validasi GPS absensi.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Aplikasi ini memerlukan akses galeri untuk foto absensi.</string>
+	<string>Aplikasi ini memerlukan akses galeri untuk foto profil, bukti reimbursement, dan berkas kepegawaian.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

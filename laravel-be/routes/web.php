@@ -13,6 +13,7 @@ use App\Http\Controllers\BpjsTkSettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemoSettingController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDocumentController;
 use App\Http\Controllers\EmployeeExitController;
@@ -256,7 +257,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('employees/{employee}/generate-password', [EmployeeController::class, 'generatePassword'])
         ->name('employees.reset-password.generate');
 
-    // Employee Documents
+    // Employee Documents (Per Employee)
     Route::prefix('employees/{employee}/documents')->name('employees.documents.')->group(function () {
         Route::get('/', [EmployeeDocumentController::class, 'index'])->name('index');
         Route::get('/create', [EmployeeDocumentController::class, 'create'])->name('create');
@@ -266,6 +267,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::delete('/{document}', [EmployeeDocumentController::class, 'destroy'])->name('destroy');
         Route::post('/{document}/verify', [EmployeeDocumentController::class, 'verify'])->name('verify');
         Route::post('/{document}/unverify', [EmployeeDocumentController::class, 'unverify'])->name('unverify');
+    });
+
+    // Centralized Documents Explorer (Global)
+    Route::prefix('documents')->name('documents.')->group(function () {
+        Route::get('/', [DocumentController::class, 'index'])->name('index');
+        Route::get('/{document}/preview', [DocumentController::class, 'preview'])->name('preview');
+        Route::get('/{document}/download', [DocumentController::class, 'download'])->name('download');
+        Route::delete('/{document}', [DocumentController::class, 'destroy'])->name('destroy');
     });
 
     // Employee Exit Management

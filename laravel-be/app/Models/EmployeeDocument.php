@@ -13,32 +13,35 @@ class EmployeeDocument extends Model
 {
     use HasFactory, LogsActivityTrait, SoftDeletes;
 
+    public const TYPE_SK = 'sk';
+
+    public const TYPE_SERTIFIKAT = 'sertifikat';
+
     public const TYPE_KTP = 'ktp';
 
-    public const TYPE_NPWP = 'npwp';
-
     public const TYPE_KK = 'kk';
+
+    public const TYPE_IJAZAH = 'ijazah';
+
+    public const TYPE_NPWP = 'npwp';
 
     public const TYPE_BPJS_KESEHATAN = 'bpjs_kesehatan';
 
     public const TYPE_BPJS_KETENAGAKERJAAN = 'bpjs_ketenagakerjaan';
-
-    public const TYPE_IJAZAH = 'ijazah';
-
-    public const TYPE_SERTIFIKAT = 'sertifikat';
 
     public const TYPE_KONTRAK_KERJA = 'kontrak_kerja';
 
     public const TYPE_OTHER = 'other';
 
     public const DOCUMENT_TYPES = [
+        self::TYPE_SK => 'SK / Surat Keputusan',
+        self::TYPE_SERTIFIKAT => 'Sertifikat & Pelatihan',
         self::TYPE_KTP => 'KTP',
-        self::TYPE_NPWP => 'NPWP',
         self::TYPE_KK => 'Kartu Keluarga',
+        self::TYPE_IJAZAH => 'Ijazah & Transkrip',
+        self::TYPE_NPWP => 'NPWP',
         self::TYPE_BPJS_KESEHATAN => 'BPJS Kesehatan',
         self::TYPE_BPJS_KETENAGAKERJAAN => 'BPJS Ketenagakerjaan',
-        self::TYPE_IJAZAH => 'Ijazah',
-        self::TYPE_SERTIFIKAT => 'Sertifikat',
         self::TYPE_KONTRAK_KERJA => 'Kontrak Kerja',
         self::TYPE_OTHER => 'Lainnya',
     ];

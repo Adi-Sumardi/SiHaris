@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\EmployeeDocumentController;
 use App\Http\Controllers\Api\V1\EmployeeOfficeController;
 use App\Http\Controllers\Api\V1\FaceRecognitionController;
 use App\Http\Controllers\Api\V1\LeaveController;
@@ -231,6 +232,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::delete('/', [EmployeeOfficeController::class, 'destroyAll'])->name('destroy-all');
             Route::delete('/{office}', [EmployeeOfficeController::class, 'destroy'])->name('destroy');
             Route::patch('/{office}/set-primary', [EmployeeOfficeController::class, 'setPrimary'])->name('set-primary');
+        });
+
+        // Employee Documents
+        Route::prefix('documents')->name('documents.')->group(function () {
+            Route::get('/', [EmployeeDocumentController::class, 'index'])->name('index');
+            Route::get('/types', [EmployeeDocumentController::class, 'types'])->name('types');
+            Route::post('/', [EmployeeDocumentController::class, 'store'])->name('store');
+            Route::get('/{id}', [EmployeeDocumentController::class, 'show'])->name('show');
+            Route::get('/{id}/preview', [EmployeeDocumentController::class, 'preview'])->name('preview');
+            Route::get('/{id}/download', [EmployeeDocumentController::class, 'download'])->name('download');
+            Route::delete('/{id}', [EmployeeDocumentController::class, 'destroy'])->name('destroy');
         });
     });
 });

@@ -73,6 +73,11 @@ import 'presentation/profile/bloc/update_profile/update_profile_bloc.dart';
 import 'data/datasources/tax_form_remote_datasource.dart';
 import 'presentation/tax_form/bloc/tax_form_list/tax_form_list_bloc.dart';
 import 'presentation/tax_form/bloc/tax_form_detail/tax_form_detail_bloc.dart';
+// Employee Document BLoCs
+import 'data/datasources/employee_document_remote_datasource.dart';
+import 'presentation/document/bloc/document_list/document_list_bloc.dart';
+import 'presentation/document/bloc/document_upload/document_upload_bloc.dart';
+import 'presentation/document/bloc/document_action/document_action_bloc.dart';
 import 'core/config/feature_config.dart';
 import 'core/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -498,6 +503,40 @@ class GajiProApp extends StatelessWidget {
               authLocalDatasource: authLocal,
             );
             return TaxFormDetailBloc(datasource: taxFormDatasource);
+          },
+        ),
+        // Employee Document BLoCs
+        BlocProvider(
+          create: (context) {
+            final client = http.Client();
+            final authLocal = AuthLocalDatasource();
+            final docDatasource = EmployeeDocumentRemoteDatasource(
+              client,
+              authLocal,
+            );
+            return DocumentListBloc(datasource: docDatasource);
+          },
+        ),
+        BlocProvider(
+          create: (context) {
+            final client = http.Client();
+            final authLocal = AuthLocalDatasource();
+            final docDatasource = EmployeeDocumentRemoteDatasource(
+              client,
+              authLocal,
+            );
+            return DocumentUploadBloc(datasource: docDatasource);
+          },
+        ),
+        BlocProvider(
+          create: (context) {
+            final client = http.Client();
+            final authLocal = AuthLocalDatasource();
+            final docDatasource = EmployeeDocumentRemoteDatasource(
+              client,
+              authLocal,
+            );
+            return DocumentActionBloc(datasource: docDatasource);
           },
         ),
       ],

@@ -15,6 +15,7 @@ import '../../auth/bloc/profile/profile_state.dart';
 import '../../auth/pages/login_screen.dart';
 import '../../home/pages/main_screen.dart';
 import '../../tax_form/pages/tax_form_screen.dart';
+import '../../document/pages/document_list_screen.dart';
 import '../../auth/pages/change_password_screen.dart';
 import '../../settings/pages/settings_screen.dart';
 import '../../settings/pages/about_screen.dart';
@@ -434,6 +435,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildSectionTitle('Keamanan & Biometrik'),
           const SizedBox(height: 12),
           _buildBiometricCard(context, employee),
+          const SizedBox(height: 20),
+          _buildSectionTitle('Dokumen & Berkas Pegawai'),
+          const SizedBox(height: 12),
+          _buildEmployeeDocumentCard(context),
           const SizedBox(height: 20),
           _buildSectionTitle('Dokumen Pajak'),
           const SizedBox(height: 12),
@@ -921,6 +926,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmployeeDocumentCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        children: [
+          _buildMenuItem(
+            Icons.folder_shared_outlined,
+            'Berkas & Dokumen Saya',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DocumentListScreen()),
+              );
+            },
+            isLast: true,
+          ),
+        ],
+      ),
     );
   }
 

@@ -234,5 +234,46 @@ void main() {
         expect(find.textContaining('CRASH:'), findsNothing);
       },
     );
+
+    testWidgets(
+      'Quick actions — berkas route ke DocumentListScreen (Navigator.push ke DocumentListScreen)',
+      (tester) async {
+        bool crashed = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (ctx) => ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      ctx,
+                      MaterialPageRoute(
+                        builder: (_) => const Scaffold(body: Text('Berkas & Dokumen Saya')),
+                      ),
+                    );
+                  },
+                  child: const Text('Berkas'),
+                ),
+              ),
+            ),
+            onUnknownRoute: (settings) {
+              crashed = true;
+              return MaterialPageRoute(
+                builder: (_) =>
+                    Scaffold(body: Text('CRASH: ${settings.name}')),
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Berkas'));
+        await tester.pumpAndSettle();
+
+        expect(crashed, isFalse);
+        expect(find.textContaining('CRASH:'), findsNothing);
+        expect(find.text('Berkas & Dokumen Saya'), findsOneWidget);
+      },
+    );
   });
 }

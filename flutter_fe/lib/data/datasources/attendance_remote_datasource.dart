@@ -107,6 +107,9 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
     } on SocketException {
       await _offline.enqueueClockIn(request);
       return Right(_offlineSavedBody(isClockIn: true));
+    } on http.ClientException {
+      await _offline.enqueueClockIn(request);
+      return Right(_offlineSavedBody(isClockIn: true));
     }
   }
 
@@ -121,6 +124,9 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
     try {
       return await _performClockOut(request);
     } on SocketException {
+      await _offline.enqueueClockOut(request);
+      return Right(_offlineSavedBody(isClockIn: false));
+    } on http.ClientException {
       await _offline.enqueueClockOut(request);
       return Right(_offlineSavedBody(isClockIn: false));
     }
@@ -233,6 +239,9 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
     } on SocketException {
       // Diteruskan agar pemanggil (clockIn) menyimpannya ke antrean offline.
       rethrow;
+    } on http.ClientException {
+      // Diteruskan agar pemanggil (clockIn) menyimpannya ke antrean offline.
+      rethrow;
     } catch (e, stackTrace) {
       HttpLogger.logError(
         method: 'POST',
@@ -323,6 +332,9 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         return Left(body['message'] ?? 'Clock out failed');
       }
     } on SocketException {
+      // Diteruskan agar pemanggil (clockOut) menyimpannya ke antrean offline.
+      rethrow;
+    } on http.ClientException {
       // Diteruskan agar pemanggil (clockOut) menyimpannya ke antrean offline.
       rethrow;
     } catch (e, stackTrace) {

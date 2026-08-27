@@ -20,10 +20,19 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
   ) async {
     emit(AttendanceLoading());
     final result = await datasource.clockIn(event.request);
-    result.fold((failure) => emit(AttendanceFailure(failure)), (data) {
-      final message = data['message'] ?? 'Clock in berhasil';
-      emit(AttendanceSuccess(message));
-    });
+    result.fold(
+      (failure) {
+        if (failure.toLowerCase().contains('sudah melakukan clock in')) {
+          emit(AttendanceSuccess('Anda sudah tercatat clock in hari ini.'));
+        } else {
+          emit(AttendanceFailure(failure));
+        }
+      },
+      (data) {
+        final message = data['message'] ?? 'Clock in berhasil';
+        emit(AttendanceSuccess(message));
+      },
+    );
   }
 
   Future<void> _onClockOut(
@@ -32,9 +41,18 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
   ) async {
     emit(AttendanceLoading());
     final result = await datasource.clockOut(event.request);
-    result.fold((failure) => emit(AttendanceFailure(failure)), (data) {
-      final message = data['message'] ?? 'Clock out berhasil';
-      emit(AttendanceSuccess(message));
-    });
+    result.fold(
+      (failure) {
+        if (failure.toLowerCase().contains('sudah melakukan clock out')) {
+          emit(AttendanceSuccess('Anda sudah tercatat clock out hari ini.'));
+        } else {
+          emit(AttendanceFailure(failure));
+        }
+      },
+      (data) {
+        final message = data['message'] ?? 'Clock out berhasil';
+        emit(AttendanceSuccess(message));
+      },
+    );
   }
 }

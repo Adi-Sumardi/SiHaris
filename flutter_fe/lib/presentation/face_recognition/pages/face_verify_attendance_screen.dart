@@ -19,9 +19,13 @@ import '../widgets/face_detector_painter.dart';
 import '../widgets/liveness_guide_overlay.dart';
 import 'camera_view_attendance_page.dart';
 
-// Helper function untuk encode JPEG di isolate
+// Helper function untuk encode JPEG di isolate dengan kompresi optimal
 Uint8List _encodeJpgInIsolate(img.Image image) {
-  return img.encodeJpg(image);
+  img.Image processed = image;
+  if (processed.width > 1080) {
+    processed = img.copyResize(processed, width: 1080);
+  }
+  return img.encodeJpg(processed, quality: 80);
 }
 
 /// Result from face verification

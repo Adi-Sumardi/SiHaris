@@ -205,18 +205,24 @@ class Attendance extends Model
             return null;
         }
 
-        $shiftDate = $this->date instanceof Carbon ? $this->date : Carbon::parse($this->date);
+        $timezone = $this->company?->timezone ?? 'Asia/Jakarta';
+        $dateStr = $this->date instanceof Carbon ? $this->date->format('Y-m-d') : substr((string) $this->date, 0, 10);
         $timeStr = $this->scheduled_end instanceof \DateTimeInterface
             ? $this->scheduled_end->format('H:i:s')
-            : $this->scheduled_end;
-        $scheduledEnd = $shiftDate->copy()->setTimeFromTimeString($timeStr);
+            : (string) $this->scheduled_end;
+
+        if (str_contains($timeStr, ' ')) {
+            $timeStr = explode(' ', $timeStr)[1];
+        }
+
+        $scheduledEnd = Carbon::parse("{$dateStr} {$timeStr}", $timezone);
 
         // If this is an overnight shift, the end time is on the next day
         if ($this->workSchedule && $this->workSchedule->is_overnight) {
             $scheduledEnd->addDay();
         }
 
-        return $scheduledEnd;
+        return $scheduledEnd->utc();
     }
 
     /**
@@ -235,7 +241,7 @@ class Attendance extends Model
             $clockIn = $this->clock_in instanceof Carbon ? $this->clock_in : Carbon::parse($this->clock_in);
             if ($clockIn->gt($scheduledStart)) {
                 $lateTolerance = (int) ($this->workSchedule->late_tolerance ?? 0);
-                $diffMinutes = $scheduledStart->diffInMinutes($clockIn);
+                $diffMinutes = (int) $scheduledStart->diffInMinutes($clockIn);
                 $flexiMinutes = min($diffMinutes, $lateTolerance);
                 if ($flexiMinutes > 0) {
                     $scheduledEnd = $scheduledEnd->copy()->addMinutes($flexiMinutes);
@@ -255,18 +261,26 @@ class Attendance extends Model
             return null;
         }
 
-        $shiftDate = $this->date instanceof Carbon ? $this->date : Carbon::parse($this->date);
+        $timezone = $this->company?->timezone ?? 'Asia/Jakarta';
+        $dateStr = $this->date instanceof Carbon ? $this->date->format('Y-m-d') : substr((string) $this->date, 0, 10);
         $timeStr = $this->scheduled_start instanceof \DateTimeInterface
             ? $this->scheduled_start->format('H:i:s')
-            : $this->scheduled_start;
+            : (string) $this->scheduled_start;
 
-        return $shiftDate->copy()->setTimeFromTimeString($timeStr);
+        if (str_contains($timeStr, ' ')) {
+            $timeStr = explode(' ', $timeStr)[1];
+        }
+
+        return Carbon::parse("{$dateStr} {$timeStr}", $timezone)->utc();
     }
 
     // Methods
     public function clockIn(array $data = []): self
     {
-        $now = $data['event_time'] ?? ($this->company ? $this->company->now() : Carbon::now());
+        $now = $data['event_time'] ?? ($this->company ? $this->company->toUtc($this->company->now()) : Carbon::now()->utc());
+        if ($now instanceof Carbon && $this->company && $now->timezoneName !== 'UTC') {
+            $now = $this->company->toUtc($now);
+        }
 
         $this->clock_in = $now;
         $this->clock_in_ip = $data['ip'] ?? null;
@@ -278,7 +292,7 @@ class Attendance extends Model
         $this->clock_in_device_id = $data['device_id'] ?? $this->clock_in_device_id;
         $this->clock_in_app_device_id = $data['app_device_id'] ?? $this->clock_in_app_device_id;
         if (array_key_exists('office_location_id', $data)) {
-            $this->office_location_id = $data['office_location_id'];
+            $this->clock_in_office_location_id = $data['office_location_id'];
         }
         if (array_key_exists('face_verified', $data)) {
             $this->face_verified = $data['face_verified'];
@@ -296,7 +310,7 @@ class Attendance extends Model
             $tolerance = $this->workSchedule?->late_tolerance ?? 15;
 
             if ($now->gt($scheduledStart->copy()->addMinutes($tolerance))) {
-                $this->late_minutes = $scheduledStart->diffInMinutes($now);
+                $this->late_minutes = (int) $scheduledStart->diffInMinutes($now);
                 $this->clock_in_status = $this->late_minutes > 30 ? 'very_late' : 'late';
                 $this->status = 'late';
             } else {
@@ -313,7 +327,10 @@ class Attendance extends Model
 
     public function clockOut(array $data = []): self
     {
-        $now = $data['event_time'] ?? ($this->company ? $this->company->now() : Carbon::now());
+        $now = $data['event_time'] ?? ($this->company ? $this->company->toUtc($this->company->now()) : Carbon::now()->utc());
+        if ($now instanceof Carbon && $this->company && $now->timezoneName !== 'UTC') {
+            $now = $this->company->toUtc($now);
+        }
 
         $this->clock_out = $now;
         $this->clock_out_ip = $data['ip'] ?? null;

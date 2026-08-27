@@ -34,11 +34,6 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production') || str_starts_with((string) config('app.url'), 'https')) {
             URL::forceScheme('https');
         }
-        // Register event listeners for push notifications
-        Event::listen(AttendanceClockIn::class, SendAttendanceClockInNotification::class);
-        Event::listen(AttendanceClockOut::class, SendAttendanceClockOutNotification::class);
-        Event::listen(LeaveRequestApproved::class, SendLeaveApprovalNotification::class);
-        Event::listen(LeaveRequestRejected::class, SendLeaveApprovalNotification::class);
 
         // Register email logging listeners
         Event::listen(MessageSending::class, [LogEmailActivity::class, 'handleSending']);

@@ -234,6 +234,27 @@
   - Jika `attendance_recap_day_of_month` > 1 (contoh: 21 pada YAPI), periode dihitung dari tanggal 21 bulan sebelumnya hingga tanggal 20 bulan berjalan (contoh tanggal eksekusi 21 Agustus 2026 -> periode `21/07/2026 - 20/08/2026`).
   - `AttendanceRecapService` memisahkan presensi hari Senin-Jumat (`weekday_present_days`), hari Sabtu (`saturday_present_days`), serta akumulasi keterlambatan lebih dari 5 menit (`late_gt_5_days`).
 
+---
+
+## 17. Timezone Synchronization & Mobile Screen Fixes (v1.0.9+16)
+- **Eliminasi Duplicate Push Notifications**:
+  - Pada Laravel 11, Event Listener di `app/Listeners` terdaftar secara otomatis via Event Discovery. Panggilan manual `Event::listen` di `AppServiceProvider.php` dihapus agar listener `AttendanceClockIn`, `AttendanceClockOut`, `LeaveRequestApproved`, dan `LeaveRequestRejected` tidak terduplikasi (mengatasi notifikasi masuk 2x).
+- **Sinkronisasi Waktu WIB pada Notifikasi & Pesan**:
+  - `PushNotificationService` mengonversi waktu presensi ke timezone perusahaan (`$attendance->company?->timezone ?? 'Asia/Jakarta'`) sebelum memformat string pesan notifikasi ("pukul 16:32" bukan "09:32").
+  - `NotificationScreen` pada aplikasi Flutter memanggil `.toLocal()` pada parsing `createdAt` (`DateTime.parse(notification.createdAt).toLocal()`) di list item, header grouping, dan modal detail bottom sheet.
+- **Kalkulasi Jam Kerja Aktif & Keterlambatan Real-time (Screen Clock)**:
+  - `AttendanceController::today()` dan Flutter `AttendanceScreen` menghitung durasi jam kerja berjalan secara dinamis saat karyawan sedang aktif bekerja (`clock_in` ada dan `clock_out` belum dilakukan), sehingga tidak lagi tampil `0m`.
+  - Field `schedule.name` disertakan dalam response API `/attendance/today` agar badge shift kerja (mis. *Fleksi Time*) tampil pada kartu jadwal.
+  - Tampilan *Jadwal Pulang* pada shift fleksibel menampilkan jam target dinamis (mis. `16:00 (Fleksi 16:30)`).
+  - Sanitasi time string pada `Attendance::getScheduledStartDatetime()` dan `getScheduledEndDatetime()` untuk mencegah error parsing datetime ganda.
+- **Redesain Kartu Riwayat Kehadiran (Attendance History Screen)**:
+  - Layout `_buildHistoryItem` dirombak menjadi kartu modern 2-tier (Baris atas: Pill Tanggal, Hari, Badge Status, Chevron; Baris bawah: Waktu Masuk, Waktu Pulang, dan Badge Durasi Jam Kerja) untuk menghilangkan masalah tampilan yang berdempetan (*overlapping*).
+- **Rilis Mobile App v1.0.9+16**:
+  - Bump versi di `pubspec.yaml` ke `1.0.9+16`.
+  - Update fallback version string di `splash_screen.dart` dan `profile_screen.dart` ke `v1.0.9`.
+  - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, dan `VERSION` (`1.0.9+16`).
+
+
 
 
 

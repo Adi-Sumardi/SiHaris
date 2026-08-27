@@ -130,15 +130,17 @@ class AttendanceController extends Controller
         $data = null;
         if ($attendance) {
             // Recalculate late_minutes if it's 0 but status is 'late' or clock_in is after schedule start + tolerance
-            $lateMinutes = $attendance->late_minutes ?? 0;
+            $lateMinutes = (int) ($attendance->late_minutes ?? 0);
             if ($lateMinutes === 0 && $schedule && $attendance->clock_in) {
                 $clockInTime = $attendance->clock_in->setTimezone($timezone);
-                $scheduleStart = $clockInTime->copy()
-                    ->setTimeFromTimeString($schedule->start_time->format('H:i:s'));
-                $tolerance = $schedule->late_tolerance ?? 15;
+                $startTimeStr = $schedule->start_time instanceof \DateTimeInterface
+                    ? $schedule->start_time->format('H:i:s')
+                    : (string) $schedule->start_time;
+                $scheduleStart = $clockInTime->copy()->setTimeFromTimeString($startTimeStr);
+                $tolerance = (int) ($schedule->late_tolerance ?? 15);
 
                 if ($clockInTime->gt($scheduleStart->copy()->addMinutes($tolerance))) {
-                    $lateMinutes = $scheduleStart->diffInMinutes($clockInTime);
+                    $lateMinutes = (int) $scheduleStart->diffInMinutes($clockInTime);
                     // Update the database record for future consistency
                     if ($lateMinutes > 0) {
                         $attendance->update([
@@ -146,6 +148,26 @@ class AttendanceController extends Controller
                             'status' => 'late',
                         ]);
                     }
+                }
+            }
+
+            // Calculate active working minutes if currently clocked in without clock out
+            $workingMinutes = (int) ($attendance->working_minutes ?? 0);
+            if ($workingMinutes === 0 && $attendance->clock_in && ! $attendance->clock_out) {
+                $clockInTime = $attendance->clock_in->setTimezone($timezone);
+                $now = $company->now();
+                if ($now->gt($clockInTime)) {
+                    $activeMinutes = (int) $clockInTime->diffInMinutes($now);
+                    if ($schedule && $schedule->break_duration && $schedule->break_end) {
+                        $breakEndStr = $schedule->break_end instanceof \DateTimeInterface
+                            ? $schedule->break_end->format('H:i:s')
+                            : (string) $schedule->break_end;
+                        $breakEnd = $now->copy()->setTimeFromTimeString($breakEndStr);
+                        if ($now->gt($breakEnd)) {
+                            $activeMinutes = max(0, $activeMinutes - (int) $schedule->break_duration);
+                        }
+                    }
+                    $workingMinutes = max(0, $activeMinutes);
                 }
             }
 
@@ -173,8 +195,9 @@ class AttendanceController extends Controller
                 'status' => $attendance->status,
                 'status_label' => $attendance->status_label,
                 'late_minutes' => (int) $lateMinutes,
-                'working_minutes' => (int) ($attendance->working_minutes ?? 0),
+                'working_minutes' => (int) $workingMinutes,
                 'schedule' => $schedule ? [
+                    'name' => $schedule->name,
                     'start_time' => Carbon::parse($schedule->start_time)->format('H:i'),
                     'end_time' => Carbon::parse($schedule->end_time)->format('H:i'),
                     'is_flexible' => (bool) $schedule->is_flexible,

@@ -836,7 +836,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       const Divider(height: 1),
                       _buildScheduleItem(
                         'Jadwal Pulang',
-                        data.schedule?.endTime ?? '-',
+                        data.schedule?.isFlexible == true &&
+                                data.targetClockOut != null &&
+                                data.targetClockOut != data.schedule?.endTime
+                            ? '${data.schedule?.endTime} (Fleksi ${data.targetClockOut})'
+                            : (data.schedule?.endTime ?? '-'),
                         Icons.logout_rounded,
                         AppColors.info,
                       ),
@@ -853,26 +857,77 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatusCard(
-                        'Jam Kerja',
-                        _formatMinutesToHoursMinutes(data.workingMinutes),
-                        Icons.access_time_rounded,
-                        AppColors.primary600,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatusCard(
-                        'Keterlambatan',
-                        _formatMinutesToHoursMinutes(data.lateMinutes),
-                        Icons.timer_off_outlined,
-                        AppColors.warning,
-                      ),
-                    ),
-                  ],
+                Builder(
+                  builder: (context) {
+                    int activeWorkingMinutes = data.workingMinutes;
+                    if (activeWorkingMinutes <= 0 &&
+                        data.clockIn != null &&
+                        data.clockOut == null) {
+                      try {
+                        final parts = data.clockIn!.split(':');
+                        final clockInHour = int.parse(parts[0]);
+                        final clockInMinute = int.parse(parts[1]);
+                        final now = DateTime.now();
+                        final clockInDt = DateTime(
+                          now.year,
+                          now.month,
+                          now.day,
+                          clockInHour,
+                          clockInMinute,
+                        );
+                        if (now.isAfter(clockInDt)) {
+                          activeWorkingMinutes =
+                              now.difference(clockInDt).inMinutes;
+                        }
+                      } catch (_) {}
+                    }
+
+                    int computedLateMinutes = data.lateMinutes;
+                    if (computedLateMinutes <= 0 &&
+                        data.clockIn != null &&
+                        data.schedule != null) {
+                      try {
+                        final inParts = data.clockIn!.split(':');
+                        final startParts = data.schedule!.startTime.split(':');
+                        final inMinutes =
+                            int.parse(inParts[0]) * 60 + int.parse(inParts[1]);
+                        final startMinutes =
+                            int.parse(startParts[0]) * 60 +
+                            int.parse(startParts[1]);
+                        if (inMinutes > startMinutes) {
+                          final diff = inMinutes - startMinutes;
+                          final tol = data.schedule!.lateTolerance;
+                          if (!data.schedule!.isFlexible && diff > tol) {
+                            computedLateMinutes = diff;
+                          }
+                        }
+                      } catch (_) {}
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatusCard(
+                            'Jam Kerja',
+                            _formatMinutesToHoursMinutes(activeWorkingMinutes),
+                            Icons.access_time_rounded,
+                            AppColors.primary600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatusCard(
+                            'Keterlambatan',
+                            _formatMinutesToHoursMinutes(computedLateMinutes),
+                            Icons.timer_off_outlined,
+                            computedLateMinutes > 0
+                                ? AppColors.warning
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

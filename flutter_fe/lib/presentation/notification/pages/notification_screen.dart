@@ -199,7 +199,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     for (final notification in notifications) {
       String dateLabel;
       try {
-        final date = DateTime.parse(notification.createdAt);
+        final date = DateTime.parse(notification.createdAt).toLocal();
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
         final yesterday = today.subtract(const Duration(days: 1));
@@ -257,7 +257,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     String timeText;
     try {
-      final date = DateTime.parse(notification.createdAt);
+      final date = DateTime.parse(notification.createdAt).toLocal();
       timeText = DateFormat('HH:mm').format(date);
     } catch (e) {
       timeText = '';
@@ -352,7 +352,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final color = _typeColors[notification.type] ?? AppColors.info;
     String formattedDate = '';
     try {
-      final date = DateTime.parse(notification.createdAt);
+      final date = DateTime.parse(notification.createdAt).toLocal();
       formattedDate = DateFormat('d MMMM yyyy, HH:mm', 'id_ID').format(date);
     } catch (_) {
       formattedDate = notification.createdAt;

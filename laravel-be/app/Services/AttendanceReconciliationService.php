@@ -108,9 +108,7 @@ class AttendanceReconciliationService
             }
         }
 
-        // Store timestamps in UTC regardless of which channel/timezone the
-        // event originated from, so cross-channel comparisons (app vs
-        // fingerprint machine vs web) are always comparing true instants.
+        // Store timestamps in UTC regardless of which channel/timezone the event originated from
         $storageEventTime = $company ? $company->toUtc($eventTime) : $eventTime->copy()->utc();
 
         try {

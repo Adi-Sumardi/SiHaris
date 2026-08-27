@@ -18,6 +18,7 @@
 /public/storage
 /public/downloads/*.apk
 /public/downloads/*.ipa
+/public/downloads/*.aab
 /storage/*.key
 /storage/pail
 /storage/api-docs

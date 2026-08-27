@@ -75,7 +75,8 @@ class PushNotificationService
         }
 
         $status = $attendance->status === 'late' ? 'terlambat' : 'tepat waktu';
-        $time = $attendance->clock_in->format('H:i');
+        $timezone = $attendance->company?->timezone ?? 'Asia/Jakarta';
+        $time = $attendance->clock_in->setTimezone($timezone)->format('H:i');
 
         $title = 'Clock In Berhasil';
         $message = "Anda telah melakukan clock in pukul {$time} ({$status})";
@@ -114,7 +115,8 @@ class PushNotificationService
             return ['total' => 0, 'success_count' => 0, 'failure_count' => 0, 'results' => []];
         }
 
-        $clockOut = $attendance->clock_out->format('H:i');
+        $timezone = $attendance->company?->timezone ?? 'Asia/Jakarta';
+        $clockOut = $attendance->clock_out->setTimezone($timezone)->format('H:i');
         $hours = floor($attendance->working_minutes / 60);
         $minutes = $attendance->working_minutes % 60;
 

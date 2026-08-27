@@ -290,7 +290,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   Widget _buildHistoryItem(AttendanceHistoryModel item) {
     final date = DateTime.tryParse(item.date) ?? DateTime.now();
     final day = DateFormat('d').format(date);
-    final month = DateFormat('MMM').format(date);
+    final month = DateFormat('MMM', 'id_ID').format(date);
     final dayName = DateFormat('EEEE', 'id_ID').format(date);
 
     Color color;
@@ -321,163 +321,223 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Row(
-        children: [
-          // Date container - 44px
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
+          children: [
+            // Top Row: Date Pill, Day Name, Status Badge, and Navigation Chevron
+            Row(
               children: [
-                Text(
-                  day,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                    height: 1,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                Text(
-                  month,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      dayName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        item.statusLabel,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        day,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        month,
+                        style: TextStyle(
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: color,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 4),
-                if (item.clockIn != null)
-                  Row(
+                const SizedBox(width: 10),
+                Text(
+                  dayName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    item.statusLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppColors.textTertiary,
+                  size: 14,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Divider(height: 1, color: AppColors.divider),
+            const SizedBox(height: 10),
+            // Bottom Row: Clock In, Clock Out, and Work Hours
+            Row(
+              children: [
+                // Masuk
+                Expanded(
+                  child: Row(
                     children: [
-                      Icon(
-                        Icons.login_rounded,
-                        size: 12,
-                        color: AppColors.success,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        item.clockIn!,
-                        style: const TextStyle(
-                          fontSize: 12,
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.login_rounded,
+                          size: 13,
                           color: AppColors.success,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.logout_rounded,
-                        size: 12,
-                        color: AppColors.info,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        item.clockOut ?? '--:--',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: item.clockOut != null
-                              ? AppColors.info
-                              : AppColors.textTertiary,
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Masuk',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                            Text(
+                              item.clockIn ?? '--:--',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: item.clockIn != null
+                                    ? AppColors.textPrimary
+                                    : AppColors.textTertiary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  )
-                else
-                  const Text(
-                    '-', // Notes not in model
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
+                  ),
+                ),
+                // Pulang
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: AppColors.info.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.logout_rounded,
+                          size: 13,
+                          color: AppColors.info,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pulang',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                            Text(
+                              item.clockOut ?? '--:--',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: item.clockOut != null
+                                    ? AppColors.textPrimary
+                                    : AppColors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Jam Kerja Badge
+                if (item.workingFormatted != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary50,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: AppColors.primary600.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 12,
+                          color: AppColors.primary600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          item.workingFormatted!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
               ],
             ),
-          ),
-          // Work hours
-          if (item.workingFormatted != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primary50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    item.workingFormatted!,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary600,
-                    ),
-                  ),
-                  const Text(
-                    'Jam Kerja',
-                    style: TextStyle(fontSize: 9, color: AppColors.primary400),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(width: 4),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.textTertiary,
-            size: 20,
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }

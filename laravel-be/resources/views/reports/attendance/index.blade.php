@@ -131,6 +131,7 @@
                     <th class="text-center">Clock Out</th>
                     <th class="text-center">Status</th>
                     <th class="text-right">Terlambat</th>
+                    <th class="text-right">Pulang Cepat</th>
                     <th class="text-right">Lembur</th>
                 </x-slot>
 
@@ -170,6 +171,13 @@
                             @endif
                         </td>
                         <td class="text-right">
+                            @if($attendance->early_leave_minutes > 0)
+                                <span class="text-warning-600 font-medium">{{ $attendance->early_leave_minutes }}m</span>
+                            @else
+                                <span class="text-secondary-400">-</span>
+                            @endif
+                        </td>
+                        <td class="text-right">
                             @if($attendance->overtime_minutes > 0)
                                 <span class="text-primary-600 font-medium">{{ $attendance->overtime_minutes }}m</span>
                             @else
@@ -179,7 +187,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center py-12">
+                        <td colspan="9" class="text-center py-12">
                             <div class="flex flex-col items-center">
                                 <svg class="w-12 h-12 text-secondary-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <p class="text-secondary-500">Tidak ada data kehadiran untuk filter yang dipilih.</p>

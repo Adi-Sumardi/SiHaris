@@ -156,13 +156,14 @@
                 <th class="text-center" style="width: 4%;">No</th>
                 <th class="text-center" style="width: 9%;">Tanggal</th>
                 <th style="width: 10%;">ID Karyawan</th>
-                <th style="width: 20%;">Nama Karyawan</th>
-                <th style="width: 15%;">Departemen</th>
+                <th style="width: 18%;">Nama Karyawan</th>
+                <th style="width: 13%;">Departemen</th>
                 <th class="text-center" style="width: 8%;">Masuk</th>
                 <th class="text-center" style="width: 8%;">Pulang</th>
                 <th class="text-center" style="width: 12%;">Status</th>
-                <th class="text-right" style="width: 7%;">Terlambat</th>
-                <th class="text-right" style="width: 7%;">Lembur</th>
+                <th class="text-right" style="width: 6%;">Terlambat</th>
+                <th class="text-right" style="width: 6%;">Pulang Cepat</th>
+                <th class="text-right" style="width: 6%;">Lembur</th>
             </tr>
         </thead>
         <tbody>
@@ -198,6 +199,13 @@
                         @endif
                     </td>
                     <td class="text-right" style="font-size: 7pt;">
+                        @if($attendance->early_leave_minutes > 0)
+                            <strong style="color: #d97706;">{{ $attendance->early_leave_minutes }} m</strong>
+                        @else
+                            <span style="color: #94a3b8;">-</span>
+                        @endif
+                    </td>
+                    <td class="text-right" style="font-size: 7pt;">
                         @if($attendance->overtime_minutes > 0)
                             <strong style="color: #0284c7;">{{ $attendance->overtime_minutes }} m</strong>
                         @else
@@ -207,7 +215,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="text-center" style="padding: 15px; color: #94a3b8;">
+                    <td colspan="11" class="text-center" style="padding: 15px; color: #94a3b8;">
                         Tidak ada data kehadiran yang sesuai dengan filter.
                     </td>
                 </tr>

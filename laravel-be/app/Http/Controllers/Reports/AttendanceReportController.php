@@ -254,6 +254,7 @@ class AttendanceReportController extends Controller
                 'Clock Out',
                 'Status',
                 'Terlambat (menit)',
+                'Pulang Cepat (menit)',
                 'Lembur (menit)',
             ]);
 
@@ -268,6 +269,7 @@ class AttendanceReportController extends Controller
                     $attendance->clock_out?->format('H:i') ?? '-',
                     ucfirst($attendance->clock_in_status ?? $attendance->status),
                     $attendance->late_minutes,
+                    $attendance->early_leave_minutes,
                     $attendance->overtime_minutes,
                 ]);
             }

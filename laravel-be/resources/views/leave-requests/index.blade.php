@@ -13,6 +13,10 @@
             <p class="text-secondary-500 mt-1">Kelola pengajuan cuti dan izin karyawan.</p>
         </div>
         <div class="flex items-center gap-3">
+            <a href="{{ route('imports.leave-requests.index') }}" class="btn btn-secondary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Import
+            </a>
             <a href="{{ route('leave-requests.create') }}" class="btn btn-primary">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                 Ajukan Cuti

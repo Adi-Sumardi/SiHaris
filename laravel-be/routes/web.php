@@ -33,6 +33,7 @@ use App\Http\Controllers\Import\DepartmentImportController;
 use App\Http\Controllers\Import\EmployeeImportController;
 use App\Http\Controllers\Import\EmployeeSalaryImportController;
 use App\Http\Controllers\Import\HolidayImportController;
+use App\Http\Controllers\Import\LeaveRequestImportController;
 use App\Http\Controllers\Import\LeaveTypeImportController;
 use App\Http\Controllers\Import\PositionImportController;
 use App\Http\Controllers\Import\WorkScheduleImportController;
@@ -598,6 +599,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('leave-types', [LeaveTypeImportController::class, 'index'])->name('leave-types.index');
         Route::get('leave-types/template', [LeaveTypeImportController::class, 'template'])->name('leave-types.template');
         Route::post('leave-types', [LeaveTypeImportController::class, 'store'])->name('leave-types.store');
+
+        // Leave Request Import
+        Route::get('leave-requests', [LeaveRequestImportController::class, 'index'])->name('leave-requests.index');
+        Route::get('leave-requests/template', [LeaveRequestImportController::class, 'template'])->name('leave-requests.template');
+        Route::post('leave-requests', [LeaveRequestImportController::class, 'store'])->name('leave-requests.store');
 
         // Employee Import
         Route::get('employees', [EmployeeImportController::class, 'index'])->name('employees.index');

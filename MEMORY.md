@@ -413,6 +413,20 @@
   - **Aman secara data**: `status` dan `clock_in_status`/`late_minutes` SELALU di-set bersamaan dalam blok kondisi yang sama di `Attendance::clockIn()`/`recalculate()` (`app/Models/Attendance.php`) — jadi tidak ada risiko baris `status='late'` kehilangan info keterlambatannya di kolom Jam Masuk setelah perubahan ini.
   - Filter dropdown "Terlambat" (`status=late`) di toolbar TIDAK diubah — tetap berguna untuk admin yang mau filter data.
 - Tidak ada perubahan model/migration/route, jadi deploy cukup `git pull` + `php artisan view:clear` (sebagai `www-data`), tanpa restart `php8.3-fpm`/`siharis-worker`.
+- **Follow-up sama sesi**: kolom Jam Masuk juga disederhanakan — `clock_in_status === 'very_late'` tidak lagi punya teks "Sangat Terlambat" tersendiri, digabung ke kondisi `late` yang sama (`in_array($attendance->clock_in_status, ['late','very_late'])` → selalu "Terlambat Xm"). Jadi baik status ringan maupun sangat terlambat sekarang tampil dengan teks identik.
+
+---
+
+## 27. Kolom "Pulang Cepat" di Laporan Absensi (`/reports/attendance`)
+
+- Ditambahkan kolom baru "Pulang Cepat" (pakai `early_leave_minutes`, sama seperti di §26) ke SEMUA 3 tempat yang menampilkan tabel laporan ini — diminta eksplisit oleh user supaya export tetap konsisten dengan tampilan web:
+  - `resources/views/reports/attendance/index.blade.php` — kolom baru di antara "Terlambat" dan "Lembur", `colspan` empty-state 8→9.
+  - `AttendanceReportController::exportExcel()` (`app/Http/Controllers/Reports/AttendanceReportController.php`) — **bukan** class `Maatwebsite\Excel` Export, ini CSV stream manual (`fputcsv`) walau tombolnya berlabel "Export Excel". Heading baru `'Pulang Cepat (menit)'` disisipkan antara `'Terlambat (menit)'` dan `'Lembur (menit)'`.
+  - `resources/views/reports/attendance/pdf.blade.php` (dompdf, landscape A4) — kolom baru + lebar kolom lain di-rebalance (Nama Karyawan 20%→18%, Departemen 15%→13%, Terlambat/Lembur 7%→6%, Pulang Cepat baru 6%) supaya total tetap 100%; `colspan` empty-state 10→11.
+- **Catatan penting**: `daily()`/`lateness()` (route `reports.attendance.daily`/`reports.attendance.lateness`, view berbeda) adalah laporan attendance LAIN di controller yang sama tapi TIDAK punya tombol export — sengaja tidak disentuh, di luar scope permintaan ini.
+- Summary bar di PDF (Total Record/Tepat Waktu/Terlambat/Total Terlambat/Total Lembur) dan stat-card di halaman index TIDAK ditambahkan "Total Pulang Cepat" — user hanya minta kolom tabel & export, bukan statistik ringkasan baru.
+- Test `tests/Feature/Reports/AttendanceReportControllerTest.php` (11 test, termasuk smoke-test export excel & pdf) tetap lolos tanpa perlu diubah — tidak ada assertion yang terikat ke struktur kolom persisnya.
+- Deploy: `git pull` + `view:clear` (sebagai `www-data`) + restart `php8.3-fpm` (karena ada perubahan file PHP controller, bukan cuma Blade).
 
 
 

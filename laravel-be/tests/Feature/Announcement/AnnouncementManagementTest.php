@@ -7,6 +7,8 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
@@ -126,6 +128,117 @@ describe('Admin - Announcement Management', function () {
         $response = $this->post(route('announcements.store'), []);
 
         $response->assertSessionHasErrors(['title', 'content', 'priority', 'target_audience']);
+    });
+
+    it('creates announcement with a PDF attachment', function () {
+        Storage::fake('local');
+        $this->actingAs($this->admin);
+
+        $file = UploadedFile::fake()->create('surat-edaran.pdf', 500, 'application/pdf');
+
+        $response = $this->post(route('announcements.store'), [
+            'title' => 'Surat Edaran',
+            'content' => 'Lihat lampiran.',
+            'priority' => 'normal',
+            'target_audience' => 'all',
+            'attachment' => $file,
+        ]);
+
+        $response->assertRedirect(route('announcements.index'));
+
+        $announcement = Announcement::where('title', 'Surat Edaran')->firstOrFail();
+        expect($announcement->attachment_name)->toBe('surat-edaran.pdf');
+        expect($announcement->attachment_mime_type)->toBe('application/pdf');
+        expect($announcement->attachment_path)->not->toBeNull();
+        Storage::disk('local')->assertExists($announcement->attachment_path);
+    });
+
+    it('creates announcement with an image attachment', function () {
+        Storage::fake('local');
+        $this->actingAs($this->admin);
+
+        $file = UploadedFile::fake()->image('poster.jpg');
+
+        $response = $this->post(route('announcements.store'), [
+            'title' => 'Poster Acara',
+            'content' => 'Lihat poster.',
+            'priority' => 'normal',
+            'target_audience' => 'all',
+            'attachment' => $file,
+        ]);
+
+        $response->assertRedirect(route('announcements.index'));
+
+        $announcement = Announcement::where('title', 'Poster Acara')->firstOrFail();
+        expect($announcement->is_attachment_image)->toBeTrue();
+    });
+
+    it('rejects an unsupported attachment file type', function () {
+        $this->actingAs($this->admin);
+
+        $file = UploadedFile::fake()->create('data.exe', 100, 'application/x-msdownload');
+
+        $response = $this->post(route('announcements.store'), [
+            'title' => 'Pengumuman',
+            'content' => 'Isi pengumuman.',
+            'priority' => 'normal',
+            'target_audience' => 'all',
+            'attachment' => $file,
+        ]);
+
+        $response->assertSessionHasErrors(['attachment']);
+        $this->assertDatabaseMissing('announcements', ['title' => 'Pengumuman']);
+    });
+
+    it('replaces the attachment and deletes the old file when updating', function () {
+        Storage::fake('local');
+        $this->actingAs($this->admin);
+
+        $oldFile = UploadedFile::fake()->create('old.pdf', 100, 'application/pdf');
+        $oldPath = $oldFile->store('announcements/'.$this->company->id, 'local');
+
+        $announcement = Announcement::factory()->create([
+            'company_id' => $this->company->id,
+            'created_by' => $this->admin->id,
+            'attachment_path' => $oldPath,
+            'attachment_name' => 'old.pdf',
+            'attachment_mime_type' => 'application/pdf',
+        ]);
+
+        $newFile = UploadedFile::fake()->create('new.pdf', 100, 'application/pdf');
+
+        $response = $this->put(route('announcements.update', $announcement), [
+            'title' => $announcement->title,
+            'content' => $announcement->content,
+            'priority' => $announcement->priority,
+            'target_audience' => 'all',
+            'attachment' => $newFile,
+        ]);
+
+        $response->assertRedirect(route('announcements.index'));
+
+        $announcement->refresh();
+        expect($announcement->attachment_name)->toBe('new.pdf');
+        Storage::disk('local')->assertMissing($oldPath);
+        Storage::disk('local')->assertExists($announcement->attachment_path);
+    });
+
+    it('deletes the attachment file when the announcement is deleted', function () {
+        Storage::fake('local');
+        $this->actingAs($this->admin);
+
+        $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
+        $path = $file->store('announcements/'.$this->company->id, 'local');
+
+        $announcement = Announcement::factory()->create([
+            'company_id' => $this->company->id,
+            'created_by' => $this->admin->id,
+            'attachment_path' => $path,
+        ]);
+
+        $this->delete(route('announcements.destroy', $announcement));
+
+        Storage::disk('local')->assertMissing($path);
     });
 
     it('displays edit form', function () {

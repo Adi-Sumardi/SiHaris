@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
@@ -50,6 +51,7 @@ describe('GET /api/v1/announcements', function () {
                         'priority_label',
                         'is_pinned',
                         'is_read',
+                        'has_attachment',
                         'published_at',
                         'created_at',
                     ],
@@ -203,6 +205,7 @@ describe('GET /api/v1/announcements/{id}', function () {
                     'priority_label',
                     'is_pinned',
                     'is_read',
+                    'has_attachment',
                     'published_at',
                     'created_at',
                     'creator' => [
@@ -241,6 +244,67 @@ describe('GET /api/v1/announcements/{id}', function () {
         $response = $this->getJson("/api/v1/announcements/{$announcement->id}");
 
         $response->assertStatus(404);
+    });
+
+    it('includes attachment fields and a working signed preview/download URL when an attachment exists', function () {
+        Sanctum::actingAs($this->user);
+
+        $file = UploadedFile::fake()->create('edaran.pdf', 300, 'application/pdf');
+        $path = $file->store("announcements/{$this->company->id}", 'local');
+
+        $announcement = Announcement::factory()->create([
+            'company_id' => $this->company->id,
+            'target_audience' => Announcement::TARGET_ALL,
+            'is_published' => true,
+            'attachment_path' => $path,
+            'attachment_name' => 'edaran.pdf',
+            'attachment_size' => 307200,
+            'attachment_mime_type' => 'application/pdf',
+        ]);
+
+        $response = $this->getJson("/api/v1/announcements/{$announcement->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.has_attachment', true)
+            ->assertJsonPath('data.attachment_name', 'edaran.pdf')
+            ->assertJsonPath('data.is_attachment_image', false)
+            ->assertJsonPath('data.is_attachment_pdf', true);
+
+        $body = $response->json('data');
+        $this->get($body['attachment_preview_url'])->assertOk();
+        $this->get($body['attachment_download_url'])->assertOk();
+    });
+
+    it('omits attachment fields when there is no attachment', function () {
+        Sanctum::actingAs($this->user);
+
+        $announcement = Announcement::factory()->create([
+            'company_id' => $this->company->id,
+            'target_audience' => Announcement::TARGET_ALL,
+            'is_published' => true,
+            'attachment_path' => null,
+        ]);
+
+        $response = $this->getJson("/api/v1/announcements/{$announcement->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.has_attachment', false)
+            ->assertJsonPath('data.attachment_preview_url', null)
+            ->assertJsonPath('data.attachment_download_url', null);
+    });
+
+    it('rejects announcement attachment preview/download with a missing or invalid token', function () {
+        Sanctum::actingAs($this->user);
+
+        $announcement = Announcement::factory()->create([
+            'company_id' => $this->company->id,
+            'attachment_path' => 'announcements/1/edaran.pdf',
+            'attachment_name' => 'edaran.pdf',
+        ]);
+
+        $this->get("/api/v1/announcements/{$announcement->id}/preview")->assertForbidden();
+        $this->get("/api/v1/announcements/{$announcement->id}/download?token=invalid&expires=".now()->addMinutes(5)->timestamp)
+            ->assertForbidden();
     });
 });
 

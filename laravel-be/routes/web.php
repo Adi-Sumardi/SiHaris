@@ -467,6 +467,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('announcements', AnnouncementController::class);
     Route::post('announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])->name('announcements.publish');
     Route::post('announcements/{announcement}/unpublish', [AnnouncementController::class, 'unpublish'])->name('announcements.unpublish');
+    Route::get('announcements/{announcement}/preview', [AnnouncementController::class, 'preview'])->name('announcements.preview');
+    Route::get('announcements/{announcement}/download', [AnnouncementController::class, 'download'])->name('announcements.download');
 
     // Settings
     Route::prefix('settings')->name('settings.')->group(function () {

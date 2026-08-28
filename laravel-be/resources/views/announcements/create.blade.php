@@ -23,7 +23,7 @@
 @endsection
 
 @section('content')
-    <form action="{{ route('announcements.store') }}" method="POST" x-data="{ targetAudience: '{{ old('target_audience', 'all') }}' }">
+    <form action="{{ route('announcements.store') }}" method="POST" enctype="multipart/form-data" x-data="{ targetAudience: '{{ old('target_audience', 'all') }}' }">
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -56,6 +56,19 @@
                                       placeholder="Tulis isi pengumuman..."
                                       required>{{ old('content') }}</textarea>
                             @error('content')
+                                <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="attachment" class="block text-sm font-medium text-secondary-700 mb-1">
+                                Lampiran
+                            </label>
+                            <input type="file" name="attachment" id="attachment"
+                                   accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                                   class="input w-full @error('attachment') border-danger-500 @enderror">
+                            <p class="mt-1 text-xs text-secondary-500">Format JPG, PNG, atau PDF. Maksimal 10 MB.</p>
+                            @error('attachment')
                                 <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                             @enderror
                         </div>

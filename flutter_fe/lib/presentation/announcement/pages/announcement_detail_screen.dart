@@ -1,10 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/text_styles.dart';
 import '../../../core/constants/spacing.dart';
 import '../../../core/components/widgets.dart';
+import '../../../data/models/responses/announcement_model.dart';
 import '../bloc/announcement_detail/announcement_detail_bloc.dart';
 import '../bloc/announcement_detail/announcement_detail_event.dart';
 import '../bloc/announcement_detail/announcement_detail_state.dart';
@@ -30,6 +33,138 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
     );
     context.read<AnnouncementMarkReadBloc>().add(
       MarkAnnouncementAsRead(widget.announcementId),
+    );
+  }
+
+  Future<void> _openOrDownloadAttachment(AnnouncementModel announcement) async {
+    final urlStr =
+        announcement.attachmentDownloadUrl ?? announcement.attachmentPreviewUrl;
+    if (urlStr == null || urlStr.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('URL lampiran tidak tersedia')),
+      );
+      return;
+    }
+
+    try {
+      final uri = Uri.parse(urlStr);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal membuka lampiran: $e')));
+      }
+    }
+  }
+
+  Widget _buildAttachment(AnnouncementModel announcement) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        Text('Lampiran', style: AppTextStyles.labelMedium),
+        const SizedBox(height: AppSpacing.sm),
+        if (announcement.isAttachmentImage &&
+            announcement.attachmentPreviewUrl != null)
+          GestureDetector(
+            onTap: () => _openOrDownloadAttachment(announcement),
+            child: Container(
+              height: 220,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: AppSpacing.borderRadiusMd,
+                border: Border.all(color: AppColors.border),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: CachedNetworkImage(
+                imageUrl: announcement.attachmentPreviewUrl!,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+                errorWidget: (context, url, error) => const Center(
+                  child: Icon(
+                    Icons.broken_image_rounded,
+                    color: Colors.white54,
+                    size: 32,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          InkWell(
+            onTap: () => _openOrDownloadAttachment(announcement),
+            borderRadius: AppSpacing.borderRadiusMd,
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: AppSpacing.borderRadiusMd,
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color:
+                          (announcement.isAttachmentPdf
+                                  ? AppColors.danger
+                                  : AppColors.primary600)
+                              .withValues(alpha: 0.1),
+                      borderRadius: AppSpacing.borderRadiusSm,
+                    ),
+                    child: Icon(
+                      announcement.isAttachmentPdf
+                          ? Icons.picture_as_pdf_rounded
+                          : Icons.insert_drive_file_rounded,
+                      color: announcement.isAttachmentPdf
+                          ? AppColors.danger
+                          : AppColors.primary600,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          announcement.attachmentName ?? 'Lampiran',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (announcement.humanAttachmentSize != null)
+                          Text(
+                            announcement.humanAttachmentSize!,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.open_in_new_rounded,
+                    size: 18,
+                    color: AppColors.textTertiary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -238,6 +373,9 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
                       ),
                     ),
                   ),
+
+                  if (announcement.hasAttachment)
+                    _buildAttachment(announcement),
                 ],
               ),
             );

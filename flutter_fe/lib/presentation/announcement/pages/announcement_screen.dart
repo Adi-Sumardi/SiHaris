@@ -387,6 +387,14 @@ class _AnnouncementScreenState extends State<AnnouncementScreen> {
                               color: AppColors.textSecondary,
                             ),
                           ),
+                          if (announcement.hasAttachment == true) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.attach_file_rounded,
+                              size: 12,
+                              color: AppColors.textTertiary,
+                            ),
+                          ],
                         ],
                       ),
                     ],

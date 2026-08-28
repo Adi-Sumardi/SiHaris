@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Announcement extends Model
 {
@@ -47,6 +48,10 @@ class Announcement extends Model
         'created_by',
         'title',
         'content',
+        'attachment_path',
+        'attachment_name',
+        'attachment_size',
+        'attachment_mime_type',
         'priority',
         'target_audience',
         'target_ids',
@@ -60,11 +65,21 @@ class Announcement extends Model
     {
         return [
             'target_ids' => 'array',
+            'attachment_size' => 'integer',
             'is_pinned' => 'boolean',
             'is_published' => 'boolean',
             'published_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $announcement) {
+            if ($announcement->attachment_path) {
+                Storage::disk('local')->delete($announcement->attachment_path);
+            }
+        });
     }
 
     // Relationships
@@ -104,6 +119,38 @@ class Announcement extends Model
     public function getIsActiveAttribute(): bool
     {
         return $this->is_published && ! $this->is_expired;
+    }
+
+    public function getHasAttachmentAttribute(): bool
+    {
+        return ! empty($this->attachment_path);
+    }
+
+    public function getIsAttachmentImageAttribute(): bool
+    {
+        return str_starts_with((string) $this->attachment_mime_type, 'image/');
+    }
+
+    public function getIsAttachmentPdfAttribute(): bool
+    {
+        return $this->attachment_mime_type === 'application/pdf';
+    }
+
+    public function getHumanAttachmentSizeAttribute(): ?string
+    {
+        $bytes = $this->attachment_size;
+
+        if (! $bytes) {
+            return null;
+        }
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 1).' MB';
+        }
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 0).' KB';
+        }
+
+        return $bytes.' B';
     }
 
     // Methods
@@ -172,7 +219,7 @@ class Announcement extends Model
                 }
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to notify users for announcement: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Failed to notify users for announcement: '.$e->getMessage());
         }
     }
 

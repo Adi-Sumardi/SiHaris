@@ -8,7 +8,10 @@ use App\Models\Employee;
 use App\Models\Position;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AnnouncementController extends Controller
 {
@@ -52,7 +55,10 @@ class AnnouncementController extends Controller
             'target_ids.*' => 'integer',
             'is_pinned' => 'nullable|boolean',
             'expires_at' => 'nullable|date|after:today',
+            'attachment' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
         ]);
+
+        $attachment = $this->storeAttachment($request, $tenant->id);
 
         $announcement = Announcement::create([
             'company_id' => $tenant->id,
@@ -64,6 +70,7 @@ class AnnouncementController extends Controller
             'target_ids' => $validated['target_ids'] ?? null,
             'is_pinned' => $validated['is_pinned'] ?? false,
             'expires_at' => $validated['expires_at'] ?? null,
+            ...$attachment ?? [],
         ]);
 
         return redirect()->route('announcements.index')
@@ -118,7 +125,26 @@ class AnnouncementController extends Controller
             'target_ids.*' => 'integer',
             'is_pinned' => 'nullable|boolean',
             'expires_at' => 'nullable|date',
+            'attachment' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
+            'remove_attachment' => 'nullable|boolean',
         ]);
+
+        $attachment = $this->storeAttachment($request, $tenant->id);
+
+        if ($attachment || $request->boolean('remove_attachment')) {
+            if ($announcement->attachment_path) {
+                Storage::disk('local')->delete($announcement->attachment_path);
+            }
+        }
+
+        if (! $attachment && $request->boolean('remove_attachment')) {
+            $attachment = [
+                'attachment_path' => null,
+                'attachment_name' => null,
+                'attachment_size' => null,
+                'attachment_mime_type' => null,
+            ];
+        }
 
         $announcement->update([
             'title' => $validated['title'],
@@ -128,6 +154,7 @@ class AnnouncementController extends Controller
             'target_ids' => $validated['target_ids'] ?? null,
             'is_pinned' => $validated['is_pinned'] ?? false,
             'expires_at' => $validated['expires_at'] ?? null,
+            ...$attachment ?? [],
         ]);
 
         return redirect()->route('announcements.index')
@@ -174,5 +201,67 @@ class AnnouncementController extends Controller
 
         return redirect()->back()
             ->with('success', 'Pengumuman berhasil di-unpublish.');
+    }
+
+    public function preview(Announcement $announcement): BinaryFileResponse
+    {
+        $tenant = app('tenant');
+
+        if ($announcement->company_id !== $tenant->id || ! $announcement->attachment_path) {
+            abort(404);
+        }
+
+        if (! Storage::disk('local')->exists($announcement->attachment_path)) {
+            abort(404);
+        }
+
+        return response()->file(
+            Storage::disk('local')->path($announcement->attachment_path),
+            [
+                'Content-Type' => $announcement->attachment_mime_type ?? 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="'.$announcement->attachment_name.'"',
+            ]
+        );
+    }
+
+    public function download(Announcement $announcement): StreamedResponse
+    {
+        $tenant = app('tenant');
+
+        if ($announcement->company_id !== $tenant->id || ! $announcement->attachment_path) {
+            abort(404);
+        }
+
+        if (! Storage::disk('local')->exists($announcement->attachment_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download(
+            $announcement->attachment_path,
+            $announcement->attachment_name,
+            ['Content-Type' => $announcement->attachment_mime_type ?? 'application/octet-stream']
+        );
+    }
+
+    /**
+     * Validate and store the uploaded attachment, if any.
+     *
+     * @return array{attachment_path: string, attachment_name: string, attachment_size: int, attachment_mime_type: string}|null
+     */
+    private function storeAttachment(Request $request, int $companyId): ?array
+    {
+        if (! $request->hasFile('attachment')) {
+            return null;
+        }
+
+        $file = $request->file('attachment');
+        $path = $file->store("announcements/{$companyId}", 'local');
+
+        return [
+            'attachment_path' => $path,
+            'attachment_name' => $file->getClientOriginalName(),
+            'attachment_size' => $file->getSize(),
+            'attachment_mime_type' => $file->getMimeType(),
+        ];
     }
 }

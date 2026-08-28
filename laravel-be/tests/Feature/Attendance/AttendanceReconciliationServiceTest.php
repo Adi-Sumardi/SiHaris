@@ -67,7 +67,7 @@ describe('AttendanceReconciliationService', function () {
 
         expect($result['status'])->toBe('duplicate_ignored');
         expect($result['attendance']->clock_in_source)->toBe('app_face');
-        expect($result['attendance']->clock_in?->format('H:i'))->toBe('08:05');
+        expect($result['attendance']->clock_in?->setTimezone($this->company->timezone)->format('H:i'))->toBe('08:05');
 
         $this->assertDatabaseCount('raw_attendance_logs', 2);
     });
@@ -80,7 +80,7 @@ describe('AttendanceReconciliationService', function () {
         $result = $this->service->record($this->employee, 'clock_in', $earlierTime, 'fingerprint');
 
         expect($result['status'])->toBe('superseded');
-        expect($result['attendance']->clock_in?->format('H:i'))->toBe('08:00');
+        expect($result['attendance']->clock_in?->setTimezone($this->company->timezone)->format('H:i'))->toBe('08:00');
         expect($result['attendance']->clock_in_source)->toBe('fingerprint');
     });
 
@@ -92,7 +92,7 @@ describe('AttendanceReconciliationService', function () {
         $result = $this->service->record($this->employee, 'clock_in', $withinSkew, 'fingerprint');
 
         expect($result['status'])->toBe('duplicate_ignored');
-        expect($result['attendance']->clock_in?->format('H:i'))->toBe('08:10');
+        expect($result['attendance']->clock_in?->setTimezone($this->company->timezone)->format('H:i'))->toBe('08:10');
     });
 
     it('always applies the latest clock-out event', function () {
@@ -105,7 +105,7 @@ describe('AttendanceReconciliationService', function () {
         $result = $this->service->record($this->employee, 'clock_out', $secondOut, 'fingerprint');
 
         expect($result['status'])->toBe('applied');
-        expect($result['attendance']->clock_out?->format('H:i'))->toBe('17:05');
+        expect($result['attendance']->clock_out?->setTimezone($this->company->timezone)->format('H:i'))->toBe('17:05');
         expect($result['attendance']->clock_out_source)->toBe('fingerprint');
     });
 
@@ -119,7 +119,7 @@ describe('AttendanceReconciliationService', function () {
         $result = $this->service->record($this->employee, 'clock_out', $earlierOut, 'fingerprint');
 
         expect($result['status'])->toBe('duplicate_ignored');
-        expect($result['attendance']->clock_out?->format('H:i'))->toBe('17:05');
+        expect($result['attendance']->clock_out?->setTimezone($this->company->timezone)->format('H:i'))->toBe('17:05');
     });
 
     it('creates a needs_review record for clock-out without prior clock-in', function () {

@@ -54,13 +54,13 @@ describe('Flexi Time Attendance', function () {
             'scheduled_end' => '16:00',
         ]);
 
-        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:00:00')]);
+        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:00:00', 'Asia/Jakarta')]);
         expect($attendance->status)->toBe('present');
         expect($attendance->clock_in_status)->toBe('on_time');
         expect($attendance->late_minutes)->toBe(0);
-        expect($attendance->getDynamicScheduledEndDatetime()->format('H:i'))->toBe('16:00');
+        expect($attendance->getDynamicScheduledEndDatetime()->setTimezone($this->company->timezone)->format('H:i'))->toBe('16:00');
 
-        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:00:00')]);
+        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:00:00', 'Asia/Jakarta')]);
         expect($attendance->clock_out_status)->toBe('on_time');
         expect($attendance->early_leave_minutes)->toBe(0);
         expect($attendance->overtime_minutes)->toBe(0);
@@ -79,15 +79,15 @@ describe('Flexi Time Attendance', function () {
         ]);
 
         // Clock in at 07:25 (25 minutes after 07:00, within 60 min tolerance)
-        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00')]);
+        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00', 'Asia/Jakarta')]);
 
         expect($attendance->status)->toBe('present');
         expect($attendance->clock_in_status)->toBe('on_time');
         expect($attendance->late_minutes)->toBe(0);
-        expect($attendance->getDynamicScheduledEndDatetime()->format('H:i'))->toBe('16:25');
+        expect($attendance->getDynamicScheduledEndDatetime()->setTimezone($this->company->timezone)->format('H:i'))->toBe('16:25');
 
         // Clock out at 16:25 -> Exactly on time
-        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:25:00')]);
+        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:25:00', 'Asia/Jakarta')]);
 
         expect($attendance->clock_out_status)->toBe('on_time');
         expect($attendance->early_leave_minutes)->toBe(0);
@@ -107,9 +107,9 @@ describe('Flexi Time Attendance', function () {
             'scheduled_end' => '16:00',
         ]);
 
-        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00')]);
+        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00', 'Asia/Jakarta')]);
         // Clock out at 16:22 (3 mins before 16:25, within 5 min early tolerance)
-        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:22:00')]);
+        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:22:00', 'Asia/Jakarta')]);
 
         expect($attendance->clock_out_status)->toBe('on_time');
         expect($attendance->early_leave_minutes)->toBe(0);
@@ -127,9 +127,9 @@ describe('Flexi Time Attendance', function () {
             'scheduled_end' => '16:00',
         ]);
 
-        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00')]);
+        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00', 'Asia/Jakarta')]);
         // Leaves at 16:00 (25 mins before dynamic target 16:25)
-        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:00:00')]);
+        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:00:00', 'Asia/Jakarta')]);
 
         expect($attendance->clock_out_status)->toBe('early');
         expect($attendance->early_leave_minutes)->toBe(25);
@@ -147,8 +147,8 @@ describe('Flexi Time Attendance', function () {
             'scheduled_end' => '16:00',
         ]);
 
-        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00')]);
-        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:45:00')]);
+        $attendance->clockIn(['event_time' => Carbon::parse('2026-08-26 07:25:00', 'Asia/Jakarta')]);
+        $attendance->clockOut(['event_time' => Carbon::parse('2026-08-26 16:45:00', 'Asia/Jakarta')]);
 
         expect($attendance->clock_out_status)->toBe('overtime');
         expect($attendance->overtime_minutes)->toBe(20);
@@ -165,8 +165,8 @@ describe('Flexi Time Attendance', function () {
             'date' => $shiftDate,
             'scheduled_start' => '07:00',
             'scheduled_end' => '16:00',
-            'clock_in' => Carbon::parse('2026-08-26 07:25:00'),
-            'clock_out' => Carbon::parse('2026-08-26 16:25:00'),
+            'clock_in' => Carbon::parse('2026-08-26 07:25:00', 'Asia/Jakarta')->utc(),
+            'clock_out' => Carbon::parse('2026-08-26 16:25:00', 'Asia/Jakarta')->utc(),
         ]);
 
         $attendance->recalculate();

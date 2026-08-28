@@ -90,8 +90,8 @@ describe('Attendance overnight calculations', function () {
             'date' => '2026-02-24',
             'scheduled_start' => '22:00',
             'scheduled_end' => '06:00',
-            'clock_in' => Carbon::parse('2026-02-24 22:00'),
-            'clock_out' => Carbon::parse('2026-02-25 06:30'), // 30 min overtime
+            'clock_in' => Carbon::parse('2026-02-24 22:00', 'Asia/Jakarta')->utc(),
+            'clock_out' => Carbon::parse('2026-02-25 06:30', 'Asia/Jakarta')->utc(), // 30 min overtime
             'status' => 'present',
         ]);
 
@@ -123,8 +123,8 @@ describe('Attendance overnight calculations', function () {
             'date' => '2026-02-24',
             'scheduled_start' => '22:00',
             'scheduled_end' => '06:00',
-            'clock_in' => Carbon::parse('2026-02-24 22:00'),
-            'clock_out' => Carbon::parse('2026-02-25 05:00'), // 1 hour early
+            'clock_in' => Carbon::parse('2026-02-24 22:00', 'Asia/Jakarta')->utc(),
+            'clock_out' => Carbon::parse('2026-02-25 05:00', 'Asia/Jakarta')->utc(), // 1 hour early
             'status' => 'present',
         ]);
 
@@ -156,8 +156,8 @@ describe('Attendance overnight calculations', function () {
             'date' => '2026-02-24',
             'scheduled_start' => '22:00',
             'scheduled_end' => '06:00',
-            'clock_in' => Carbon::parse('2026-02-24 22:00'),
-            'clock_out' => Carbon::parse('2026-02-25 05:50'), // Within tolerance
+            'clock_in' => Carbon::parse('2026-02-24 22:00', 'Asia/Jakarta')->utc(),
+            'clock_out' => Carbon::parse('2026-02-25 05:50', 'Asia/Jakarta')->utc(), // Within tolerance
             'status' => 'present',
         ]);
 
@@ -222,8 +222,8 @@ describe('Attendance overnight calculations', function () {
             'date' => '2026-02-24',
             'scheduled_start' => '22:00',
             'scheduled_end' => '06:00',
-            'clock_in' => Carbon::parse('2026-02-24 22:30'), // 30 min late
-            'clock_out' => Carbon::parse('2026-02-25 06:00'),
+            'clock_in' => Carbon::parse('2026-02-24 22:30', 'Asia/Jakarta')->utc(), // 30 min late
+            'clock_out' => Carbon::parse('2026-02-25 06:00', 'Asia/Jakarta')->utc(),
             'status' => 'present',
         ]);
 
@@ -301,7 +301,9 @@ describe('Attendance model helpers', function () {
 
         $scheduledEnd = $attendance->getScheduledEndDatetime();
 
-        expect($scheduledEnd->format('Y-m-d H:i'))->toBe('2026-02-25 06:00');
+        // getScheduledEndDatetime() returns UTC (matching how clock_in/clock_out
+        // are stored); 06:00 WIB the next day is 23:00 UTC the day before.
+        expect($scheduledEnd->format('Y-m-d H:i'))->toBe('2026-02-24 23:00');
     });
 });
 

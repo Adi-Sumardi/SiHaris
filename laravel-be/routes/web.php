@@ -138,6 +138,7 @@ Route::get('/privacy', function () {
 
 Route::get('/download', [AppDownloadController::class, 'index'])->name('app.download');
 Route::get('/download/android', [AppDownloadController::class, 'downloadAndroid'])->name('app.download.android');
+Route::get('/download/apk', [AppDownloadController::class, 'downloadAndroid'])->name('app.download.apk');
 Route::get('/download/ios', [AppDownloadController::class, 'downloadIos'])->name('app.download.ios');
 
 Route::get('/subscription-expired', function () {

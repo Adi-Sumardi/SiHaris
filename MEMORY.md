@@ -302,7 +302,7 @@
   - `pubspec.yaml`: `version: 1.1.0+17`.
   - `splash_screen.dart` fallback version string: `v1.1.0`.
   - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, `SiHaris-v1.1.0.apk`, `SiHaris-v1.1.0.aab`, `SiHaris-v1.1.0.ipa`, dan `VERSION` (`1.1.0`).
-  - Web & Direct APK download URL: `https://siharis.yapinet.id/download/apk` (mengembalikan file `SiHaris-v1.1.0.apk`).
+  - Web & Direct APK download URL: `https://siharis.yapinet.id/download/android` (mengembalikan file `SiHaris-v1.1.0.apk`).
 
 ---
 
@@ -316,7 +316,7 @@
   - Jika user sudah dalam kondisi login, sistem otomatis mengambil dan mendaftarkan FCM device token ke endpoint `POST /api/v1/device-tokens`.
   - `NotificationService` dan `AuthLocalDatasourceBase` dibuat *injectable* dengan unit/widget tests komprehensif di `test/presentation/notification/widgets/notification_wrapper_test.dart` (956 test lolos).
 - **Download Endpoint**:
-  - Rute alias `/download/apk` ditambahkan pada `routes/web.php` mengarah ke `AppDownloadController@downloadAndroid` sehingga download langsung menyajikan file bernama `SiHaris-v1.1.0.apk`.
+  - Rute resmi download APK: `https://siharis.yapinet.id/download/android` (alias: `/download/apk`) via `AppDownloadController@downloadAndroid` yang menyajikan file dengan Content-Disposition `SiHaris-v1.1.0.apk`.
 
 
 

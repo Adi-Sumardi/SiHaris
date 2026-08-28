@@ -137,7 +137,7 @@
                         @if($attendance->clock_out)
                             <span class="font-medium text-secondary-900">{{ $attendance->formatted_clock_out }}</span>
                             @if($attendance->clock_out_status === 'early')
-                                <p class="text-xs text-warning-600">Pulang Awal</p>
+                                <p class="text-xs text-warning-600">Pulang Cepat {{ $attendance->early_leave_minutes }}m</p>
                             @elseif($attendance->clock_out_status === 'overtime')
                                 <p class="text-xs text-primary-600">Lembur {{ $attendance->overtime_minutes }}m</p>
                             @endif
@@ -153,7 +153,12 @@
                         @endif
                     </td>
                     <td>
-                        <x-badge :type="$attendance->status_color">{{ $attendance->status_label }}</x-badge>
+                        @if($attendance->status === 'late')
+                            {{-- Lateness detail already shown under Jam Masuk; here it still counts as present. --}}
+                            <x-badge type="success">Hadir</x-badge>
+                        @else
+                            <x-badge :type="$attendance->status_color">{{ $attendance->status_label }}</x-badge>
+                        @endif
                         @if($attendance->is_manual_entry)
                             <span class="text-xs text-secondary-400 block mt-0.5">Manual</span>
                         @endif

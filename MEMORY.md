@@ -300,8 +300,24 @@
     - Ringkasan metadata lengkap (Format, Ukuran File, Waktu Unggah, dll) dan tombol unduh/buka file asli.
 - **Rilis Mobile App v1.1.0+17**:
   - `pubspec.yaml`: `version: 1.1.0+17`.
-  - `splash_screen.dart` fallback version string di-update ke `v1.1.0`.
-  - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, `SiHaris-v1.1.0.apk`, `SiHaris-v1.1.0.aab`, `SiHaris-v1.1.0.ipa`, dan `VERSION` (`v1.1.0`).
+  - `splash_screen.dart` fallback version string: `v1.1.0`.
+  - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, `SiHaris-v1.1.0.apk`, `SiHaris-v1.1.0.aab`, `SiHaris-v1.1.0.ipa`, dan `VERSION` (`1.1.0`).
+  - Web & Direct APK download URL: `https://siharis.yapinet.id/download/apk` (mengembalikan file `SiHaris-v1.1.0.apk`).
+
+---
+
+## 19. FCM Token Startup Auto-Registration (Push Notification Hotfix)
+- **Problem**:
+  - Push notification di Laravel backend (`PushNotificationService`) sudah aktif dan terintegrasi ke event Clock In/Out, Approval Cuti, Slip Gaji, dan Pengumuman.
+  - Namun di database production, tabel `device_tokens` kosong (`DeviceToken::count() == 0`), sehingga FCM tidak memiliki target device token untuk dikirimi push.
+  - **Root Cause**: `NotificationWrapper` sebelumnya hanya memicu registrasi token saat event `LoginSuccess` (fresh login). User yang sudah login sebelumnya (sesi tersimpan via `AuthLocalDatasource`) langsung melewati `SplashScreen` ke `MainScreen` tanpa memicu event `LoginSuccess`, sehingga token perangkat tidak pernah terdaftar.
+- **Fix**:
+  - `NotificationWrapper` kini mengecek `AuthLocalDatasource.isLoggedIn()` saat inisialisasi awal (*cold start* / startup).
+  - Jika user sudah dalam kondisi login, sistem otomatis mengambil dan mendaftarkan FCM device token ke endpoint `POST /api/v1/device-tokens`.
+  - `NotificationService` dan `AuthLocalDatasourceBase` dibuat *injectable* dengan unit/widget tests komprehensif di `test/presentation/notification/widgets/notification_wrapper_test.dart` (956 test lolos).
+- **Download Endpoint**:
+  - Rute alias `/download/apk` ditambahkan pada `routes/web.php` mengarah ke `AppDownloadController@downloadAndroid` sehingga download langsung menyajikan file bernama `SiHaris-v1.1.0.apk`.
+
 
 
 

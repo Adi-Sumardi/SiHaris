@@ -9,6 +9,8 @@ class AuthLocalDatasource implements AuthLocalDatasourceBase {
   static const String _userIdKey = 'user_id';
   static const String _userNameKey = 'user_name';
   static const String _userEmailKey = 'user_email';
+  static const String _userPositionKey = 'user_position';
+  static const String _userDepartmentKey = 'user_department';
   static const String _assignedOfficesKey = 'assigned_offices';
 
   // Data sensitif (token & face embedding) disimpan terenkripsi.
@@ -24,6 +26,12 @@ class AuthLocalDatasource implements AuthLocalDatasourceBase {
       await prefs.setInt(_userIdKey, response.user!.id);
       await prefs.setString(_userNameKey, response.user!.name);
       await prefs.setString(_userEmailKey, response.user!.email);
+    }
+    if (response.employee?.position != null) {
+      await prefs.setString(_userPositionKey, response.employee!.position!);
+    }
+    if (response.employee?.department != null) {
+      await prefs.setString(_userDepartmentKey, response.employee!.department!);
     }
     // Save assigned offices
     if (response.employee?.assignedOffices != null) {
@@ -60,6 +68,8 @@ class AuthLocalDatasource implements AuthLocalDatasourceBase {
     await prefs.remove(_userIdKey);
     await prefs.remove(_userNameKey);
     await prefs.remove(_userEmailKey);
+    await prefs.remove(_userPositionKey);
+    await prefs.remove(_userDepartmentKey);
     await prefs.remove(_assignedOfficesKey);
   }
 
@@ -126,6 +136,16 @@ class AuthLocalDatasource implements AuthLocalDatasourceBase {
     return offices.firstWhere(
       (o) => o.isPrimary,
       orElse: () => offices.first,
+    );
+  }
+
+  /// Get the employee's position and department, as saved from the last
+  /// login/profile response (used by the home screen greeting card).
+  Future<({String? position, String? department})> getEmployeeInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    return (
+      position: prefs.getString(_userPositionKey),
+      department: prefs.getString(_userDepartmentKey),
     );
   }
 

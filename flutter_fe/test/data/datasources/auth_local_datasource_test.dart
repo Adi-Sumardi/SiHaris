@@ -58,6 +58,43 @@ void main() {
       final token = await datasource.getToken();
       expect(token, isNull);
     });
+
+    test('should save employee position and department', () async {
+      // Arrange
+      final authResponse = AuthResponseModel(
+        success: true,
+        message: 'Login berhasil',
+        token: 'test_token_123',
+        user: UserModel(
+          id: 1,
+          name: 'Test User',
+          email: 'test@example.com',
+        ),
+        employee: EmployeeModel(
+          id: 1,
+          employeeId: 'EMP001',
+          fullName: 'Test User',
+          position: 'Staff IT',
+          department: 'Departemen Teknologi',
+        ),
+      );
+
+      // Act
+      await datasource.saveAuthData(authResponse);
+
+      // Assert
+      final info = await datasource.getEmployeeInfo();
+      expect(info.position, 'Staff IT');
+      expect(info.department, 'Departemen Teknologi');
+    });
+  });
+
+  group('getEmployeeInfo', () {
+    test('should return null fields when nothing was saved', () async {
+      final info = await datasource.getEmployeeInfo();
+      expect(info.position, isNull);
+      expect(info.department, isNull);
+    });
   });
 
   group('getToken', () {
@@ -155,6 +192,23 @@ void main() {
       expect(token, isNull);
       expect(userData, isNull);
       expect(isLoggedIn, false);
+    });
+
+    test('should remove employee position and department', () async {
+      // Arrange
+      SharedPreferences.setMockInitialValues({
+        'user_position': 'Staff IT',
+        'user_department': 'Departemen Teknologi',
+      });
+      datasource = AuthLocalDatasource();
+
+      // Act
+      await datasource.removeAuthData();
+
+      // Assert
+      final info = await datasource.getEmployeeInfo();
+      expect(info.position, isNull);
+      expect(info.department, isNull);
     });
   });
 

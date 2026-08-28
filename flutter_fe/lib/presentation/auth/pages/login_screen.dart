@@ -69,10 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
     result.fold(
       (error) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: AppColors.danger,
-          ),
+          SnackBar(content: Text(error), backgroundColor: AppColors.danger),
         );
       },
       (data) {
@@ -96,11 +93,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handlePasswordLogin() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<LoginBloc>().add(
-            LoginSubmitted(
-              identifier: _emailController.text.trim(),
-              password: _passwordController.text,
-            ),
-          );
+        LoginSubmitted(
+          identifier: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
     }
   }
 
@@ -228,7 +225,9 @@ class _LoginScreenState extends State<LoginScreen> {
               hint: 'Contoh: 08123456789 atau nama@email.com',
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              textInputAction: _usePasswordLogin ? TextInputAction.next : TextInputAction.done,
+              textInputAction: _usePasswordLogin
+                  ? TextInputAction.next
+                  : TextInputAction.done,
               prefixIcon: Icons.phone_android_outlined,
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -341,7 +340,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Tidak dapat membuka WhatsApp. Silakan hubungi 081292702075.'),
+          content: Text(
+            'Tidak dapat membuka WhatsApp. Silakan hubungi 081292702075.',
+          ),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -356,16 +357,10 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const Text(
             'Powered by',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
           ),
           const SizedBox(height: 8),
-          Image.asset(
-            'assets/images/adilabs.png',
-            height: 36,
-          ),
+          Image.asset('assets/images/yapi.png', height: 28),
         ],
       ),
     );

@@ -37,7 +37,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _appVersion = 'v1.2.0';
+  String _appVersion = 'v1.2.1';
 
   @override
   void initState() {

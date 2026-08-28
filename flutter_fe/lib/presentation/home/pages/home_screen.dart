@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/colors.dart';
+import '../../../data/datasources/auth_local_datasource.dart';
 import '../../dashboard/bloc/dashboard_blocs.dart';
 import '../../payslip/pages/payslip_screen.dart';
 import '../../attendance/pages/attendance_history_screen.dart';
@@ -37,11 +38,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = 'User'; // Default fallback
+  String? _userPosition;
+  String? _userDepartment;
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
+    _loadEmployeeInfo();
   }
 
   Future<void> _loadUserName() async {
@@ -54,6 +58,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadEmployeeInfo() async {
+    final info = await AuthLocalDatasource().getEmployeeInfo();
+    if (mounted) {
+      setState(() {
+        _userPosition = info.position;
+        _userDepartment = info.department;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Load data when screen is built
@@ -61,9 +75,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<DashboardBloc>().add(LoadDashboard());
       context.read<QuickStatsBloc>().add(LoadQuickStats());
       context.read<AnnouncementListBloc>().add(const LoadAnnouncements());
-      context
-          .read<NotificationUnreadCountBloc>()
-          .add(const LoadNotificationUnreadCount());
+      context.read<NotificationUnreadCountBloc>().add(
+        const LoadNotificationUnreadCount(),
+      );
     });
 
     SystemChrome.setSystemUIOverlayStyle(
@@ -79,10 +93,12 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: () async {
           context.read<DashboardBloc>().add(RefreshDashboard());
           context.read<QuickStatsBloc>().add(RefreshQuickStats());
-          context.read<AnnouncementListBloc>().add(const RefreshAnnouncements());
-          context
-              .read<NotificationUnreadCountBloc>()
-              .add(const RefreshNotificationUnreadCount());
+          context.read<AnnouncementListBloc>().add(
+            const RefreshAnnouncements(),
+          );
+          context.read<NotificationUnreadCountBloc>().add(
+            const RefreshNotificationUnreadCount(),
+          );
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -90,6 +106,58 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
+              // Transition band: blue behind, a rounded-top grey "notch" on
+              // top with a centered grabber line — the curve completes
+              // entirely within this fixed-height band, so no negative
+              // margin/padding is needed (Container/Padding both assert
+              // non-negative insets) to make the rounding visible against
+              // the blue header above it.
+              SizedBox(
+                height: 24,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primary700,
+                              AppColors.primary600,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: AppColors.scaffoldBackground,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(24),
+                            topRight: Radius.circular(24),
+                          ),
+                        ),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Container(
+                              width: 36,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDADADA),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               _buildQuickActions(context),
               const SizedBox(height: 24),
               _buildTodayScheduleWidget(context),
@@ -173,6 +241,35 @@ class _HomeScreenState extends State<HomeScreen> {
                             letterSpacing: -0.3,
                           ),
                         ),
+                        if (_userPosition != null ||
+                            _userDepartment != null) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.work_outline_rounded,
+                                size: 12,
+                                color: Colors.white.withValues(alpha: 0.75),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  [
+                                    _userPosition,
+                                    _userDepartment,
+                                  ].whereType<String>().join(' • '),
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -186,12 +283,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ).then((_) {
                         if (context.mounted) {
-                          context
-                              .read<NotificationUnreadCountBloc>()
-                              .add(const RefreshNotificationUnreadCount());
-                          context
-                              .read<AnnouncementListBloc>()
-                              .add(const RefreshAnnouncements());
+                          context.read<NotificationUnreadCountBloc>().add(
+                            const RefreshNotificationUnreadCount(),
+                          );
+                          context.read<AnnouncementListBloc>().add(
+                            const RefreshAnnouncements(),
+                          );
                         }
                       });
                     },
@@ -214,12 +311,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               size: 22,
                             ),
                           ),
-                          BlocBuilder<NotificationUnreadCountBloc,
-                              NotificationUnreadCountState>(
+                          BlocBuilder<
+                            NotificationUnreadCountBloc,
+                            NotificationUnreadCountState
+                          >(
                             builder: (context, state) {
                               final hasUnread =
                                   state is NotificationUnreadCountLoaded &&
-                                      state.count > 0;
+                                  state.count > 0;
                               if (!hasUnread) return const SizedBox.shrink();
 
                               return Positioned(
@@ -249,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
             _buildAttendanceCard(context),
-            const SizedBox(height: 24),
+            const SizedBox(height: 44),
           ],
         ),
       ),
@@ -384,7 +483,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Refresh dashboard data when returning from attendance
                         if (context.mounted) {
                           context.read<DashboardBloc>().add(RefreshDashboard());
-                          context.read<QuickStatsBloc>().add(RefreshQuickStats());
+                          context.read<QuickStatsBloc>().add(
+                            RefreshQuickStats(),
+                          );
                         }
                       },
                       child: Container(
@@ -896,7 +997,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.overtime.withValues(alpha: 0.1),
+                                  color: AppColors.overtime.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
@@ -1370,9 +1473,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ).then((_) {
                     if (context.mounted) {
-                      context
-                          .read<AnnouncementListBloc>()
-                          .add(const RefreshAnnouncements());
+                      context.read<AnnouncementListBloc>().add(
+                        const RefreshAnnouncements(),
+                      );
                     }
                   });
                 },
@@ -1527,9 +1630,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      context
-                          .read<AnnouncementListBloc>()
-                          .add(const RefreshAnnouncements());
+                      context.read<AnnouncementListBloc>().add(
+                        const RefreshAnnouncements(),
+                      );
                     },
                     child: const Icon(
                       Icons.refresh_rounded,
@@ -1572,15 +1675,14 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AnnouncementDetailScreen(
-              announcementId: announcement.id,
-            ),
+            builder: (context) =>
+                AnnouncementDetailScreen(announcementId: announcement.id),
           ),
         ).then((_) {
           if (context.mounted) {
-            context
-                .read<AnnouncementListBloc>()
-                .add(const RefreshAnnouncements());
+            context.read<AnnouncementListBloc>().add(
+              const RefreshAnnouncements(),
+            );
           }
         });
       },

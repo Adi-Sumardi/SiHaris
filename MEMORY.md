@@ -351,7 +351,21 @@
 - `splash_screen.dart` & `profile_screen.dart` fallback version string: `v1.2.0`.
 - Mencakup: fix auto-logout per-device token (§20), fix Server Error clock-in wajah (§20), FCM auto-registration (§19, baru pertama kali dirilis di versi ini), fitur lampiran pengumuman (§21), perbaikan UX target penerima (§21, backend/web-only — tidak mempengaruhi versi mobile secara fungsional tapi dibundel dalam rilis yang sama).
 - APK release dibuild & ditandatangani (`android/app/siharis.jks`, alias `siharis`) di `build/app/outputs/flutter-apk/app-release.apk`; package `id.yapinet.siharis`, versionCode 18, versionName 1.2.0.
-- **Belum dilakukan**: publish artifact ke `/downloads` server (`siharis-latest.apk`, `SiHaris-v1.2.0.apk`, update `VERSION`) — perlu dikonfirmasi/dieksekusi terpisah sebelum link download resmi `https://siharis.yapinet.id/download/android` mengarah ke build ini.
+- Sudah dipublish ke server produksi (`/downloads`) sebagai build resmi terbaru di sesi ini.
+
+---
+
+## 23. Rilis Mobile App v1.2.1+19 — Home Greeting Info Pegawai & Rounded Menu Cepat
+
+- **Home Screen — info pegawai di greeting card**: `AuthLocalDatasource` kini menyimpan `position`/`department` dari `EmployeeModel` saat login (`_userPositionKey`/`_userDepartmentKey`, dibersihkan saat `removeAuthData()`), diakses lewat `getEmployeeInfo()` (Dart record `({String? position, String? department})`) — method konkret di luar `AuthLocalDatasourceBase` (mengikuti pola `getPrimaryOffice()`, agar tidak mengubah kontrak `getUserData()`). `HomeScreen` menampilkan baris posisi/departemen (ikon briefcase) di bawah nama pengguna pada greeting card.
+- **Home Screen — rounded top edge Menu Cepat**: Section abu-abu (mulai dari "Menu Cepat") sekarang punya sudut atas membulat (radius 24) yang menyingkap warna biru header di baliknya, plus garis "grabber" kecil di tengah.
+  - **Catatan penting**: pendekatan awal pakai `Container(margin: EdgeInsets.only(top: -20))` lalu `Padding(padding: EdgeInsets.only(top: -20))` untuk meniru overlap ala CSS (`margin-top: negatif`) — KEDUANYA gagal di runtime (`margin.isNonNegative`/`padding.isNonNegative` assertion), karena Flutter (tidak seperti CSS) tidak mengizinkan `EdgeInsets` negatif di `Container.margin` maupun `Padding.padding`. Solusi yang benar: `Stack` + dua `Positioned.fill` di dalam `SizedBox(height: 24)` sebagai band transisi tetap (layer bawah = gradient biru header, layer atas = `Container` abu dengan `borderRadius` atas + grabber) — diletakkan di antara `_buildHeader()` dan `_buildQuickActions()`, tanpa nilai negatif sama sekali. Kalau ada kebutuhan overlap/reveal serupa di masa depan, pakai pola `Stack`/`Positioned` ini, bukan margin/padding negatif.
+  - Mockup desainnya dieksplorasi dulu via Claude Design skill (`.dc.html` di scratchpad) sebelum diterapkan ke kode asli, sesuai alur "match existing app pixel-perfectly" — file mockup TIDAK bagian dari repo/tidak disimpan permanen.
+- **Login Screen — ganti logo**: Logo "Powered by" di halaman login diganti dari `assets/images/adilabs.png` ke `assets/images/yapi.png` (didownsample ke 200×200 dari source di root repo), ditampilkan kecil (`height: 28`, sebelumnya `36`).
+- `pubspec.yaml`: `version: 1.2.1+19`. Fallback version string di `splash_screen.dart` & `profile_screen.dart` ikut dibump ke `v1.2.1`.
+- Semua 961 test lolos (`flutter test`), `flutter analyze` bersih di file yang diubah.
+- APK release dibuild & ditandatangani (`android/app/siharis.jks`) di `build/app/outputs/flutter-apk/app-release.apk`; versionCode 19, versionName 1.2.1.
+- **Belum dilakukan**: publish APK build ini ke `/downloads` server produksi — perlu dieksekusi terpisah (butuh akses SSH password ke `172.16.5.204`, sempat diblokir classifier auto-mode saat dicoba otomatis di sesi ini) sebelum link download resmi mengarah ke build ini.
 
 
 

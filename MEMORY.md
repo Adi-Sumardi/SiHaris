@@ -387,6 +387,21 @@
 - APK release dibuild & ditandatangani (`android/app/siharis.jks`) di `build/app/outputs/flutter-apk/app-release.apk`; versionCode 20, versionName 1.2.2.
 - Sudah dipublish ke `/var/www/siharis/laravel-be/public/downloads/`: `siharis-latest.apk`, `siharis-release.apk`, `SiHaris-v1.2.2.apk` (baru), `VERSION` di-update ke `1.2.2`. Dikonfirmasi lewat `https://siharis.yapinet.id/download/android` (Content-Disposition `SiHaris-v1.2.2.apk`, content-length cocok). Build v1.2.1/v1.2.0 sebelumnya tetap disimpan sebagai arsip.
 
+---
+
+## 25. Fitur Import Data Cuti (Web Admin, `/imports/leave-requests`)
+
+- **Masalah**: modul Cuti & Izin di web admin punya import untuk *Jenis Cuti* (`imports.leave-types`), tapi tidak ada cara mengimpor *riwayat/histori pengajuan cuti* karyawan dari sistem lama secara massal — HR harus input satu-satu.
+- **Solusi**: dibuat mengikuti pola import yang sudah ada persis (Leave Type Import & Employee Salary Import sebagai referensi):
+  - `App\Imports\LeaveRequestImport` (`ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows`) — resolve karyawan secara fleksibel (ID Karyawan/PIN/NIK/Email/Nama, termasuk yang sudah `withTrashed()`), resolve jenis cuti via kode atau nama, hitung `total_days` otomatis dari rentang tanggal kalau kolom "Jumlah Hari" kosong, dukung setengah hari & 4 status (Disetujui/Menunggu/Ditolak/Dibatalkan, default Disetujui karena tujuannya migrasi data historis).
+  - **Penting**: karena baris diimpor langsung (bukan lewat `LeaveRequest::approve()/reject()`), tidak ada `pending_days` yang bisa "dikonversi" — importer nge-adjust `LeaveBalance` (`used_days` untuk status approved, `pending_days` untuk status pending via `firstOrCreate` + `deductDays()`/`addPendingDays()`) secara langsung, bukan lewat method approve/reject bawaan model.
+  - `App\Exports\Templates\LeaveRequestTemplateExport` — file `template_data_cuti.xlsx` dengan 3 baris contoh (termasuk contoh setengah hari).
+  - `App\Http\Controllers\Import\LeaveRequestImportController` (`index/template/store`) + view `resources/views/imports/leave-requests/index.blade.php` — identik strukturnya dengan `imports/leave-types/index.blade.php` (dropzone upload, tombol Download Template, panel "Panduan Import").
+  - Rute terdaftar di grup `imports.` (`routes/web.php`) sebagai `imports.leave-requests.{index,template,store}`.
+  - Tombol "Import" ditambahkan di toolbar `leave-requests/index.blade.php` (sebelah "Ajukan Cuti"), style sama dengan tombol Import di halaman Jenis Cuti.
+- **Test**: `tests/Feature/Import/LeaveRequestImportTest.php`, 16 test (resolve karyawan/jenis cuti, hitung hari otomatis vs eksplisit, setengah hari, efek ke saldo per status, baris di-skip untuk data tidak valid) — semua lolos. Full suite backend: 2254 passed, 3 failed pre-existing & tidak terkait (`PortalLeaveControllerTest`, gagal juga di `main` sebelum perubahan ini — kemungkinan sensitif terhadap tanggal `now()`, bukan regresi).
+- **Deploy**: `git pull` di server produksi (`/var/www/siharis`), cache Laravel di-clear & di-cache ulang **sebagai `www-data`** (`sudo -u www-data php artisan config:clear/cache:clear/route:clear/view:clear` lalu `config:cache/route:cache` — **jangan lupa `-u www-data`**, sempat kelupaan sekali di sesi ini dan bikin `bootstrap/cache/{config,routes-v7}.php` ke-generate ulang milik `root:root` alih-alih `www-data:www-data`; langsung diperbaiki dengan re-run pakai `-u www-data`), `php8.3-fpm` & `siharis-worker` di-restart. Rute baru dikonfirmasi ada di `route:list --name=imports.leave-requests` di server.
+
 
 
 

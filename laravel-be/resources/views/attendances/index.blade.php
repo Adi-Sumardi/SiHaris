@@ -124,10 +124,8 @@
                     <td>
                         @if($attendance->clock_in)
                             <span class="font-medium text-secondary-900">{{ $attendance->formatted_clock_in }}</span>
-                            @if($attendance->clock_in_status === 'late')
+                            @if(in_array($attendance->clock_in_status, ['late', 'very_late']))
                                 <p class="text-xs text-warning-600">Terlambat {{ $attendance->late_minutes }}m</p>
-                            @elseif($attendance->clock_in_status === 'very_late')
-                                <p class="text-xs text-danger-600">Sangat Terlambat</p>
                             @endif
                         @else
                             <span class="text-secondary-400">-</span>

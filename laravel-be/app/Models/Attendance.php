@@ -292,7 +292,7 @@ class Attendance extends Model
         $this->clock_in_device_id = $data['device_id'] ?? $this->clock_in_device_id;
         $this->clock_in_app_device_id = $data['app_device_id'] ?? $this->clock_in_app_device_id;
         if (array_key_exists('office_location_id', $data)) {
-            $this->clock_in_office_location_id = $data['office_location_id'];
+            $this->office_location_id = $data['office_location_id'];
         }
         if (array_key_exists('face_verified', $data)) {
             $this->face_verified = $data['face_verified'];

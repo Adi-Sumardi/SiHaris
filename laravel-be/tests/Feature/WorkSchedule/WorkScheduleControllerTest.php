@@ -63,7 +63,11 @@ describe('WorkScheduleController', function () {
 
             $response->assertOk();
             $response->assertSee('Regular Office');
-            $response->assertDontSee('Night Shift');
+            // "Night Shift" may still appear in the bulk-assign modal's
+            // schedule picker (which intentionally lists ALL schedules,
+            // independent of the table's search filter) — assert against
+            // the filtered table data itself instead of raw page text.
+            expect($response->viewData('workSchedules')->pluck('name'))->not->toContain('Night Shift');
         });
 
         it('can filter by active status', function () {
@@ -336,6 +340,159 @@ describe('WorkScheduleController', function () {
             $response->assertOk();
             $response->assertViewIs('work-schedules.show');
             $response->assertViewHas('workSchedule');
+        });
+    });
+
+    describe('bulkAssign', function () {
+        it('assigns the schedule to all employees when target_type is all', function () {
+            $schedule = WorkSchedule::factory()->create(['company_id' => $this->company->id]);
+            $employees = Employee::factory()->count(3)->create(['company_id' => $this->company->id]);
+
+            $response = $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $schedule->id,
+                'target_type' => 'all',
+            ]);
+
+            $response->assertRedirect(route('work-schedules.index'));
+            $response->assertSessionHas('success');
+
+            foreach ($employees as $employee) {
+                $this->assertDatabaseHas('employees', [
+                    'id' => $employee->id,
+                    'work_schedule_id' => $schedule->id,
+                ]);
+            }
+        });
+
+        it('assigns the schedule only to employees in the selected department', function () {
+            $schedule = WorkSchedule::factory()->create(['company_id' => $this->company->id]);
+            $department = \App\Models\Department::factory()->create(['company_id' => $this->company->id]);
+            $otherDepartment = \App\Models\Department::factory()->create(['company_id' => $this->company->id]);
+
+            $inDepartment = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'department_id' => $department->id,
+            ]);
+            $outsideDepartment = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'department_id' => $otherDepartment->id,
+            ]);
+
+            $response = $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $schedule->id,
+                'target_type' => 'department',
+                'department_id' => $department->id,
+            ]);
+
+            $response->assertRedirect(route('work-schedules.index'));
+
+            $this->assertDatabaseHas('employees', [
+                'id' => $inDepartment->id,
+                'work_schedule_id' => $schedule->id,
+            ]);
+            $this->assertDatabaseMissing('employees', [
+                'id' => $outsideDepartment->id,
+                'work_schedule_id' => $schedule->id,
+            ]);
+        });
+
+        it('assigns the schedule only to employees in the selected position', function () {
+            $schedule = WorkSchedule::factory()->create(['company_id' => $this->company->id]);
+            $position = \App\Models\Position::factory()->create(['company_id' => $this->company->id]);
+            $otherPosition = \App\Models\Position::factory()->create(['company_id' => $this->company->id]);
+
+            $inPosition = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'position_id' => $position->id,
+            ]);
+            $outsidePosition = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'position_id' => $otherPosition->id,
+            ]);
+
+            $response = $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $schedule->id,
+                'target_type' => 'position',
+                'position_id' => $position->id,
+            ]);
+
+            $response->assertRedirect(route('work-schedules.index'));
+
+            $this->assertDatabaseHas('employees', [
+                'id' => $inPosition->id,
+                'work_schedule_id' => $schedule->id,
+            ]);
+            $this->assertDatabaseMissing('employees', [
+                'id' => $outsidePosition->id,
+                'work_schedule_id' => $schedule->id,
+            ]);
+        });
+
+        it('clears weekly schedule overrides for assigned employees', function () {
+            $schedule = WorkSchedule::factory()->create(['company_id' => $this->company->id]);
+            $employee = Employee::factory()->create(['company_id' => $this->company->id]);
+
+            \App\Models\EmployeeWeeklySchedule::factory()->forDay(1)->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $employee->id,
+            ]);
+
+            $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $schedule->id,
+                'target_type' => 'all',
+            ]);
+
+            $this->assertDatabaseMissing('employee_weekly_schedules', [
+                'employee_id' => $employee->id,
+            ]);
+        });
+
+        it('requires department_id when target_type is department', function () {
+            $schedule = WorkSchedule::factory()->create(['company_id' => $this->company->id]);
+
+            $response = $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $schedule->id,
+                'target_type' => 'department',
+            ]);
+
+            $response->assertSessionHasErrors('department_id');
+        });
+
+        it('requires position_id when target_type is position', function () {
+            $schedule = WorkSchedule::factory()->create(['company_id' => $this->company->id]);
+
+            $response = $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $schedule->id,
+                'target_type' => 'position',
+            ]);
+
+            $response->assertSessionHasErrors('position_id');
+        });
+
+        it('rejects a work schedule belonging to another company', function () {
+            $otherCompany = Company::factory()->create();
+            $otherSchedule = WorkSchedule::factory()->create(['company_id' => $otherCompany->id]);
+
+            $response = $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $otherSchedule->id,
+                'target_type' => 'all',
+            ]);
+
+            $response->assertSessionHasErrors('work_schedule_id');
+        });
+
+        it('shows an error and does not fail when no employees match the target', function () {
+            $schedule = WorkSchedule::factory()->create(['company_id' => $this->company->id]);
+            $emptyDepartment = \App\Models\Department::factory()->create(['company_id' => $this->company->id]);
+
+            $response = $this->post(route('work-schedules.bulk-assign'), [
+                'work_schedule_id' => $schedule->id,
+                'target_type' => 'department',
+                'department_id' => $emptyDepartment->id,
+            ]);
+
+            $response->assertRedirect(route('work-schedules.index'));
+            $response->assertSessionHas('error');
         });
     });
 });

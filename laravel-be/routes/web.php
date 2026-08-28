@@ -301,6 +301,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Work Schedule Management
     Route::resource('work-schedules', WorkScheduleController::class);
+    Route::post('work-schedules/bulk-assign', [WorkScheduleController::class, 'bulkAssign'])->name('work-schedules.bulk-assign');
 
     // Holiday Management
     Route::get('holidays/calendar', [HolidayController::class, 'calendar'])->name('holidays.calendar');

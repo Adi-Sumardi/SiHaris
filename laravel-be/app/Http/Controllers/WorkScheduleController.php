@@ -3,9 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\WorkScheduleRequest;
+use App\Models\Department;
+use App\Models\Employee;
+use App\Models\EmployeeWeeklySchedule;
+use App\Models\Position;
 use App\Models\WorkSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class WorkScheduleController extends Controller
@@ -31,7 +37,71 @@ class WorkScheduleController extends Controller
 
         $workSchedules = $query->orderBy('name')->paginate(15)->withQueryString();
 
-        return view('work-schedules.index', compact('workSchedules'));
+        $assignableSchedules = WorkSchedule::where('company_id', $tenant->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $departments = Department::where('company_id', $tenant->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $positions = Position::with('department')
+            ->where('company_id', $tenant->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('work-schedules.index', compact('workSchedules', 'assignableSchedules', 'departments', 'positions'));
+    }
+
+    /**
+     * Bulk-assign one work schedule to all employees, or to employees
+     * scoped to a department or position.
+     */
+    public function bulkAssign(Request $request): RedirectResponse
+    {
+        $tenant = app('tenant');
+
+        $validated = $request->validate([
+            'work_schedule_id' => ['required', Rule::exists('work_schedules', 'id')->where('company_id', $tenant->id)],
+            'target_type' => ['required', 'in:all,department,position'],
+            'department_id' => ['required_if:target_type,department', 'nullable', Rule::exists('departments', 'id')->where('company_id', $tenant->id)],
+            'position_id' => ['required_if:target_type,position', 'nullable', Rule::exists('positions', 'id')->where('company_id', $tenant->id)],
+        ]);
+
+        $employeeQuery = Employee::where('company_id', $tenant->id);
+
+        if ($validated['target_type'] === 'department') {
+            $employeeQuery->where('department_id', $validated['department_id']);
+        } elseif ($validated['target_type'] === 'position') {
+            $employeeQuery->where('position_id', $validated['position_id']);
+        }
+
+        $employeeIds = $employeeQuery->pluck('id');
+
+        if ($employeeIds->isEmpty()) {
+            return redirect()->route('work-schedules.index')
+                ->with('error', 'Tidak ada karyawan yang sesuai dengan target yang dipilih.');
+        }
+
+        $updatedCount = DB::transaction(function () use ($employeeIds, $validated) {
+            $count = Employee::whereIn('id', $employeeIds)
+                ->update(['work_schedule_id' => $validated['work_schedule_id']]);
+
+            // A per-day weekly override takes priority over work_schedule_id
+            // in Employee::resolveScheduleForDate() — clear it so the newly
+            // assigned flat schedule actually takes effect for everyone.
+            EmployeeWeeklySchedule::whereIn('employee_id', $employeeIds)->delete();
+
+            return $count;
+        });
+
+        $schedule = WorkSchedule::findOrFail($validated['work_schedule_id']);
+
+        return redirect()->route('work-schedules.index')
+            ->with('success', "Jadwal '{$schedule->name}' berhasil ditetapkan ke {$updatedCount} karyawan.");
     }
 
     public function create(): View
@@ -92,7 +162,7 @@ class WorkScheduleController extends Controller
         }
 
         // If this schedule is set as default, remove default from others
-        if ($request->boolean('is_default') && !$workSchedule->is_default) {
+        if ($request->boolean('is_default') && ! $workSchedule->is_default) {
             WorkSchedule::where('company_id', $tenant->id)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);

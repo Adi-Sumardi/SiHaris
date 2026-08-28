@@ -162,17 +162,22 @@
                                         <input type="checkbox" name="target_ids[]" value="{{ $pos->id }}"
                                                {{ in_array($pos->id, $targetIds) ? 'checked' : '' }}
                                                class="rounded border-secondary-300 text-primary-600">
-                                        <span class="text-sm">{{ $pos->name }}</span>
+                                        <span class="text-sm">{{ $pos->name }}{{ $pos->department ? ' ('.$pos->department->name.')' : '' }}</span>
                                     </label>
                                 @endforeach
                             </div>
                         </div>
 
-                        <div x-show="targetAudience === 'specific'" x-cloak>
+                        <div x-show="targetAudience === 'specific'" x-cloak x-data="{ employeeSearch: '' }">
                             <label class="block text-sm font-medium text-secondary-700 mb-1">Pilih Karyawan</label>
+                            <input type="text" x-model="employeeSearch"
+                                   placeholder="Cari nama atau ID karyawan..."
+                                   class="input w-full mb-2 text-sm">
                             <div class="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-2">
                                 @foreach($employees as $emp)
-                                    <label class="flex items-center gap-2">
+                                    <label class="flex items-center gap-2"
+                                           data-search="{{ Str::lower($emp->full_name.' '.$emp->employee_id) }}"
+                                           x-show="employeeSearch === '' || $el.dataset.search.includes(employeeSearch.toLowerCase())">
                                         <input type="checkbox" name="target_ids[]" value="{{ $emp->id }}"
                                                {{ in_array($emp->id, $targetIds) ? 'checked' : '' }}
                                                class="rounded border-secondary-300 text-primary-600">

@@ -33,7 +33,10 @@ class AnnouncementController extends Controller
         $tenant = app('tenant');
 
         $departments = Department::where('company_id', $tenant->id)->orderBy('name')->get();
-        $positions = Position::where('company_id', $tenant->id)->orderBy('name')->get();
+        $positions = Position::with('department')
+            ->where('company_id', $tenant->id)
+            ->orderBy('name')
+            ->get();
         $employees = Employee::with('user')
             ->where('company_id', $tenant->id)
             ->orderBy('employee_id')
@@ -99,7 +102,10 @@ class AnnouncementController extends Controller
         }
 
         $departments = Department::where('company_id', $tenant->id)->orderBy('name')->get();
-        $positions = Position::where('company_id', $tenant->id)->orderBy('name')->get();
+        $positions = Position::with('department')
+            ->where('company_id', $tenant->id)
+            ->orderBy('name')
+            ->get();
         $employees = Employee::with('user')
             ->where('company_id', $tenant->id)
             ->orderBy('employee_id')

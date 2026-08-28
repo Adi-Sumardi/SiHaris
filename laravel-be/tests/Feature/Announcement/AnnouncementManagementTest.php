@@ -77,6 +77,37 @@ describe('Admin - Announcement Management', function () {
         $response->assertViewIs('announcements.create');
     });
 
+    it('disambiguates same-named positions from different departments on the create form', function () {
+        $otherDepartment = Department::factory()->create(['company_id' => $this->company->id]);
+        Position::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'name' => 'Guru',
+        ]);
+        Position::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $otherDepartment->id,
+            'name' => 'Guru',
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $response = $this->get(route('announcements.create'));
+
+        $response->assertOk();
+        $response->assertSee("Guru ({$this->department->name})", false);
+        $response->assertSee("Guru ({$otherDepartment->name})", false);
+    });
+
+    it('includes a search input for the employee target list on the create form', function () {
+        $this->actingAs($this->admin);
+
+        $response = $this->get(route('announcements.create'));
+
+        $response->assertOk();
+        $response->assertSee('Cari nama atau ID karyawan', false);
+    });
+
     it('creates new announcement', function () {
         $this->actingAs($this->admin);
 
@@ -253,6 +284,47 @@ describe('Admin - Announcement Management', function () {
 
         $response->assertOk();
         $response->assertViewIs('announcements.edit');
+    });
+
+    it('disambiguates same-named positions from different departments on the edit form', function () {
+        $otherDepartment = Department::factory()->create(['company_id' => $this->company->id]);
+        Position::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'name' => 'Guru',
+        ]);
+        Position::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $otherDepartment->id,
+            'name' => 'Guru',
+        ]);
+
+        $announcement = Announcement::factory()->create([
+            'company_id' => $this->company->id,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $response = $this->get(route('announcements.edit', $announcement));
+
+        $response->assertOk();
+        $response->assertSee("Guru ({$this->department->name})", false);
+        $response->assertSee("Guru ({$otherDepartment->name})", false);
+    });
+
+    it('includes a search input for the employee target list on the edit form', function () {
+        $announcement = Announcement::factory()->create([
+            'company_id' => $this->company->id,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $response = $this->get(route('announcements.edit', $announcement));
+
+        $response->assertOk();
+        $response->assertSee('Cari nama atau ID karyawan', false);
     });
 
     it('updates announcement', function () {

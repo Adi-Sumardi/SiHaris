@@ -318,8 +318,40 @@
 - **Download Endpoint**:
   - Rute resmi download APK: `https://siharis.yapinet.id/download/android` (alias: `/download/apk`) via `AppDownloadController@downloadAndroid` yang menyajikan file dengan Content-Disposition `SiHaris-v1.1.0.apk`.
 
+---
 
+## 20. Session-Scoped Login (Per-Device Token) & Attendance 500 Fix
 
+- **Bug 1 — Auto-logout saat clock-in**:
+  - **Root Cause**: `AuthController::login()` memanggil `$user->tokens()->delete()` (revoke SEMUA token milik user) setiap kali login, tanpa memandang device. Jika akun yang sama login dari device lain (atau double-tap tombol Masuk memicu dua request login), token yang sedang aktif di HP langsung ter-revoke di server. Request API berikutnya (mis. clock-in) balas `401` dan `SessionService.handleSessionExpired()` langsung memaksa logout tanpa pesan error — terlihat seperti "app tiba-tiba nge-log out sendiri".
+  - **Fix**: Token kini diberi nama `mobile-app:{app_device_id}` (device id yang sama dipakai untuk anti-fraud device-binding absensi) dan hanya token dengan nama itu yang di-revoke saat login ulang — device lain tidak lagi ikut ter-logout. `AuthRemoteDatasource.login()` sekarang mengirim `app_device_id` di body request login.
+- **Bug 2 — "Server Error" saat clock-in pakai face recognition**:
+  - **Root Cause**: `Attendance::clockIn()` menulis lokasi kantor ke kolom `clock_in_office_location_id`, padahal kolom itu **tidak pernah ada** di migration manapun (kolom asli cukup `office_location_id`; hanya sisi clock-out yang punya kolom terpisah `clock_out_office_location_id`). Setiap clock-in yang berhasil menentukan office location (kasus normal saat GPS validation aktif — selalu terjadi di alur face recognition) memicu SQL error mentah → tampil sebagai "Server Error" generik di app.
+  - **Fix**: satu baris — `$this->office_location_id = $data['office_location_id']` (bukan `clock_in_office_location_id`).
+  - Ditemukan lewat reproduksi test Pest lokal yang meniru persis payload multipart yang dikirim app (GPS + face_verified + liveness + descriptors + foto), bukan lewat debugging live di server produksi — lihat pola kerja di README dev notes bila ada kasus serupa.
+  - Ikut memperbaiki 9 test lawas yang gagal sejak commit timezone-sync sebelumnya (WIB→UTC untuk `getScheduledStartDatetime()`/`getScheduledEndDatetime()` sekarang benar, test lama tinggal disesuaikan ekspektasinya).
+
+---
+
+## 21. Lampiran Pengumuman (JPG/PNG/PDF) & Perbaikan UX Target Penerima
+
+- **Lampiran Pengumuman**:
+  - Kolom baru pada `announcements`: `attachment_path`, `attachment_name`, `attachment_size`, `attachment_mime_type` (nullable, disk `local` privat, pola signed-URL yang sama dengan `EmployeeDocumentController`/`PayslipController` — tidak pernah diserve langsung).
+  - Web Admin (`/announcements/create` & `/edit`): field upload "Lampiran" (JPG/PNG/PDF, maks 10MB), preview + tombol hapus di form edit, tampilan inline (gambar) atau kartu buka/unduh (PDF) di halaman detail.
+  - Mobile API (`/api/v1/announcements`): response `index`/`show` menyertakan `has_attachment` dan (di `show`) metadata lengkap + `attachment_preview_url`/`attachment_download_url` bertanda tangan (15 menit). Endpoint publik baru `GET /announcements/{id}/preview` & `/download`, di luar `auth:sanctum`.
+  - Mobile App: `AnnouncementDetailScreen` menampilkan gambar inline atau kartu file (PDF) yang dibuka via `url_launcher`; `AnnouncementScreen` (list) menampilkan ikon klip kecil bila ada lampiran.
+- **Perbaikan UX Target Penerima** (create & edit form):
+  - **Jabatan Tertentu**: sebelumnya menampilkan nama jabatan saja sehingga jabatan dengan nama sama di departemen berbeda (mis. beberapa baris "Guru") tidak bisa dibedakan. Sekarang menampilkan `Guru (SD)`, `Guru (SMP)`, dst. (`Position::with('department')`).
+  - **Karyawan Tertentu**: ditambahkan input pencarian (Alpine.js, filter nama + ID karyawan) di atas daftar checkbox karyawan.
+
+---
+
+## 22. Rilis Mobile App v1.2.0+18
+- `pubspec.yaml`: `version: 1.2.0+18`.
+- `splash_screen.dart` & `profile_screen.dart` fallback version string: `v1.2.0`.
+- Mencakup: fix auto-logout per-device token (§20), fix Server Error clock-in wajah (§20), FCM auto-registration (§19, baru pertama kali dirilis di versi ini), fitur lampiran pengumuman (§21), perbaikan UX target penerima (§21, backend/web-only — tidak mempengaruhi versi mobile secara fungsional tapi dibundel dalam rilis yang sama).
+- APK release dibuild & ditandatangani (`android/app/siharis.jks`, alias `siharis`) di `build/app/outputs/flutter-apk/app-release.apk`; package `id.yapinet.siharis`, versionCode 18, versionName 1.2.0.
+- **Belum dilakukan**: publish artifact ke `/downloads` server (`siharis-latest.apk`, `SiHaris-v1.2.0.apk`, update `VERSION`) — perlu dikonfirmasi/dieksekusi terpisah sebelum link download resmi `https://siharis.yapinet.id/download/android` mengarah ke build ini.
 
 
 

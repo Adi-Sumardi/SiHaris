@@ -6,6 +6,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../core/config/feature_config.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../data/datasources/auth_datasource.dart';
+import '../../../data/datasources/auth_local_datasource.dart';
 import '../../../data/models/requests/register_token_request_model.dart';
 import '../../auth/bloc/login/login_bloc.dart';
 import '../../auth/bloc/login/login_state.dart';
@@ -16,15 +18,25 @@ import '../bloc/device_token/device_token_event.dart';
 
 class NotificationWrapper extends StatefulWidget {
   final Widget child;
+  final NotificationService? notificationService;
+  final AuthLocalDatasourceBase? authLocalDatasource;
 
-  const NotificationWrapper({super.key, required this.child});
+  const NotificationWrapper({
+    super.key,
+    required this.child,
+    this.notificationService,
+    this.authLocalDatasource,
+  });
 
   @override
   State<NotificationWrapper> createState() => _NotificationWrapperState();
 }
 
 class _NotificationWrapperState extends State<NotificationWrapper> {
-  final NotificationService _notificationService = NotificationService();
+  late final NotificationService _notificationService =
+      widget.notificationService ?? NotificationService();
+  late final AuthLocalDatasourceBase _authLocalDatasource =
+      widget.authLocalDatasource ?? AuthLocalDatasource();
 
   @override
   void initState() {
@@ -37,6 +49,14 @@ class _NotificationWrapperState extends State<NotificationWrapper> {
       return;
     }
     await _notificationService.initialize();
+
+    // Registrasi token hanya terpicu otomatis oleh event LoginSuccess, tapi
+    // splash screen langsung ke MainScreen tanpa event itu kalau sesi lama
+    // sudah tersimpan — jadi device yang sudah login sebelum fitur push ini
+    // aktif tidak akan pernah ter-registrasi tanpa pengecekan ini.
+    if (await _authLocalDatasource.isLoggedIn() && mounted) {
+      _registerToken();
+    }
   }
 
   Future<void> _registerToken() async {

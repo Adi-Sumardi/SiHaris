@@ -402,6 +402,18 @@
 - **Test**: `tests/Feature/Import/LeaveRequestImportTest.php`, 16 test (resolve karyawan/jenis cuti, hitung hari otomatis vs eksplisit, setengah hari, efek ke saldo per status, baris di-skip untuk data tidak valid) — semua lolos. Full suite backend: 2254 passed, 3 failed pre-existing & tidak terkait (`PortalLeaveControllerTest`, gagal juga di `main` sebelum perubahan ini — kemungkinan sensitif terhadap tanggal `now()`, bukan regresi).
 - **Deploy**: `git pull` di server produksi (`/var/www/siharis`), cache Laravel di-clear & di-cache ulang **sebagai `www-data`** (`sudo -u www-data php artisan config:clear/cache:clear/route:clear/view:clear` lalu `config:cache/route:cache` — **jangan lupa `-u www-data`**, sempat kelupaan sekali di sesi ini dan bikin `bootstrap/cache/{config,routes-v7}.php` ke-generate ulang milik `root:root` alih-alih `www-data:www-data`; langsung diperbaiki dengan re-run pakai `-u www-data`), `php8.3-fpm` & `siharis-worker` di-restart. Rute baru dikonfirmasi ada di `route:list --name=imports.leave-requests` di server.
 
+---
+
+## 26. Simplifikasi Kolom Status di Halaman Absensi (`/attendances`)
+
+- **Masalah**: kolom STATUS di tabel `attendances/index.blade.php` menampilkan badge "Terlambat" terpisah dari detail jam masuk yang sudah ada sebagai sub-teks di bawah kolom Jam Masuk (`clock_in_status === 'late'/'very_late'` → "Terlambat Xm" / "Sangat Terlambat") — informasi terlambat jadi dobel/tersebar. Sub-teks "pulang cepat" di kolom Jam Pulang (`clock_out_status === 'early'`) juga belum menampilkan jumlah menitnya (cuma teks "Pulang Awal" polos), padahal versi "Terlambat" sudah pakai format `Xm`.
+- **Fix** (murni view, `resources/views/attendances/index.blade.php`):
+  - Kolom STATUS: kalau `$attendance->status === 'late'`, tampilkan badge "Hadir" (hijau/success) — bukan `status_label`/`status_color` bawaan (yang akan menampilkan "Terlambat"/warning). Status lain (`present`/`absent`/`half_day`/`leave`/`holiday`/`weekend`) tetap pakai accessor asli, tidak diubah — kolom status sekarang efektif hanya menampilkan Hadir/Tidak Hadir untuk kasus harian biasa, sementara detail keterlambatan tetap terlihat di kolom Jam Masuk.
+  - Kolom Jam Pulang: teks "Pulang Awal" diganti "Pulang Cepat {{ early_leave_minutes }}m", konsisten dengan format "Terlambat Xm" di kolom Jam Masuk.
+  - **Aman secara data**: `status` dan `clock_in_status`/`late_minutes` SELALU di-set bersamaan dalam blok kondisi yang sama di `Attendance::clockIn()`/`recalculate()` (`app/Models/Attendance.php`) — jadi tidak ada risiko baris `status='late'` kehilangan info keterlambatannya di kolom Jam Masuk setelah perubahan ini.
+  - Filter dropdown "Terlambat" (`status=late`) di toolbar TIDAK diubah — tetap berguna untuk admin yang mau filter data.
+- Tidak ada perubahan model/migration/route, jadi deploy cukup `git pull` + `php artisan view:clear` (sebagai `www-data`), tanpa restart `php8.3-fpm`/`siharis-worker`.
+
 
 
 

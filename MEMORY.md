@@ -367,6 +367,26 @@
 - APK release dibuild & ditandatangani (`android/app/siharis.jks`) di `build/app/outputs/flutter-apk/app-release.apk`; versionCode 19, versionName 1.2.1.
 - Sudah dipublish ke `/var/www/siharis/laravel-be/public/downloads/` di server produksi: `siharis-latest.apk`, `siharis-release.apk`, `SiHaris-v1.2.1.apk` (baru), `VERSION` di-update ke `1.2.1`. Dikonfirmasi lewat `https://siharis.yapinet.id/download/apk` (Content-Disposition `SiHaris-v1.2.1.apk`, content-length cocok). Build v1.2.0 sebelumnya (`SiHaris-v1.2.0.apk`) tetap disimpan sebagai arsip.
 
+---
+
+## 24. Rilis Mobile App v1.2.2+20 — Unifikasi Transisi Header Biru ke Body Abu-abu
+
+- **Masalah**: setiap screen mobile (Absensi, Riwayat Kehadiran, Slip Gaji, Jadwal Shift, Berkas & Dokumen, Cuti & Izin, Lembur, Profil, Notifikasi, Login) punya treatment berbeda-beda di batas antara header biru dan body — sebagian gradient dengan arah/warna berbeda, sebagian warna flat dengan radius rounded di BAWAH header sendiri, dan dua screen (Jadwal Shift, Lembur) malah tidak punya header gradient sama sekali (pakai `AppBar` polos `AppColors.primary`); Notifikasi malah pakai `AppBar` putih tanpa warna biru sama sekali.
+- **Solusi**: dieksplorasi dulu lewat 10-artboard mockup di Claude Design skill (bukan bagian repo) sebelum diterapkan ke kode asli. Diekstrak jadi 2 komponen shared, dipakai ulang oleh Home Screen (§23) dan seluruh screen lain:
+  - `AppColors.headerGradient` (`core/constants/colors.dart`) — gradient standar (`primary700` → `primary600`, topLeft → bottomRight) untuk header biru semua screen.
+  - `JagoHeaderBand` (`core/components/jago_header_band.dart`) — widget `SizedBox(height: 24)` berisi `Stack` + 2 `Positioned.fill` (layer bawah gradient biru, layer atas `Container` abu `scaffoldBackground` dengan `borderRadius` atas 24 + garis "grabber" abu di tengah). Ini REUSE dari pola yang sama persis dipakai `HomeScreen` (§23) — jangan duplikasi manual lagi di screen baru, import & pakai widget ini.
+- **Per-screen**:
+  - Absensi, Riwayat Kehadiran, Profil: gradient arah/warna diseragamkan (sebelumnya `topCenter→bottomCenter, primary600→primary700`) + `JagoHeaderBand` ditambahkan.
+  - Slip Gaji, Cuti & Izin: header sebelumnya warna flat `AppColors.primary` + `BorderRadius.vertical(bottom: 24)` sendiri — diganti gradient + `JagoHeaderBand`, radius bawah pada header dihapus (rounding sekarang di band, bukan di header).
+  - Jadwal Shift, Lembur: `Scaffold.appBar: AppBar(...)` dihapus total, diganti custom `_buildHeader()` gradient + `JagoHeaderBand`, body dibungkus `Column([header, band, Expanded(...)])`.
+  - Notifikasi: `AppBar` putih (`AppColors.surface`) diganti custom gradient header (ikon mark-all-read + refresh jadi putih) + `JagoHeaderBand`.
+  - Berkas & Dokumen (`document_list_screen.dart`, pakai `NestedScrollView`/`SliverAppBar`): gradient `[primary700, primary500]` diseragamkan ke `AppColors.headerGradient`, `Scaffold.backgroundColor` (sebelumnya custom `0xFFF8FAFC`) diseragamkan ke `AppColors.scaffoldBackground`, `JagoHeaderBand` ditambahkan sebagai child pertama `NestedScrollView.body`.
+  - Login: TETAP pakai bentuk rounded-BOTTOM sendiri (bodinya putih, bukan grey scaffold, jadi trik reveal-band tidak relevan di sini) — hanya arah/warna gradient yang diseragamkan ke `AppColors.headerGradient`. Logo "Powered by" (§23) juga dibesarkan dari `height: 28` ke `44` di rilis ini (masukan user: "kekecilan").
+- `pubspec.yaml`: `version: 1.2.2+20`. Fallback version string di `splash_screen.dart` & `profile_screen.dart` ikut dibump ke `v1.2.2`.
+- Semua 961 test lolos (`flutter test`), `flutter analyze` bersih (tidak ada issue baru, semua warning yang tersisa pre-existing & tidak terkait perubahan ini).
+- APK release dibuild & ditandatangani (`android/app/siharis.jks`) di `build/app/outputs/flutter-apk/app-release.apk`; versionCode 20, versionName 1.2.2.
+- Sudah dipublish ke `/var/www/siharis/laravel-be/public/downloads/`: `siharis-latest.apk`, `siharis-release.apk`, `SiHaris-v1.2.2.apk` (baru), `VERSION` di-update ke `1.2.2`. Dikonfirmasi lewat `https://siharis.yapinet.id/download/android` (Content-Disposition `SiHaris-v1.2.2.apk`, content-length cocok). Build v1.2.1/v1.2.0 sebelumnya tetap disimpan sebagai arsip.
+
 
 
 

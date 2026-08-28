@@ -365,7 +365,7 @@
 - `pubspec.yaml`: `version: 1.2.1+19`. Fallback version string di `splash_screen.dart` & `profile_screen.dart` ikut dibump ke `v1.2.1`.
 - Semua 961 test lolos (`flutter test`), `flutter analyze` bersih di file yang diubah.
 - APK release dibuild & ditandatangani (`android/app/siharis.jks`) di `build/app/outputs/flutter-apk/app-release.apk`; versionCode 19, versionName 1.2.1.
-- **Belum dilakukan**: publish APK build ini ke `/downloads` server produksi — perlu dieksekusi terpisah (butuh akses SSH password ke `172.16.5.204`, sempat diblokir classifier auto-mode saat dicoba otomatis di sesi ini) sebelum link download resmi mengarah ke build ini.
+- Sudah dipublish ke `/var/www/siharis/laravel-be/public/downloads/` di server produksi: `siharis-latest.apk`, `siharis-release.apk`, `SiHaris-v1.2.1.apk` (baru), `VERSION` di-update ke `1.2.1`. Dikonfirmasi lewat `https://siharis.yapinet.id/download/apk` (Content-Disposition `SiHaris-v1.2.1.apk`, content-length cocok). Build v1.2.0 sebelumnya (`SiHaris-v1.2.0.apk`) tetap disimpan sebagai arsip.
 
 
 

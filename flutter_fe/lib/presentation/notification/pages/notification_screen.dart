@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/components/widgets.dart';
+import '../../../core/components/jago_header_band.dart';
 import '../../../data/models/responses/notification_model.dart';
 import '../bloc/notification_list/notification_list_bloc.dart';
 import '../bloc/notification_list/notification_list_event.dart';
@@ -55,145 +56,178 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Notifikasi',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              context
-                  .read<NotificationListBloc>()
-                  .add(const MarkAllNotificationsAsRead());
-            },
-            icon: const Icon(Icons.done_all_rounded, size: 20, color: AppColors.primary600),
-            tooltip: 'Tandai semua dibaca',
-          ),
-          IconButton(
-            onPressed: () {
-              context
-                  .read<NotificationListBloc>()
-                  .add(const RefreshNotifications());
-            },
-            icon: const Icon(Icons.refresh_rounded, size: 20, color: AppColors.textSecondary),
-            tooltip: 'Segarkan',
-          ),
-        ],
-      ),
-      body: BlocBuilder<NotificationListBloc, NotificationListState>(
-        builder: (context, state) {
-          if (state is NotificationListLoading) {
-            return const Center(
-              child: SizedBox(
-                width: 32,
-                height: 32,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: AppColors.primary600,
-                ),
-              ),
-            );
-          }
-
-          if (state is NotificationListError) {
-            return JagoEmptyState(
-              title: 'Gagal Memuat Notifikasi',
-              message: state.message,
-              icon: Icons.error_outline_rounded,
-              actionText: 'Coba Lagi',
-              onAction: _loadData,
-            );
-          }
-
-          if (state is NotificationListLoaded) {
-            final notifications = state.notifications;
-
-            if (notifications.isEmpty) {
-              return const JagoEmptyState(
-                title: 'Tidak Ada Notifikasi',
-                message: 'Semua notifikasi Anda akan muncul di sini',
-                icon: Icons.notifications_off_outlined,
-              );
-            }
-
-            final grouped = _groupByDate(notifications);
-
-            return RefreshIndicator(
-              color: AppColors.primary600,
-              onRefresh: () async {
-                context
-                    .read<NotificationListBloc>()
-                    .add(const RefreshNotifications());
-              },
-              child: ListView.builder(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: grouped.length + (state.hasReachedMax ? 0 : 1),
-                itemBuilder: (context, index) {
-                  if (index >= grouped.length) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: AppColors.primary600,
-                          ),
-                        ),
+      body: Column(
+        children: [
+          _buildHeader(context),
+          const JagoHeaderBand(),
+          Expanded(
+            child: BlocBuilder<NotificationListBloc, NotificationListState>(
+              builder: (context, state) {
+                if (state is NotificationListLoading) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: AppColors.primary600,
                       ),
+                    ),
+                  );
+                }
+
+                if (state is NotificationListError) {
+                  return JagoEmptyState(
+                    title: 'Gagal Memuat Notifikasi',
+                    message: state.message,
+                    icon: Icons.error_outline_rounded,
+                    actionText: 'Coba Lagi',
+                    onAction: _loadData,
+                  );
+                }
+
+                if (state is NotificationListLoaded) {
+                  final notifications = state.notifications;
+
+                  if (notifications.isEmpty) {
+                    return const JagoEmptyState(
+                      title: 'Tidak Ada Notifikasi',
+                      message: 'Semua notifikasi Anda akan muncul di sini',
+                      icon: Icons.notifications_off_outlined,
                     );
                   }
 
-                  final group = grouped[index];
-                  final dateLabel = group['dateLabel'] as String;
-                  final items = group['items'] as List<NotificationModel>;
+                  final grouped = _groupByDate(notifications);
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          dateLabel,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                      ...items.map((item) => _buildNotificationItem(item)),
-                    ],
+                  return RefreshIndicator(
+                    color: AppColors.primary600,
+                    onRefresh: () async {
+                      context.read<NotificationListBloc>().add(
+                        const RefreshNotifications(),
+                      );
+                    },
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: grouped.length + (state.hasReachedMax ? 0 : 1),
+                      itemBuilder: (context, index) {
+                        if (index >= grouped.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: AppColors.primary600,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final group = grouped[index];
+                        final dateLabel = group['dateLabel'] as String;
+                        final items = group['items'] as List<NotificationModel>;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                              child: Text(
+                                dateLabel,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            ...items.map(
+                              (item) => _buildNotificationItem(item),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   );
-                },
-              ),
-            );
-          }
+                }
 
-          return const SizedBox.shrink();
-        },
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  List<Map<String, dynamic>> _groupByDate(List<NotificationModel> notifications) {
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const Expanded(
+                child: Text(
+                  'Notifikasi',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  context.read<NotificationListBloc>().add(
+                    const MarkAllNotificationsAsRead(),
+                  );
+                },
+                icon: const Icon(
+                  Icons.done_all_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
+                tooltip: 'Tandai semua dibaca',
+              ),
+              IconButton(
+                onPressed: () {
+                  context.read<NotificationListBloc>().add(
+                    const RefreshNotifications(),
+                  );
+                },
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
+                tooltip: 'Segarkan',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _groupByDate(
+    List<NotificationModel> notifications,
+  ) {
     final Map<String, List<NotificationModel>> grouped = {};
 
     for (final notification in notifications) {
@@ -294,8 +328,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           notification.title,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight:
-                                isUnread ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isUnread
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -340,9 +375,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   void _handleNotificationTap(NotificationModel notification) {
     if (!notification.isRead) {
-      context
-          .read<NotificationListBloc>()
-          .add(MarkNotificationAsRead(notification.id));
+      context.read<NotificationListBloc>().add(
+        MarkNotificationAsRead(notification.id),
+      );
     }
     _showNotificationDetail(notification);
   }
@@ -458,7 +493,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: const Text(
+                  'Tutup',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],

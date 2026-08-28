@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  String _version = 'v1.2.1';
+  String _version = 'v1.2.2';
 
   @override
   void initState() {
@@ -131,9 +131,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.heroGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.heroGradient),
         child: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -144,10 +142,7 @@ class _SplashScreenState extends State<SplashScreen>
                 builder: (context, child) {
                   return Transform.scale(
                     scale: _scaleAnimation.value,
-                    child: Opacity(
-                      opacity: _fadeAnimation.value,
-                      child: child,
-                    ),
+                    child: Opacity(opacity: _fadeAnimation.value, child: child),
                   );
                 },
                 child: Column(
@@ -205,10 +200,7 @@ class _SplashScreenState extends State<SplashScreen>
               AnimatedBuilder(
                 animation: _fadeAnimation,
                 builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: child,
-                  );
+                  return Opacity(opacity: _fadeAnimation.value, child: child);
                 },
                 child: Column(
                   children: [

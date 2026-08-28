@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/colors.dart';
+import '../../../../core/components/jago_header_band.dart';
 import '../../../../data/models/responses/overtime_model.dart';
 import '../../../../data/models/responses/overtime_summary_model.dart';
 import '../bloc/list/overtime_list_bloc.dart';
@@ -60,23 +61,6 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Lembur',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push(
@@ -90,72 +74,126 @@ class _OvertimeScreenState extends State<OvertimeScreen> {
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => _loadData(),
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: BlocBuilder<OvertimeSummaryBloc, OvertimeSummaryState>(
-                  builder: (context, state) {
-                    if (state is OvertimeSummaryLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (state is OvertimeSummaryLoaded) {
-                      return _buildSummaryCard(state.summary);
-                    }
-                    return const SizedBox();
-                  },
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: BlocBuilder<OvertimeListBloc, OvertimeListState>(
-                builder: (context, state) {
-                  if (state is OvertimeListLoading) {
-                    return const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  if (state is OvertimeListError) {
-                    return SliverFillRemaining(
-                      child: Center(child: Text(state.message)),
-                    );
-                  }
-                  if (state is OvertimeListLoaded) {
-                    if (state.overtimes.isEmpty) {
-                      return const SliverFillRemaining(
-                        child: Center(child: Text('Belum ada riwayat lembur')),
-                      );
-                    }
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          if (index >= state.overtimes.length) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: CircularProgressIndicator(),
+      body: Column(
+        children: [
+          _buildHeader(context),
+          const JagoHeaderBand(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async => _loadData(),
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child:
+                          BlocBuilder<
+                            OvertimeSummaryBloc,
+                            OvertimeSummaryState
+                          >(
+                            builder: (context, state) {
+                              if (state is OvertimeSummaryLoading) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                              if (state is OvertimeSummaryLoaded) {
+                                return _buildSummaryCard(state.summary);
+                              }
+                              return const SizedBox();
+                            },
+                          ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: BlocBuilder<OvertimeListBloc, OvertimeListState>(
+                      builder: (context, state) {
+                        if (state is OvertimeListLoading) {
+                          return const SliverFillRemaining(
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        if (state is OvertimeListError) {
+                          return SliverFillRemaining(
+                            child: Center(child: Text(state.message)),
+                          );
+                        }
+                        if (state is OvertimeListLoaded) {
+                          if (state.overtimes.isEmpty) {
+                            return const SliverFillRemaining(
+                              child: Center(
+                                child: Text('Belum ada riwayat lembur'),
                               ),
                             );
                           }
-                          return _buildOvertimeItem(state.overtimes[index]);
-                        },
-                        childCount: state.hasReachedMax
-                            ? state.overtimes.length
-                            : state.overtimes.length + 1,
-                      ),
-                    );
-                  }
-                  return const SliverToBoxAdapter(child: SizedBox());
-                },
+                          return SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                if (index >= state.overtimes.length) {
+                                  return const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                }
+                                return _buildOvertimeItem(
+                                  state.overtimes[index],
+                                );
+                              },
+                              childCount: state.hasReachedMax
+                                  ? state.overtimes.length
+                                  : state.overtimes.length + 1,
+                            ),
+                          );
+                        }
+                        return const SliverToBoxAdapter(child: SizedBox());
+                      },
+                    ),
+                  ),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+                ],
               ),
             ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const Expanded(
+                child: Text(
+                  'Lembur',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 40),
+            ],
+          ),
         ),
       ),
     );

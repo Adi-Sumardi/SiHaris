@@ -121,4 +121,12 @@ class AppColors {
     end: Alignment.bottomRight,
     colors: [primary500, primary600],
   );
+
+  /// Standard gradient for a screen's blue top header (used with
+  /// [JagoHeaderBand] for the rounded-top transition into the grey body).
+  static const LinearGradient headerGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary700, primary600],
+  );
 }

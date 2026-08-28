@@ -153,11 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
         bottom: 40,
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.primary600, AppColors.primary700],
-        ),
+        gradient: AppColors.headerGradient,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
@@ -360,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
             style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
           ),
           const SizedBox(height: 8),
-          Image.asset('assets/images/yapi.png', height: 28),
+          Image.asset('assets/images/yapi.png', height: 44),
         ],
       ),
     );

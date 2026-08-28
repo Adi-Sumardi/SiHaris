@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/components/widgets.dart';
+import '../../../core/components/jago_header_band.dart';
 import '../../../core/constants/colors.dart';
 import '../../../data/models/responses/employee_schedule_model.dart';
 import '../bloc/schedule/schedule_bloc.dart';
@@ -34,62 +35,93 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: const Text('Jadwal Shift'),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      body: BlocBuilder<ScheduleBloc, ScheduleState>(
-        builder: (context, state) {
-          if (state is ScheduleLoading || state is ScheduleInitial) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          _buildHeader(context),
+          const JagoHeaderBand(),
+          Expanded(
+            child: BlocBuilder<ScheduleBloc, ScheduleState>(
+              builder: (context, state) {
+                if (state is ScheduleLoading || state is ScheduleInitial) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (state is ScheduleError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 64,
-                      color: AppColors.danger,
+                if (state is ScheduleError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            size: 64,
+                            color: AppColors.danger,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            state.message,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => _loadMonth(_currentMonth ?? ''),
+                            child: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.message,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _loadMonth(_currentMonth ?? ''),
-                      child: const Text('Coba Lagi'),
-                    ),
-                  ],
+                  );
+                }
+
+                if (state is ScheduleLoaded) {
+                  return _buildContent(state.data);
+                }
+
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const Expanded(
+                child: Text(
+                  'Jadwal Shift',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            );
-          }
-
-          if (state is ScheduleLoaded) {
-            return _buildContent(state.data);
-          }
-
-          return const SizedBox.shrink();
-        },
+              const SizedBox(width: 40),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -247,7 +279,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 bgColor = AppColors.dangerLight;
                 shortLabel = 'L';
               } else if (day.schedule != null) {
-                bgColor = _getShiftColor(day.schedule!.name).withValues(alpha: 0.15);
+                bgColor = _getShiftColor(
+                  day.schedule!.name,
+                ).withValues(alpha: 0.15);
                 shortLabel = _getShiftAbbreviation(day.schedule!.name);
               } else {
                 bgColor = AppColors.secondary100;
@@ -292,8 +326,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               color: day?.isHoliday == true
                                   ? AppColors.danger
                                   : day?.schedule != null
-                                      ? _getShiftColor(day!.schedule!.name)
-                                      : AppColors.textTertiary,
+                                  ? _getShiftColor(day!.schedule!.name)
+                                  : AppColors.textTertiary,
                             ),
                           ),
                         ),
@@ -453,7 +487,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Color _getShiftColor(String shiftName) {
     final name = shiftName.toLowerCase();
     if (name.contains('pagi') || name.contains('morning')) {
-      return const Color(0xFF00897B); // Teal/Emerald (Pagi - Fresh & Eye-friendly)
+      return const Color(
+        0xFF00897B,
+      ); // Teal/Emerald (Pagi - Fresh & Eye-friendly)
     }
     if (name.contains('siang') || name.contains('afternoon')) {
       return AppColors.primary600; // Blue (Siang - Professional)

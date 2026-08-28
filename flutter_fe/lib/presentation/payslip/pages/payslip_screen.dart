@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/components/jago_header_band.dart';
 import '../../../data/models/responses/payslip_model.dart';
 import '../../home/pages/main_screen.dart';
 import '../bloc/payslip_list/payslip_list_bloc.dart';
@@ -66,6 +67,7 @@ class _PayslipScreenState extends State<PayslipScreen> {
         child: Column(
           children: [
             _buildHeader(),
+            const JagoHeaderBand(),
             Expanded(
               child: BlocBuilder<PayslipListBloc, PayslipListState>(
                 builder: (context, state) {
@@ -154,10 +156,7 @@ class _PayslipScreenState extends State<PayslipScreen> {
 
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: SafeArea(
         bottom: false,

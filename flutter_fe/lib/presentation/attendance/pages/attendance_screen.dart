@@ -18,6 +18,7 @@ import 'package:gaji_pro/presentation/office_location/bloc/office_location/offic
 import 'package:gaji_pro/presentation/office_location/bloc/office_location/office_location_state.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/components/widgets.dart';
+import '../../../core/components/jago_header_band.dart';
 import '../widgets/clock_button.dart';
 import '../widgets/attendance_calendar.dart';
 import 'attendance_history_screen.dart';
@@ -378,6 +379,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         body: Column(
           children: [
             _buildHeader(),
+            const JagoHeaderBand(),
             Container(
               color: AppColors.surface,
               child: TabBar(
@@ -449,11 +451,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
 
             return Container(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [AppColors.primary600, AppColors.primary700],
-                ),
+                gradient: AppColors.headerGradient,
               ),
               child: SafeArea(
                 bottom: false,
@@ -655,7 +653,8 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (data.clockInSource == 'fingerprint' || data.clockOutSource == 'fingerprint') ...[
+                if (data.clockInSource == 'fingerprint' ||
+                    data.clockOutSource == 'fingerprint') ...[
                   JagoCard(
                     child: Row(
                       children: [
@@ -786,7 +785,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                             ),
                           ),
                           if (data.schedule != null &&
-                              data.schedule!.startTime.compareTo(data.schedule!.endTime) > 0) ...[
+                              data.schedule!.startTime.compareTo(
+                                    data.schedule!.endTime,
+                                  ) >
+                                  0) ...[
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -794,7 +796,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.overtime.withValues(alpha: 0.1),
+                                color: AppColors.overtime.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -876,8 +880,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                           clockInMinute,
                         );
                         if (now.isAfter(clockInDt)) {
-                          activeWorkingMinutes =
-                              now.difference(clockInDt).inMinutes;
+                          activeWorkingMinutes = now
+                              .difference(clockInDt)
+                              .inMinutes;
                         }
                       } catch (_) {}
                     }

@@ -7,6 +7,7 @@ import 'package:gaji_pro/presentation/attendance/bloc/attendance_summary/attenda
 import 'package:gaji_pro/presentation/attendance/pages/attendance_detail_screen.dart';
 import 'package:gaji_pro/presentation/home/pages/main_screen.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/components/jago_header_band.dart';
 
 /// Attendance History Screen with 8-point grid system
 /// Spacing: 4, 8, 12, 16, 24, 32 px
@@ -51,6 +52,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         children: [
           // Header with gradient
           _buildHeader(),
+          const JagoHeaderBand(),
           // Filter chips
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -129,13 +131,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.primary600, AppColors.primary700],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -222,10 +218,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                     return Center(
                       child: Text(
                         'Gagal memuat ringkasan',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                     );
                   }
@@ -241,7 +234,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                       ),
                     );
                   }
-                  return const SizedBox(height: 60); // Placeholder height (Initial)
+                  return const SizedBox(
+                    height: 60,
+                  ); // Placeholder height (Initial)
                 },
               ),
             ),
@@ -341,7 +336,10 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),

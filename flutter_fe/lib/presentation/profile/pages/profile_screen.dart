@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/components/widgets.dart';
+import '../../../core/components/jago_header_band.dart';
 import '../../../core/widgets/delete_account_dialog.dart';
 import '../../../data/datasources/auth_local_datasource.dart';
 import '../../../data/models/responses/auth_response_model.dart';
@@ -37,7 +38,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _appVersion = 'v1.2.1';
+  String _appVersion = 'v1.2.2';
 
   @override
   void initState() {
@@ -95,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     children: [
                       _buildHeader(context, state.user, state.company),
+                      const JagoHeaderBand(),
                       _buildProfileContent(context, state.user, state.company),
                     ],
                   ),
@@ -143,13 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final companyName = company?.name ?? '';
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.primary600, AppColors.primary700],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
       child: SafeArea(
         bottom: false,
         child: Column(

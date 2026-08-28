@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gaji_pro/core/constants/colors.dart';
+import 'package:gaji_pro/core/components/jago_header_band.dart';
 import 'package:gaji_pro/data/models/responses/employee_document_model.dart';
 import 'package:gaji_pro/presentation/document/bloc/document_action/document_action_bloc.dart';
 import 'package:gaji_pro/presentation/document/bloc/document_list/document_list_bloc.dart';
@@ -45,13 +46,13 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
   void _navigateToUpload() async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const DocumentUploadScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const DocumentUploadScreen()),
     );
 
     if (result == true && mounted) {
-      context.read<DocumentListBloc>().add(RefreshDocuments(type: _selectedType));
+      context.read<DocumentListBloc>().add(
+        RefreshDocuments(type: _selectedType),
+      );
     }
   }
 
@@ -67,7 +68,9 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          context.read<DocumentListBloc>().add(RefreshDocuments(type: _selectedType));
+          context.read<DocumentListBloc>().add(
+            RefreshDocuments(type: _selectedType),
+          );
         } else if (state is DocumentActionError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -79,7 +82,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: AppColors.scaffoldBackground,
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
@@ -91,11 +94,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary700, AppColors.primary500],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      gradient: AppColors.headerGradient,
                     ),
                     padding: const EdgeInsets.fromLTRB(20, 50, 20, 16),
                     alignment: Alignment.bottomLeft,
@@ -125,7 +124,11 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                   ),
                 ),
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -133,6 +136,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
           },
           body: Column(
             children: [
+              const JagoHeaderBand(),
               // Search Box & Category Filters
               Container(
                 color: Colors.white,
@@ -150,14 +154,28 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: _onSearchChanged,
-                        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Cari nama atau nomor berkas...',
-                          hintStyle: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
-                          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textTertiary),
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textTertiary,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: AppColors.textTertiary,
+                          ),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.textTertiary),
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    size: 18,
+                                    color: AppColors.textTertiary,
+                                  ),
                                   onPressed: () {
                                     _searchController.clear();
                                     _onSearchChanged('');
@@ -165,7 +183,9 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -176,12 +196,24 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       height: 34,
                       child: BlocBuilder<DocumentListBloc, DocumentListState>(
                         builder: (context, state) {
-                          final types = state is DocumentListLoaded ? state.types : <DocumentTypeModel>[];
+                          final types = state is DocumentListLoaded
+                              ? state.types
+                              : <DocumentTypeModel>[];
                           return ListView(
                             scrollDirection: Axis.horizontal,
                             children: [
-                              _buildCategoryChip('all', 'Semua Berkas', Icons.folder_copy_outlined),
-                              ...types.map((t) => _buildCategoryChip(t.type, t.label, t.iconData)),
+                              _buildCategoryChip(
+                                'all',
+                                'Semua Berkas',
+                                Icons.folder_copy_outlined,
+                              ),
+                              ...types.map(
+                                (t) => _buildCategoryChip(
+                                  t.type,
+                                  t.label,
+                                  t.iconData,
+                                ),
+                              ),
                             ],
                           );
                         },
@@ -201,7 +233,9 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       return const Center(
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
+                          ),
                         ),
                       );
                     }
@@ -213,24 +247,38 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 48),
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: AppColors.danger,
+                                size: 48,
+                              ),
                               const SizedBox(height: 12),
                               Text(
                                 state.message,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
                               ),
                               const SizedBox(height: 16),
                               ElevatedButton.icon(
                                 onPressed: () {
-                                  context.read<DocumentListBloc>().add(GetDocuments(type: _selectedType));
+                                  context.read<DocumentListBloc>().add(
+                                    GetDocuments(type: _selectedType),
+                                  );
                                 },
-                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                icon: const Icon(
+                                  Icons.refresh_rounded,
+                                  size: 18,
+                                ),
                                 label: const Text('Coba Lagi'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                               ),
                             ],
@@ -289,8 +337,13 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary600,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -301,12 +354,15 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
 
                       return RefreshIndicator(
                         onRefresh: () async {
-                          context.read<DocumentListBloc>().add(RefreshDocuments(type: _selectedType));
+                          context.read<DocumentListBloc>().add(
+                            RefreshDocuments(type: _selectedType),
+                          );
                         },
                         child: ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                           itemCount: docs.length,
-                          separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                          separatorBuilder: (ctx, i) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final doc = docs[index];
                             return _buildDocumentCard(context, doc);
@@ -350,7 +406,9 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
             color: isSelected ? AppColors.primary600 : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? AppColors.primary600 : const Color(0xFFE2E8F0),
+              color: isSelected
+                  ? AppColors.primary600
+                  : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(
@@ -439,9 +497,14 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                         right: 2,
                         bottom: 2,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 3,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
-                            color: doc.isPdf ? const Color(0xFFDC2626) : const Color(0xFF2563EB),
+                            color: doc.isPdf
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFF2563EB),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -468,11 +531,16 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2.5,
+                            ),
                             decoration: BoxDecoration(
                               color: doc.categoryColor.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: doc.categoryColor.withValues(alpha: 0.2)),
+                              border: Border.all(
+                                color: doc.categoryColor.withValues(alpha: 0.2),
+                              ),
                             ),
                             child: Text(
                               doc.documentTypeLabel,
@@ -510,7 +578,8 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       ),
 
                       // Document Number (if exists)
-                      if (doc.documentNumber != null && doc.documentNumber!.isNotEmpty) ...[
+                      if (doc.documentNumber != null &&
+                          doc.documentNumber!.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
                           'No: ${doc.documentNumber}',
@@ -527,11 +596,18 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       // Upload date
                       Row(
                         children: [
-                          const Icon(Icons.access_time_rounded, size: 12, color: AppColors.textTertiary),
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 12,
+                            color: AppColors.textTertiary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             formattedDate,
-                            style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textTertiary,
+                            ),
                           ),
                         ],
                       ),
@@ -541,8 +617,14 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
 
                 // More Menu Button
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textTertiary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    size: 20,
+                    color: AppColors.textTertiary,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   onSelected: (action) {
                     if (action == 'preview') {
                       Navigator.push(
@@ -560,7 +642,11 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       value: 'preview',
                       child: Row(
                         children: [
-                          Icon(Icons.visibility_outlined, size: 18, color: AppColors.primary),
+                          Icon(
+                            Icons.visibility_outlined,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
                           SizedBox(width: 10),
                           Text('Lihat / Buka', style: TextStyle(fontSize: 13)),
                         ],
@@ -570,9 +656,19 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+                          Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                            color: AppColors.danger,
+                          ),
                           SizedBox(width: 10),
-                          Text('Hapus Berkas', style: TextStyle(fontSize: 13, color: AppColors.danger)),
+                          Text(
+                            'Hapus Berkas',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.danger,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -586,7 +682,10 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, EmployeeDocumentModel doc) {
+  void _showDeleteConfirmation(
+    BuildContext context,
+    EmployeeDocumentModel doc,
+  ) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -602,17 +701,24 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogCtx);
-              context.read<DocumentActionBloc>().add(DeleteDocumentEvent(doc.id));
+              context.read<DocumentActionBloc>().add(
+                DeleteDocumentEvent(doc.id),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.danger,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Hapus'),
           ),

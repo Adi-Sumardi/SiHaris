@@ -7,6 +7,7 @@ import 'package:gaji_pro/presentation/leave/pages/leave_form_screen.dart';
 import 'package:gaji_pro/presentation/leave/pages/leave_detail_screen.dart';
 import 'package:gaji_pro/data/models/responses/leave_model.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/components/jago_header_band.dart';
 
 class LeaveListScreen extends StatefulWidget {
   const LeaveListScreen({super.key});
@@ -46,6 +47,7 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
       body: Column(
         children: [
           _buildHeader(),
+          const JagoHeaderBand(),
           Expanded(
             child: BlocBuilder<LeaveListBloc, LeaveListState>(
               builder: (context, state) {
@@ -92,10 +94,7 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
 
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: SafeArea(
         bottom: false,

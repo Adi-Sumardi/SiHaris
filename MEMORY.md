@@ -428,6 +428,18 @@
 - Test `tests/Feature/Reports/AttendanceReportControllerTest.php` (11 test, termasuk smoke-test export excel & pdf) tetap lolos tanpa perlu diubah — tidak ada assertion yang terikat ke struktur kolom persisnya.
 - Deploy: `git pull` + `view:clear` (sebagai `www-data`) + restart `php8.3-fpm` (karena ada perubahan file PHP controller, bukan cuma Blade).
 
+---
+
+## 28. Bulk-Assign Jadwal Kerja (`/work-schedules`)
+
+- **Fitur baru**: tombol "Assign Jadwal" di toolbar halaman Jadwal Kerja (`resources/views/work-schedules/index.blade.php`), sebelah tombol Import & Tambah Jadwal. Membuka `<x-modal name="assign-schedule">` (komponen modal reusable `resources/views/components/modal.blade.php` — sebelumnya belum pernah dipakai di codebase, ini pemakaian pertamanya) berisi form pilih 1 jadwal kerja + target: **Semua Karyawan** / **Departemen Tertentu** / **Jabatan Tertentu** (toggle dropdown terkait via Alpine `x-show`/`x-model`, mengikuti request user "bisa assign berdasarkan Jabatan" sebagai tambahan atas permintaan awal all/department).
+- **Backend**: `WorkScheduleController::bulkAssign()` (route `POST work-schedules/bulk-assign`, ditambahkan setelah `Route::resource('work-schedules', ...)` di `routes/web.php`) — validasi `work_schedule_id`/`department_id`/`position_id` scoped ke `company_id` tenant via `Rule::exists(...)->where(...)`, lalu `Employee::whereIn('id', $employeeIds)->update(['work_schedule_id' => ...])` dalam `DB::transaction()`.
+- **Detail teknis penting** (mencegah bug diam-diam / silent no-op): `Employee::resolveScheduleForDate()` MEMPRIORITASKAN baris `employee_weekly_schedules` (pola jadwal per-hari, lihat §-nya di model) di atas kolom `work_schedule_id` — jadi kalau importer/bulk-assign HANYA meng-update `work_schedule_id` tanpa membersihkan baris weekly override karyawan tsb, hasil assignment tidak akan berpengaruh sama sekali untuk karyawan yang sudah dalam mode "jadwal mingguan". `bulkAssign()` karena itu SELALU ikut menghapus (`EmployeeWeeklySchedule::whereIn('employee_id', $employeeIds)->delete()`) baris weekly milik karyawan yang di-assign, di dalam transaction yang sama — modal juga menampilkan warning text soal ini ke admin.
+- Dropdown "Jabatan" pakai konvensi disambiguasi yang sama seperti fitur Target Penerima Pengumuman (§21): `Position::with('department')`, ditampilkan `{{ $position->name }} ({{ $position->department->name }})` supaya jabatan dengan nama sama di departemen berbeda (mis. beberapa "Guru") bisa dibedakan.
+- Validasi error pada modal (mis. lupa pilih departemen saat target_type=department) auto-membuka kembali modal setelah redirect-back via `@if($errors->hasAny([...])) <script>...dispatchEvent(new CustomEvent('open-modal', {detail:'assign-schedule'}))...</script> @endif` — modal Alpine defaultnya `open: false` dan tidak tahu soal validation errors dari server tanpa trik ini.
+- Test: `tests/Feature/WorkSchedule/WorkScheduleControllerTest.php` — 8 test baru (`describe('bulkAssign', ...)`): assign ke semua/departemen/jabatan, weekly override kehapus, validasi department_id/position_id required saat target_type terkait, penolakan `work_schedule_id` milik company lain, dan kasus target kosong (tidak error, tapi flash message "error" informatif). Satu test pre-existing (`can search work schedules by name`) ikut diperbaiki — sebelumnya `assertDontSee('Night Shift')` di seluruh halaman, sekarang harus scoped ke `workSchedules` (koleksi tabel yang difilter search) karena dropdown modal baru ini sengaja menampilkan SEMUA jadwal aktif terlepas dari filter pencarian tabel.
+- Deploy: `git pull` + rebuild cache Laravel penuh (`config/cache/route/view:clear` lalu `config:cache`/`route:cache`, sebagai `www-data`) + restart `php8.3-fpm` (ada rute & controller baru).
+
 
 
 

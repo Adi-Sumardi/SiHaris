@@ -464,6 +464,21 @@
   - 979 unit/widget tests lolos (`flutter test`).
   - Release APK di-build & di-publish ke `/var/www/siharis/laravel-be/public/downloads/`: `siharis-latest.apk`, `siharis-release.apk`, `SiHaris-v1.2.3.apk`, serta `VERSION` di-update ke `1.2.3`.
 
+---
+
+## 30. Perbaikan Tata Letak Card Ringkasan Bulan Ini (Kehadiran & Terlambat)
+
+- **Masalah**: Teks judul pada card "Kehadiran" dan "Terlambat" di grid "Ringkasan Bulan Ini" pada layar HP tertentu mengalami line-wrap yang tidak rapi (misal: "Kehadira\nn" dan "Terlamb\nat"). Hal ini disebabkan oleh padding internal card (`16px`), icon box (`40px`), dan chevron icon kanan (`16px`) yang memakan terlalu banyak ruang horizontal, menyisakan area teks hanya ~58px.
+- **Solusi** (`flutter_fe/lib/presentation/home/pages/home_screen.dart`):
+  - Menghapus icon chevron kanan pada card ringkasan grid 2x2.
+  - Menyesuaikan padding card menjadi `EdgeInsets.symmetric(horizontal: 10, vertical: 12)`.
+  - Menyesuaikan ukuran icon box menjadi `36x36` (icon size `18`) dan spacing `8px`.
+  - Membungkus judul dan baris angka+satuan dengan `FittedBox(fit: BoxFit.scaleDown)` dan `maxLines: 1` agar responsif dan tidak pernah turun baris secara janggal di layar HP manapun.
+- **Testing & Build**:
+  - Semua 979 unit & widget test lolos (`flutter test`).
+  - Release APK berhasil di-build ulang dan di-publish ke `/var/www/siharis/laravel-be/public/downloads/`: `siharis-latest.apk`, `siharis-release.apk`, `SiHaris-v1.2.3.apk`.
+
+
 
 
 

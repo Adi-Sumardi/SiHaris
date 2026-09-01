@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gaji_pro/core/utils/error_parser.dart';
 import 'package:gaji_pro/data/datasources/employee_document_remote_datasource.dart';
 import 'package:gaji_pro/data/models/responses/employee_document_model.dart';
 

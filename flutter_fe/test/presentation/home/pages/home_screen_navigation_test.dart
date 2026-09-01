@@ -275,5 +275,83 @@ void main() {
         expect(find.text('Berkas & Dokumen Saya'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'Ringkasan Bulan Ini — Kehadiran, Sisa Cuti, Lembur, Terlambat navigation',
+      (tester) async {
+        bool crashed = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (ctx) => Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        ctx,
+                        MaterialPageRoute(
+                          builder: (_) => const Scaffold(body: Text('Detail Kehadiran')),
+                        ),
+                      ),
+                      child: const Text('Kehadiran'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        ctx,
+                        MaterialPageRoute(
+                          builder: (_) => const Scaffold(body: Text('Detail Cuti')),
+                        ),
+                      ),
+                      child: const Text('Sisa Cuti'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        ctx,
+                        MaterialPageRoute(
+                          builder: (_) => const Scaffold(body: Text('Detail Lembur')),
+                        ),
+                      ),
+                      child: const Text('Lembur'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        ctx,
+                        MaterialPageRoute(
+                          builder: (_) => const Scaffold(body: Text('Detail Terlambat')),
+                        ),
+                      ),
+                      child: const Text('Terlambat'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Kehadiran'));
+        await tester.pumpAndSettle();
+        expect(find.text('Detail Kehadiran'), findsOneWidget);
+        Navigator.pop(tester.element(find.text('Detail Kehadiran')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sisa Cuti'));
+        await tester.pumpAndSettle();
+        expect(find.text('Detail Cuti'), findsOneWidget);
+        Navigator.pop(tester.element(find.text('Detail Cuti')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Lembur'));
+        await tester.pumpAndSettle();
+        expect(find.text('Detail Lembur'), findsOneWidget);
+        Navigator.pop(tester.element(find.text('Detail Lembur')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Terlambat'));
+        await tester.pumpAndSettle();
+        expect(find.text('Detail Terlambat'), findsOneWidget);
+      },
+    );
   });
 }

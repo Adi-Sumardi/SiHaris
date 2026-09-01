@@ -5,6 +5,7 @@ import '../../core/constants/variables.dart';
 import '../../core/services/http_logger.dart';
 import '../../core/services/secure_storage_service.dart';
 import '../../core/services/session_service.dart';
+import '../../core/utils/error_parser.dart';
 import '../models/requests/register_request_model.dart';
 import '../models/requests/update_profile_request_model.dart';
 import '../models/responses/auth_response_model.dart';
@@ -75,7 +76,7 @@ class AuthRemoteDatasource implements AuthDatasource {
         return Right(AuthResponseModel.fromJson(data));
       } else {
         final data = jsonDecode(response.body);
-        return Left(data['message'] ?? 'Login gagal');
+        return Left(ErrorParser.parse(data, fallback: 'Login gagal'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
@@ -85,7 +86,7 @@ class AuthRemoteDatasource implements AuthDatasource {
         error: e,
         stackTrace: stackTrace,
       );
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -124,12 +125,12 @@ class AuthRemoteDatasource implements AuthDatasource {
       if (response.statusCode == 200) {
         return Right(Map<String, dynamic>.from(data));
       } else {
-        return Left(data['message'] ?? 'Gagal mengirim kode OTP');
+        return Left(ErrorParser.parse(data, fallback: 'Gagal mengirim kode OTP'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
       HttpLogger.logError(method: 'POST', url: url, error: e, stackTrace: stackTrace);
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -175,12 +176,12 @@ class AuthRemoteDatasource implements AuthDatasource {
       if (response.statusCode == 200) {
         return Right(AuthResponseModel.fromJson(data));
       } else {
-        return Left(data['message'] ?? 'Verifikasi OTP gagal');
+        return Left(ErrorParser.parse(data, fallback: 'Verifikasi OTP gagal'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
       HttpLogger.logError(method: 'POST', url: url, error: e, stackTrace: stackTrace);
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -226,7 +227,7 @@ class AuthRemoteDatasource implements AuthDatasource {
       if (response.statusCode == 201) {
         return Right(RegisterResponseModel.fromJson(data));
       } else {
-        return Left(data['message'] ?? 'Registrasi gagal');
+        return Left(ErrorParser.parse(data, fallback: 'Registrasi gagal'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
@@ -236,7 +237,7 @@ class AuthRemoteDatasource implements AuthDatasource {
         error: e,
         stackTrace: stackTrace,
       );
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -327,12 +328,12 @@ class AuthRemoteDatasource implements AuthDatasource {
         return const Left('Sesi Anda telah berakhir');
       } else {
         final data = jsonDecode(response.body);
-        return Left(data['message'] ?? 'Gagal mengambil profile');
+        return Left(ErrorParser.parse(data, fallback: 'Gagal mengambil profile'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
       HttpLogger.logError(method: 'GET', url: url, error: e, stackTrace: stackTrace);
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -388,13 +389,13 @@ class AuthRemoteDatasource implements AuthDatasource {
         return const Left('Sesi Anda telah berakhir');
       } else {
         final data = jsonDecode(response.body);
-        return Left(data['message'] ?? 'Gagal memperbarui profil');
+        return Left(ErrorParser.parse(data, fallback: 'Gagal memperbarui profil'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
       HttpLogger.logError(
           method: 'PATCH', url: url, error: e, stackTrace: stackTrace);
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -445,12 +446,12 @@ class AuthRemoteDatasource implements AuthDatasource {
         return const Left('Sesi Anda telah berakhir');
       } else {
         final data = jsonDecode(response.body);
-        return Left(data['message'] ?? 'Gagal mengubah password');
+        return Left(ErrorParser.parse(data, fallback: 'Gagal mengubah password'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
       HttpLogger.logError(method: 'POST', url: url, error: e, stackTrace: stackTrace);
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -502,15 +503,15 @@ class AuthRemoteDatasource implements AuthDatasource {
         return const Right(true);
       } else if (response.statusCode == 401) {
         final data = jsonDecode(response.body);
-        return Left(data['message'] ?? 'Password tidak sesuai');
+        return Left(ErrorParser.parse(data, fallback: 'Password tidak sesuai'));
       } else {
         final data = jsonDecode(response.body);
-        return Left(data['message'] ?? 'Gagal menghapus akun');
+        return Left(ErrorParser.parse(data, fallback: 'Gagal menghapus akun'));
       }
     } catch (e, stackTrace) {
       stopwatch.stop();
       HttpLogger.logError(method: 'DELETE', url: url, error: e, stackTrace: stackTrace);
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 }

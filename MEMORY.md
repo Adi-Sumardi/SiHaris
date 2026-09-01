@@ -440,6 +440,31 @@
 - Test: `tests/Feature/WorkSchedule/WorkScheduleControllerTest.php` — 8 test baru (`describe('bulkAssign', ...)`): assign ke semua/departemen/jabatan, weekly override kehapus, validasi department_id/position_id required saat target_type terkait, penolakan `work_schedule_id` milik company lain, dan kasus target kosong (tidak error, tapi flash message "error" informatif). Satu test pre-existing (`can search work schedules by name`) ikut diperbaiki — sebelumnya `assertDontSee('Night Shift')` di seluruh halaman, sekarang harus scoped ke `workSchedules` (koleksi tabel yang difilter search) karena dropdown modal baru ini sengaja menampilkan SEMUA jadwal aktif terlepas dari filter pencarian tabel.
 - Deploy: `git pull` + rebuild cache Laravel penuh (`config/cache/route/view:clear` lalu `config:cache`/`route:cache`, sebagai `www-data`) + restart `php8.3-fpm` (ada rute & controller baru).
 
+---
+
+## 29. Penanganan Error Offline/Koneksi, Reorganisasi Beranda & Navigasi Ringkasan (v1.2.3)
+
+- **Penanganan Error Offline & Jaringan Terpadu**:
+  - `ErrorParser` (`flutter_fe/lib/core/utils/error_parser.dart`): menambahkan `isNetworkError()`, `isTimeoutError()`, `isTechnicalError()`, dan `parseException()` yang menerjemahkan exception teknis (`SocketException`, `ClientException`, `Failed host lookup`, `errno = 7`, timeout, format error, dll.) menjadi pesan ramah bahasa Indonesia (*"Terjadi kesalahan koneksi: Tidak ada koneksi internet. Silakan periksa jaringan Wi-Fi atau data seluler Anda."*), sehingga tidak membocorkan kode error/URL/stack trace yang membingungkan karyawan.
+  - Remote Datasources (`dashboard_remote_datasource`, `attendance_remote_datasource`, `auth_remote_datasource`, `office_location_remote_datasource`, `face_recognition_datasource`, `schedule_remote_datasource`, `api_service`) di-update menggunakan error parser terpadu.
+  - UI Beranda (`home_screen.dart`): kartu error absensi offline (`_buildAttendanceCardError`) diperbarui dengan ikon `wifi_off_rounded`, judul *"Tidak Ada Koneksi Internet"*, panduan koneksi, dan tombol *"Coba Lagi"* untuk refresh dashboard.
+- **Reorganisasi Section Beranda (`home_screen.dart`)**:
+  - Section *"Jadwal Hari Ini"* (`_buildTodayScheduleWidget`) dihapus dari layout beranda atas permintaan user.
+  - Section *"Aktivitas Terbaru"* (`_buildRecentActivities`) dinaikkan posisinya langsung di bawah Quick Actions.
+  - Section *"Ringkasan Bulan Ini"* dan *"Pengumuman"* berada di bawahnya.
+- **Navigasi Interaktif Kartu Ringkasan Bulan Ini**:
+  - Keempat kartu di *"Ringkasan Bulan Ini"* dibuat interaktif (`InkWell` dengan feedback ripple & chevron):
+    - **Kehadiran** $\rightarrow$ `AttendanceHistoryScreen` (Riwayat Kehadiran).
+    - **Sisa Cuti** $\rightarrow$ `LeaveListScreen` (Daftar & Pengajuan Cuti).
+    - **Lembur** $\rightarrow$ `OvertimeScreen` (Daftar & Pengajuan Lembur).
+    - **Terlambat** $\rightarrow$ `AttendanceHistoryScreen(initialFilter: 'Terlambat')` dengan filter "Terlambat" otomatis aktif dan memfilter list item riwayat.
+- **Versi & Build**:
+  - `pubspec.yaml`: bumped ke `1.2.3+21`.
+  - `profile_screen.dart` & `splash_screen.dart` string versi di-update ke `v1.2.3`.
+  - 979 unit/widget tests lolos (`flutter test`).
+  - Release APK di-build & di-publish ke `/var/www/siharis/laravel-be/public/downloads/`: `siharis-latest.apk`, `siharis-release.apk`, `SiHaris-v1.2.3.apk`, serta `VERSION` di-update ke `1.2.3`.
+
+
 
 
 

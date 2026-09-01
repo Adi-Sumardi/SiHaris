@@ -16,7 +16,9 @@ import '../../../core/components/jago_header_band.dart';
 /// Container sizes: 40, 44, 48 px
 /// Border radius: 4, 8, 12, 16 px
 class AttendanceHistoryScreen extends StatefulWidget {
-  const AttendanceHistoryScreen({super.key});
+  final String? initialFilter;
+
+  const AttendanceHistoryScreen({super.key, this.initialFilter});
 
   @override
   State<AttendanceHistoryScreen> createState() =>
@@ -24,7 +26,7 @@ class AttendanceHistoryScreen extends StatefulWidget {
 }
 
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
-  String _selectedFilter = 'Semua';
+  late String _selectedFilter;
   final List<String> _filters = [
     'Semua',
     'Hadir',
@@ -32,6 +34,30 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     'Cuti',
     'Tidak Hadir',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFilter = widget.initialFilter ?? 'Semua';
+  }
+
+  List<AttendanceHistoryModel> _filterData(List<AttendanceHistoryModel> items) {
+    if (_selectedFilter == 'Semua') return items;
+    return items.where((item) {
+      switch (_selectedFilter) {
+        case 'Hadir':
+          return item.status.toLowerCase() == 'present';
+        case 'Terlambat':
+          return item.status.toLowerCase() == 'late';
+        case 'Cuti':
+          return item.status.toLowerCase() == 'leave';
+        case 'Tidak Hadir':
+          return item.status.toLowerCase() == 'absent';
+        default:
+          return true;
+      }
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,9 +133,19 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                   return Center(child: Text(state.message));
                 }
                 if (state is AttendanceHistoryLoaded) {
-                  final data = state.data;
+                  final data = _filterData(state.data);
                   if (data.isEmpty) {
-                    return const Center(child: Text('Belum ada riwayat'));
+                    return Center(
+                      child: Text(
+                        _selectedFilter == 'Semua'
+                            ? 'Belum ada riwayat'
+                            : 'Tidak ada riwayat dengan status $_selectedFilter',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    );
                   }
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

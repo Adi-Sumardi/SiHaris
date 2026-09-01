@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
 import 'package:gaji_pro/core/constants/variables.dart';
 import 'package:gaji_pro/core/services/session_service.dart';
+import 'package:gaji_pro/core/utils/error_parser.dart';
 import 'package:gaji_pro/data/datasources/auth_datasource.dart';
 import 'package:gaji_pro/data/datasources/auth_local_datasource.dart';
 import 'package:gaji_pro/data/models/requests/validate_gps_request_model.dart';
@@ -46,9 +47,9 @@ class OfficeLocationRemoteDatasource {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       }
-      return Left(body['message'] ?? 'Terjadi kesalahan');
+      return Left(ErrorParser.parse(body, fallback: 'Gagal memuat daftar lokasi kantor'));
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -112,9 +113,9 @@ class OfficeLocationRemoteDatasource {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       }
-      return Left(body['message'] ?? 'Terjadi kesalahan');
+      return Left(ErrorParser.parse(body, fallback: 'Gagal memuat detail lokasi kantor'));
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -140,9 +141,9 @@ class OfficeLocationRemoteDatasource {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       }
-      return Left(body['message'] ?? 'Terjadi kesalahan');
+      return Left(ErrorParser.parse(body, fallback: 'Validasi GPS gagal'));
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 }

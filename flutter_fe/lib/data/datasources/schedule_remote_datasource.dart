@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
 import 'package:gaji_pro/core/constants/variables.dart';
 import 'package:gaji_pro/core/services/session_service.dart';
+import 'package:gaji_pro/core/utils/error_parser.dart';
 import 'package:gaji_pro/data/datasources/auth_datasource.dart';
 import 'package:gaji_pro/data/datasources/auth_local_datasource.dart';
 import 'package:gaji_pro/data/models/responses/employee_schedule_model.dart';
@@ -55,9 +56,9 @@ class ScheduleRemoteDatasource {
         return const Left('Data jadwal tidak ditemukan');
       }
 
-      return Left((body['message'] as String?) ?? 'Gagal memuat jadwal');
+      return Left(ErrorParser.parse(body, fallback: 'Gagal memuat jadwal'));
     } catch (e) {
-      return Left('Terjadi kesalahan: $e');
+      return Left(ErrorParser.parseException(e));
     }
   }
 }

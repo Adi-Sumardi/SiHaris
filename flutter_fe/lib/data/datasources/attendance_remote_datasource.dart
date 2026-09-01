@@ -8,6 +8,7 @@ import 'package:gaji_pro/core/services/http_logger.dart';
 import 'package:gaji_pro/core/services/offline_attendance/offline_attendance_service.dart';
 import 'package:gaji_pro/core/services/secure_storage_service.dart';
 import 'package:gaji_pro/core/services/session_service.dart';
+import 'package:gaji_pro/core/utils/error_parser.dart';
 import 'package:gaji_pro/data/datasources/auth_datasource.dart';
 import 'package:gaji_pro/data/datasources/auth_local_datasource.dart';
 import 'package:gaji_pro/data/models/requests/clock_in_request_model.dart';
@@ -82,10 +83,10 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        return Left(body['message'] ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(body, fallback: 'Gagal memuat absensi hari ini'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -249,7 +250,7 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         error: e,
         stackTrace: stackTrace,
       );
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -329,7 +330,7 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        return Left(body['message'] ?? 'Clock out failed');
+        return Left(ErrorParser.parse(body, fallback: 'Clock out gagal'));
       }
     } on SocketException {
       // Diteruskan agar pemanggil (clockOut) menyimpannya ke antrean offline.
@@ -344,7 +345,7 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         error: e,
         stackTrace: stackTrace,
       );
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -381,10 +382,10 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        return Left(body['message'] ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(body, fallback: 'Gagal memuat riwayat absensi'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -414,10 +415,10 @@ class AttendanceRemoteDatasource implements AttendanceUploader {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        return Left(body['message'] ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(body, fallback: 'Gagal memuat ringkasan absensi'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 }

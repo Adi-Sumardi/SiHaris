@@ -23,13 +23,7 @@ class LeaveListBloc extends Bloc<LeaveListEvent, LeaveListState> {
     try {
       final leaves = await datasource.getLeaves(page: event.page);
 
-      // If we are loading the first page, we just emit the result
-      // For simplicity in this iteration, we treat it as a fresh load.
-      // Pagination logic can be more complex (appending), but for now sticking to basic requirement.
-      // Based on test expectation:
-
-      bool hasReachedMax =
-          leaves.isEmpty || leaves.length < 10; // Assuming 10 is page size
+      bool hasReachedMax = leaves.isEmpty || leaves.length < 10;
 
       emit(LeaveListLoaded(leaves, hasReachedMax: hasReachedMax));
     } catch (e) {

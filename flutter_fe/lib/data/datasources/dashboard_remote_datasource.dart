@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../core/constants/variables.dart';
 import '../../core/services/session_service.dart';
+import '../../core/utils/error_parser.dart';
 import '../models/responses/dashboard/dashboard_models.dart';
 import 'auth_datasource.dart';
 import 'auth_local_datasource.dart';
@@ -49,18 +50,18 @@ class DashboardRemoteDatasource implements DashboardDatasource {
         } catch (parseError) {
           debugPrint('Dashboard parse error: $parseError');
           debugPrint('Dashboard response body: $body');
-          return Left('Terjadi kesalahan: $parseError');
+          return Left(ErrorParser.parseException(parseError));
         }
       } else if (response.statusCode == 401) {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        final message = body['message'] ?? 'Terjadi kesalahan';
+        final message = ErrorParser.parse(body, fallback: 'Gagal memuat data dashboard');
         return Left(message);
       }
     } catch (e) {
       debugPrint('Dashboard error: $e');
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -88,7 +89,7 @@ class DashboardRemoteDatasource implements DashboardDatasource {
           } catch (parseError) {
             debugPrint('QuickStats parse error: $parseError');
             debugPrint('QuickStats response data: $data');
-            return Left('Terjadi kesalahan: $parseError');
+            return Left(ErrorParser.parseException(parseError));
           }
         }
         return const Left('Data tidak ditemukan');
@@ -96,12 +97,12 @@ class DashboardRemoteDatasource implements DashboardDatasource {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        final message = body['message'] ?? 'Terjadi kesalahan';
+        final message = ErrorParser.parse(body, fallback: 'Gagal memuat ringkasan');
         return Left(message);
       }
     } catch (e) {
       debugPrint('QuickStats error: $e');
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -137,11 +138,11 @@ class DashboardRemoteDatasource implements DashboardDatasource {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        final message = body['message'] ?? 'Terjadi kesalahan';
+        final message = ErrorParser.parse(body, fallback: 'Gagal memuat grafik kehadiran');
         return Left(message);
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 }

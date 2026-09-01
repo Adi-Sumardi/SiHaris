@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../errors/exceptions.dart';
+import '../utils/error_parser.dart';
 import 'session_service.dart';
 import 'storage_service.dart';
 
@@ -159,7 +160,9 @@ class ApiService {
     } on AppException {
       rethrow;
     } catch (e) {
-      throw NetworkException(message: 'Gagal terhubung ke server');
+      throw NetworkException(
+        message: ErrorParser.parseException(e, fallback: 'Gagal terhubung ke server'),
+      );
     }
   }
 
@@ -182,7 +185,9 @@ class ApiService {
     } on AppException {
       rethrow;
     } catch (e) {
-      throw NetworkException(message: 'Gagal terhubung ke server');
+      throw NetworkException(
+        message: ErrorParser.parseException(e, fallback: 'Gagal terhubung ke server'),
+      );
     }
   }
 
@@ -205,7 +210,9 @@ class ApiService {
     } on AppException {
       rethrow;
     } catch (e) {
-      throw NetworkException(message: 'Gagal terhubung ke server');
+      throw NetworkException(
+        message: ErrorParser.parseException(e, fallback: 'Gagal terhubung ke server'),
+      );
     }
   }
 
@@ -228,7 +235,9 @@ class ApiService {
     } on AppException {
       rethrow;
     } catch (e) {
-      throw NetworkException(message: 'Gagal terhubung ke server');
+      throw NetworkException(
+        message: ErrorParser.parseException(e, fallback: 'Gagal terhubung ke server'),
+      );
     }
   }
 
@@ -251,7 +260,9 @@ class ApiService {
     } on AppException {
       rethrow;
     } catch (e) {
-      throw NetworkException(message: 'Gagal terhubung ke server');
+      throw NetworkException(
+        message: ErrorParser.parseException(e, fallback: 'Gagal terhubung ke server'),
+      );
     }
   }
 
@@ -293,7 +304,9 @@ class ApiService {
     } on AppException {
       rethrow;
     } catch (e) {
-      throw NetworkException(message: 'Gagal mengunggah file');
+      throw NetworkException(
+        message: ErrorParser.parseException(e, fallback: 'Gagal mengunggah file'),
+      );
     }
   }
 }

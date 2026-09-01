@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:gaji_pro/core/constants/variables.dart';
 import 'package:gaji_pro/core/services/session_service.dart';
+import 'package:gaji_pro/core/utils/error_parser.dart';
 import 'package:gaji_pro/data/datasources/auth_datasource.dart';
 import 'package:gaji_pro/data/datasources/auth_local_datasource.dart';
 import 'package:gaji_pro/data/models/requests/face_recognition/face_enroll_request_model.dart';
@@ -58,10 +59,10 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
         return const Left('Sesi Anda telah berakhir');
       } else {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(json, fallback: 'Gagal memuat status face recognition'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -90,13 +91,13 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
           final firstError = errors.values.first as List;
           return Left(firstError.first as String);
         }
-        return Left(json['message'] as String? ?? 'Data tidak valid');
+        return Left(ErrorParser.parse(json, fallback: 'Data tidak valid'));
       } else {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(json, fallback: 'Pendaftaran wajah gagal'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -120,10 +121,10 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
         return const Left('Sesi Anda telah berakhir');
       } else {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(json, fallback: 'Verifikasi wajah gagal'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -147,10 +148,10 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
         return const Left('Sesi Anda telah berakhir');
       } else {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(json, fallback: 'Gagal menghapus enrollment wajah'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -172,10 +173,10 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(json, fallback: 'Gagal mengajukan permohonan reset wajah'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 
@@ -196,10 +197,10 @@ class FaceRecognitionRemoteDatasource implements FaceRecognitionDatasource {
         SessionService.instance.handleSessionExpired();
         return const Left('Sesi Anda telah berakhir');
       } else {
-        return Left(json['message'] as String? ?? 'Terjadi kesalahan');
+        return Left(ErrorParser.parse(json, fallback: 'Gagal mengambil status reset wajah'));
       }
     } catch (e) {
-      return Left('Terjadi kesalahan: ${e.toString()}');
+      return Left(ErrorParser.parseException(e));
     }
   }
 }

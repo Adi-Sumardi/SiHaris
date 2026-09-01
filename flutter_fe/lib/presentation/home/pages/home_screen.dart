@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/components/jago_header_band.dart';
+import '../../../core/utils/error_parser.dart';
 import '../../../data/datasources/auth_local_datasource.dart';
 import '../../dashboard/bloc/dashboard_blocs.dart';
 import '../../payslip/pages/payslip_screen.dart';
@@ -110,11 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const JagoHeaderBand(),
               _buildQuickActions(context),
               const SizedBox(height: 24),
-              _buildTodayScheduleWidget(context),
+              _buildRecentActivities(context),
               const SizedBox(height: 24),
               _buildSummarySection(context),
-              const SizedBox(height: 24),
-              _buildRecentActivities(context),
               const SizedBox(height: 24),
               _buildAnnouncements(context),
               const SizedBox(height: 96), // Space for bottom nav
@@ -537,9 +536,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAttendanceCardError(String message) {
+    final isNetwork = ErrorParser.isNetworkError(message);
+    final displayMessage = ErrorParser.parseException(message);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -552,13 +554,82 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
-          const SizedBox(height: 8),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isNetwork
+                  ? AppColors.warning.withValues(alpha: 0.12)
+                  : AppColors.danger.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isNetwork ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
+              color: isNetwork ? AppColors.warning : AppColors.danger,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
-            message,
-            style: const TextStyle(color: AppColors.textSecondary),
+            isNetwork ? 'Tidak Ada Koneksi Internet' : 'Gagal Memuat Data',
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isNetwork
+                ? 'Tidak dapat terhubung ke server. Pastikan paket data atau Wi-Fi Anda aktif dan coba lagi.'
+                : displayMessage,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          InkWell(
+            onTap: () {
+              context.read<DashboardBloc>().add(RefreshDashboard());
+              context.read<QuickStatsBloc>().add(RefreshQuickStats());
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary50,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary200,
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.refresh_rounded,
+                    size: 16,
+                    color: AppColors.primary600,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'Coba Lagi',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -1041,6 +1112,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           '/$workingDays Hari',
                           Icons.calendar_today_outlined,
                           AppColors.success,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AttendanceHistoryScreen(
+                                initialFilter: 'Hadir',
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1053,6 +1132,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Hari',
                           Icons.beach_access_outlined,
                           AppColors.accent500,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LeaveListScreen(),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -1069,6 +1154,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Jam',
                           Icons.schedule_rounded,
                           AppColors.info,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const OvertimeScreen(),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1079,6 +1170,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Kali',
                           Icons.warning_amber_rounded,
                           AppColors.warning,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AttendanceHistoryScreen(
+                                initialFilter: 'Terlambat',
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -1097,75 +1196,89 @@ class _HomeScreenState extends State<HomeScreen> {
     String value,
     String unit,
     IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Icon container - 40px
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+          child: Row(
+            children: [
+              // Icon container - 40px
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      value,
+                      title,
                       style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        unit,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          value,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            unit,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textTertiary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              if (onTap != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: AppColors.textTertiary.withValues(alpha: 0.5),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

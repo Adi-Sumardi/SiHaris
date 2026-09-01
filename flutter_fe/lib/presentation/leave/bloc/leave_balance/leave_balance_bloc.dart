@@ -19,8 +19,8 @@ class LeaveBalanceBloc extends Bloc<LeaveBalanceEvent, LeaveBalanceState> {
   ) async {
     emit(LeaveBalanceLoading());
     try {
-      final balances = await datasource.getLeaveBalances();
-      emit(LeaveBalanceLoaded(balances));
+      final balance = await datasource.getLeaveBalances();
+      emit(LeaveBalanceLoaded(balance));
     } catch (e) {
       emit(LeaveBalanceError(e.toString().replaceAll('Exception: ', '')));
     }

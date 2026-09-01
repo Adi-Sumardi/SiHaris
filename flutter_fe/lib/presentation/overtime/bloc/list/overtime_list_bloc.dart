@@ -77,10 +77,6 @@ class OvertimeListBloc extends Bloc<OvertimeListEvent, OvertimeListState> {
     RefreshOvertimeList event,
     Emitter<OvertimeListState> emit,
   ) async {
-    // Keep showing current data while refreshing if desired,
-    // or emit Loading. Here we emit Loading to confirm refresh.
-    // To implement "pull-to-refresh" properly without clearing list,
-    // we might just emit Loaded with new data. But let's stick to standard flow.
     try {
       final result = await datasource.getOvertimes(
         status: event.status,

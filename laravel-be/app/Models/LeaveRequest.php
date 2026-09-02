@@ -67,19 +67,23 @@ class LeaveRequest extends Model
         $year = date('Y');
         $month = date('m');
 
-        $lastRequest = static::where('company_id', $companyId)
+        $lastRequest = static::withTrashed()
+            ->where('company_id', $companyId)
             ->where('request_number', 'like', "{$prefix}{$year}{$month}%")
-            ->orderBy('request_number', 'desc')
+            ->orderByRaw('LENGTH(request_number) DESC, request_number DESC')
             ->first();
 
+        $lastNumber = 0;
         if ($lastRequest) {
             $lastNumber = (int) substr($lastRequest->request_number, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
         }
 
-        return $prefix.$year.$month.str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        do {
+            $lastNumber++;
+            $candidateNumber = $prefix.$year.$month.str_pad($lastNumber, 4, '0', STR_PAD_LEFT);
+        } while (static::withTrashed()->where('company_id', $companyId)->where('request_number', $candidateNumber)->exists());
+
+        return $candidateNumber;
     }
 
     public function company()

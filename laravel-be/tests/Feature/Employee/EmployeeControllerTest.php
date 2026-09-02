@@ -240,6 +240,58 @@ describe('Employee Create', function () {
         expect($employee->employee_id)->toStartWith('EMP');
     });
 
+    it('auto-generates employee id correctly even when previous employees are soft-deleted', function () {
+        $this->actingAs($this->admin);
+
+        // Create and then soft-delete an employee
+        $emp1 = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'employee_id' => 'EMP'.date('Y').'0001',
+        ]);
+        $emp1->delete();
+
+        // Create another employee without specifying employee_id
+        $response = $this->post('/employees', [
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'hire_date' => '2024-01-15',
+            'employment_status' => 'permanent',
+        ]);
+
+        $response->assertRedirect('/employees');
+        $response->assertSessionHas('success');
+
+        $emp2 = Employee::where('first_name', 'Jane')->first();
+        expect($emp2)->not->toBeNull()
+            ->and($emp2->employee_id)->toBe('EMP'.date('Y').'0002');
+    });
+
+    it('validates unique employee_id within company', function () {
+        $this->actingAs($this->admin);
+
+        Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'employee_id' => 'EMP-TEST-001',
+        ]);
+
+        $response = $this->post('/employees', [
+            'employee_id' => 'EMP-TEST-001',
+            'first_name' => 'Duplicate',
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'hire_date' => '2024-01-15',
+            'employment_status' => 'permanent',
+        ]);
+
+        $response->assertSessionHasErrors(['employee_id']);
+    });
+
 });
 
 describe('Employee Show', function () {

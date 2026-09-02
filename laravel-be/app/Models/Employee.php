@@ -114,19 +114,23 @@ class Employee extends Model
     {
         $prefix = 'EMP';
         $year = date('Y');
-        $lastEmployee = static::where('company_id', $companyId)
+        $lastEmployee = static::withTrashed()
+            ->where('company_id', $companyId)
             ->where('employee_id', 'like', "{$prefix}{$year}%")
-            ->orderBy('employee_id', 'desc')
+            ->orderByRaw('LENGTH(employee_id) DESC, employee_id DESC')
             ->first();
 
+        $lastNumber = 0;
         if ($lastEmployee) {
             $lastNumber = (int) substr($lastEmployee->employee_id, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
         }
 
-        return $prefix.$year.str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        do {
+            $lastNumber++;
+            $candidateId = $prefix.$year.str_pad($lastNumber, 4, '0', STR_PAD_LEFT);
+        } while (static::withTrashed()->where('company_id', $companyId)->where('employee_id', $candidateId)->exists());
+
+        return $candidateId;
     }
 
     public function company()

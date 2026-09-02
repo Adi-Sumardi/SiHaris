@@ -285,7 +285,16 @@
   - **Layar Detail (`DocumentDetailScreen`)**:
     - Pratinjau interaktif zoomable untuk gambar (`InteractiveViewer` + `CachedNetworkImage`) dan dokumen PDF.
     - Ringkasan metadata lengkap (Format, Ukuran File, Waktu Unggah, dll) dan tombol unduh/buka file asli.
-- **Rilis Mobile App v1.1.0+17**:
-  - `pubspec.yaml`: `version: 1.1.0+17`.
-  - `splash_screen.dart` fallback version string di-update ke `v1.1.0`.
-  - Downloadable artifacts di `/downloads`: `siharis-latest.apk`, `siharis-latest.aab`, `siharis-latest.ipa`, `SiHaris-v1.1.0.apk`, `SiHaris-v1.1.0.aab`, `SiHaris-v1.1.0.ipa`, dan `VERSION` (`v1.1.0`).
+---
+
+## 31. Perbaikan Error 500 Tambah Karyawan Manual (Collision Generator ID & Unique Validation)
+
+- **Masalah**: Menambahkan karyawan secara input manual (bukan import) menghasilkan error **500 Kesalahan Server** (`SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'company_id-EMP...' for key 'employees.employees_company_id_employee_id_unique'`).
+- **Penyebab (Root Cause)**:
+  - `Employee::generateEmployeeId()` sebelumnya menggunakan query `static::where('company_id', $companyId)` tanpa `withTrashed()`.
+  - Ketika data karyawan dengan nomor urut lebih tinggi pernah dihapus (*soft deleted*), fungsi generate mengabaikan baris tersebut dan menghasilkan ID yang menabrak baris *soft deleted* di database MySQL (karena unique index `['company_id', 'employee_id']` mencakup baris soft-deleted).
+  - Pada `EmployeeController`, validasi `Rule::unique` untuk `employee_id` belum diterapkan secara eksplisit, dan `setPermissionsTeamId()` belum dipanggil sebelum pembuatan role `assignRole('employee')`.
+- **Solusi**:
+  - `Employee.php` & `LeaveRequest.php`: Menggunakan `static::withTrashed()` dan loop `do...while` untuk menjamin generator `generateEmployeeId()` dan `generateRequestNumber()` selalu menghasilkan ID/nomor unik bebas bentrok (*collision-free*).
+  - `EmployeeController.php`: Menambahkan `Rule::unique('employees', 'employee_id')->where('company_id', $tenant->id)` pada method `store()` dan `update()`, pesan validasi bahasa Indonesia yang informatif, `setPermissionsTeamId($tenant->id)` sebelum `assignRole()`, serta try-catch database safety.
+  - `EmployeeControllerTest.php`: Menambahkan automated unit test untuk skenario soft-deleted ID generation dan validasi unique.

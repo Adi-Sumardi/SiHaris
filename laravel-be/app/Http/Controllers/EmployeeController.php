@@ -107,7 +107,12 @@ class EmployeeController extends Controller
         $tenant = app('tenant');
 
         $validated = $request->validate([
-            'employee_id' => ['nullable', 'string', 'max:50'],
+            'employee_id' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employees', 'employee_id')->where('company_id', $tenant->id),
+            ],
             'pin' => ['nullable', 'string', 'max:50'],
             'nik' => ['nullable', 'string', 'max:50'],
             'identity_number' => ['nullable', 'string', 'max:50'],
@@ -153,6 +158,17 @@ class EmployeeController extends Controller
             'office_location_ids' => ['nullable', 'array'],
             'office_location_ids.*' => ['exists:office_locations,id'],
             'primary_office_id' => ['nullable', 'exists:office_locations,id'],
+        ], [
+            'employee_id.unique' => 'NIP / ID Karyawan sudah terdaftar di sistem.',
+            'first_name.required' => 'Nama depan wajib diisi.',
+            'email.unique' => 'Email ini sudah terdaftar sebagai akun pengguna.',
+            'department_id.required' => 'Departemen wajib dipilih.',
+            'position_id.required' => 'Jabatan wajib dipilih.',
+            'hire_date.required' => 'Tanggal bergabung wajib diisi.',
+            'employment_status.required' => 'Status kerja wajib dipilih.',
+            'password.min' => 'Password minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak sesuai.',
+            'photo.max' => 'Ukuran foto maksimal 2MB.',
         ]);
 
         $validated['company_id'] = $tenant->id;
@@ -170,57 +186,71 @@ class EmployeeController extends Controller
             $validated['work_schedule_id'] = null;
         }
 
-        DB::transaction(function () use ($validated, $tenant, $request, $scheduleMode, $weeklySchedules) {
-            $user = null;
+        try {
+            DB::transaction(function () use ($validated, $tenant, $request, $scheduleMode, $weeklySchedules) {
+                $user = null;
 
-            // Create user account if password is provided and email exists
-            if (! empty($validated['password']) && ! empty($validated['email'])) {
-                $fullName = trim($validated['first_name'].' '.($validated['last_name'] ?? ''));
+                // Create user account if password is provided and email exists
+                if (! empty($validated['password']) && ! empty($validated['email'])) {
+                    $fullName = trim($validated['first_name'].' '.($validated['last_name'] ?? ''));
 
-                $user = User::create([
-                    'company_id' => $tenant->id,
-                    'name' => $fullName,
-                    'email' => $validated['email'],
-                    'phone' => $validated['phone'] ?? null,
-                    'password' => Hash::make($validated['password']),
-                    'is_active' => true,
-                ]);
+                    setPermissionsTeamId($tenant->id);
 
-                // Assign employee role
-                $user->assignRole('employee');
-            }
+                    $user = User::create([
+                        'company_id' => $tenant->id,
+                        'name' => $fullName,
+                        'email' => $validated['email'],
+                        'phone' => $validated['phone'] ?? null,
+                        'password' => Hash::make($validated['password']),
+                        'is_active' => true,
+                    ]);
 
-            // Remove non-employee fields
-            unset($validated['password'], $validated['office_location_ids'], $validated['primary_office_id'], $validated['schedule_mode'], $validated['weekly_schedules']);
-
-            // Create employee with user_id if user was created
-            $employeeData = $validated;
-            if ($user) {
-                $employeeData['user_id'] = $user->id;
-            }
-
-            $employee = Employee::create($employeeData);
-
-            // Sync weekly schedules
-            if ($scheduleMode === 'weekly') {
-                $this->syncWeeklySchedules($employee, $weeklySchedules, $tenant->id);
-            }
-
-            // Attach office locations
-            $officeIds = $request->input('office_location_ids', []);
-            $primaryOfficeId = (int) $request->input('primary_office_id');
-
-            if (! empty($officeIds)) {
-                $syncData = [];
-                foreach ($officeIds as $officeId) {
-                    $syncData[(int) $officeId] = ['is_primary' => (int) $officeId === $primaryOfficeId];
+                    // Assign employee role
+                    $user->assignRole('employee');
                 }
-                $employee->officeLocations()->attach($syncData);
-            }
-        });
 
-        return redirect()->route('employees.index')
-            ->with('success', 'Karyawan berhasil ditambahkan.');
+                // Remove non-employee fields
+                unset($validated['password'], $validated['office_location_ids'], $validated['primary_office_id'], $validated['schedule_mode'], $validated['weekly_schedules']);
+
+                // Create employee with user_id if user was created
+                $employeeData = $validated;
+                if ($user) {
+                    $employeeData['user_id'] = $user->id;
+                }
+
+                $employee = Employee::create($employeeData);
+
+                // Sync weekly schedules
+                if ($scheduleMode === 'weekly') {
+                    $this->syncWeeklySchedules($employee, $weeklySchedules, $tenant->id);
+                }
+
+                // Attach office locations
+                $officeIds = $request->input('office_location_ids', []);
+                $primaryOfficeId = (int) $request->input('primary_office_id');
+
+                if (! empty($officeIds)) {
+                    $syncData = [];
+                    foreach ($officeIds as $officeId) {
+                        $syncData[(int) $officeId] = ['is_primary' => (int) $officeId === $primaryOfficeId];
+                    }
+                    $employee->officeLocations()->attach($syncData);
+                }
+            });
+
+            return redirect()->route('employees.index')
+                ->with('success', 'Karyawan berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Log::error('Error creating employee: '.$e->getMessage(), [
+                'company_id' => $tenant->id,
+                'request' => $request->except(['password', 'password_confirmation', 'photo']),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal menambahkan karyawan: '.$e->getMessage());
+        }
     }
 
     public function show(Employee $employee): View
@@ -302,7 +332,12 @@ class EmployeeController extends Controller
         }
 
         $validated = $request->validate([
-            'employee_id' => ['nullable', 'string', 'max:50'],
+            'employee_id' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('employees', 'employee_id')->where('company_id', $tenant->id)->ignore($employee->id),
+            ],
             'pin' => ['nullable', 'string', 'max:50'],
             'nik' => ['nullable', 'string', 'max:50'],
             'identity_number' => ['nullable', 'string', 'max:50'],
@@ -350,6 +385,17 @@ class EmployeeController extends Controller
             'office_location_ids' => ['nullable', 'array'],
             'office_location_ids.*' => ['exists:office_locations,id'],
             'primary_office_id' => ['nullable', 'exists:office_locations,id'],
+        ], [
+            'employee_id.unique' => 'NIP / ID Karyawan sudah terdaftar di sistem.',
+            'first_name.required' => 'Nama depan wajib diisi.',
+            'email.unique' => 'Email ini sudah terdaftar sebagai akun pengguna.',
+            'department_id.required' => 'Departemen wajib dipilih.',
+            'position_id.required' => 'Jabatan wajib dipilih.',
+            'hire_date.required' => 'Tanggal bergabung wajib diisi.',
+            'employment_status.required' => 'Status kerja wajib dipilih.',
+            'password.min' => 'Password minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak sesuai.',
+            'photo.max' => 'Ukuran foto maksimal 2MB.',
         ]);
 
         // Handle photo upload
@@ -364,72 +410,87 @@ class EmployeeController extends Controller
             $validated['work_schedule_id'] = null;
         }
 
-        DB::transaction(function () use ($validated, $employee, $tenant, $request, $scheduleMode, $weeklySchedules) {
-            $fullName = trim($validated['first_name'].' '.($validated['last_name'] ?? ''));
+        try {
+            DB::transaction(function () use ($validated, $employee, $tenant, $request, $scheduleMode, $weeklySchedules) {
+                $fullName = trim($validated['first_name'].' '.($validated['last_name'] ?? ''));
 
-            // Handle user account
-            if ($employee->user) {
-                // Update existing user
-                $userData = ['name' => $fullName];
+                // Handle user account
+                if ($employee->user) {
+                    // Update existing user
+                    $userData = ['name' => $fullName];
 
-                if (! empty($validated['email'])) {
-                    $userData['email'] = $validated['email'];
+                    if (! empty($validated['email'])) {
+                        $userData['email'] = $validated['email'];
+                    }
+
+                    if (isset($validated['phone'])) {
+                        $userData['phone'] = $validated['phone'];
+                    }
+
+                    if (! empty($validated['password'])) {
+                        $userData['password'] = Hash::make($validated['password']);
+                    }
+
+                    $employee->user->update($userData);
+                } elseif (! empty($validated['password']) && ! empty($validated['email'])) {
+                    // Create new user account
+                    setPermissionsTeamId($tenant->id);
+
+                    $user = User::create([
+                        'company_id' => $tenant->id,
+                        'name' => $fullName,
+                        'email' => $validated['email'],
+                        'phone' => $validated['phone'] ?? null,
+                        'password' => Hash::make($validated['password']),
+                        'is_active' => true,
+                    ]);
+
+                    $user->assignRole('employee');
+                    $validated['user_id'] = $user->id;
                 }
 
-                if (isset($validated['phone'])) {
-                    $userData['phone'] = $validated['phone'];
+                // Remove non-employee fields
+                unset($validated['password'], $validated['office_location_ids'], $validated['primary_office_id'], $validated['schedule_mode'], $validated['weekly_schedules']);
+
+                $employee->update($validated);
+
+                // Sync weekly schedules
+                if ($scheduleMode === 'weekly') {
+                    $this->syncWeeklySchedules($employee, $weeklySchedules, $tenant->id);
+                } else {
+                    // Clear weekly schedules when switching to default mode
+                    $employee->weeklySchedules()->delete();
                 }
 
-                if (! empty($validated['password'])) {
-                    $userData['password'] = Hash::make($validated['password']);
+                // Sync office locations
+                $officeIds = $request->input('office_location_ids', []);
+                $primaryOfficeId = (int) $request->input('primary_office_id');
+
+                if (! empty($officeIds)) {
+                    $syncData = [];
+                    foreach ($officeIds as $officeId) {
+                        $syncData[(int) $officeId] = ['is_primary' => (int) $officeId === $primaryOfficeId];
+                    }
+                    $employee->officeLocations()->sync($syncData);
+                } else {
+                    $employee->officeLocations()->detach();
                 }
+            });
 
-                $employee->user->update($userData);
-            } elseif (! empty($validated['password']) && ! empty($validated['email'])) {
-                // Create new user account
-                $user = User::create([
-                    'company_id' => $tenant->id,
-                    'name' => $fullName,
-                    'email' => $validated['email'],
-                    'phone' => $validated['phone'] ?? null,
-                    'password' => Hash::make($validated['password']),
-                    'is_active' => true,
-                ]);
+            return redirect()->route('employees.show', $employee)
+                ->with('success', 'Data karyawan berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Log::error('Error updating employee: '.$e->getMessage(), [
+                'employee_id' => $employee->id,
+                'company_id' => $tenant->id,
+                'request' => $request->except(['password', 'password_confirmation', 'photo']),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-                $user->assignRole('employee');
-                $validated['user_id'] = $user->id;
-            }
-
-            // Remove non-employee fields
-            unset($validated['password'], $validated['office_location_ids'], $validated['primary_office_id'], $validated['schedule_mode'], $validated['weekly_schedules']);
-
-            $employee->update($validated);
-
-            // Sync weekly schedules
-            if ($scheduleMode === 'weekly') {
-                $this->syncWeeklySchedules($employee, $weeklySchedules, $tenant->id);
-            } else {
-                // Clear weekly schedules when switching to default mode
-                $employee->weeklySchedules()->delete();
-            }
-
-            // Sync office locations
-            $officeIds = $request->input('office_location_ids', []);
-            $primaryOfficeId = (int) $request->input('primary_office_id');
-
-            if (! empty($officeIds)) {
-                $syncData = [];
-                foreach ($officeIds as $officeId) {
-                    $syncData[(int) $officeId] = ['is_primary' => (int) $officeId === $primaryOfficeId];
-                }
-                $employee->officeLocations()->sync($syncData);
-            } else {
-                $employee->officeLocations()->detach();
-            }
-        });
-
-        return redirect()->route('employees.show', $employee)
-            ->with('success', 'Data karyawan berhasil diperbarui.');
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui data karyawan: '.$e->getMessage());
+        }
     }
 
     public function destroy(Employee $employee): RedirectResponse

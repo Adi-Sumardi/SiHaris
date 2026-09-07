@@ -131,7 +131,6 @@
                             Hapus Pendaftaran
                         </button>
                     </div>
-                </div>
             @endif
         </div>
 

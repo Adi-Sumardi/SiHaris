@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +10,10 @@ import 'package:gaji_pro/data/models/responses/leave_type_model.dart';
 import 'package:gaji_pro/presentation/leave/bloc/leave_crud/leave_crud_bloc.dart';
 import 'package:gaji_pro/presentation/leave/bloc/leave_types/leave_types_bloc.dart';
 import '../../../../core/constants/colors.dart';
+
+/// Backend's `attachment` validation rule (LeaveController::store):
+/// `mimes:jpg,jpeg,png,pdf|max:10240` (10240 KB = 10 MB).
+const int _kMaxAttachmentBytes = 10 * 1024 * 1024;
 
 class LeaveFormScreen extends StatefulWidget {
   const LeaveFormScreen({super.key});
@@ -30,6 +35,10 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   File? _attachment;
+  String? _attachmentName;
+
+  bool _isHalfDay = false;
+  String? _halfDayType;
 
   @override
   void initState() {
@@ -75,15 +84,85 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
     }
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _setAttachment(File file, String name) async {
+    final size = await file.length();
+    if (size > _kMaxAttachmentBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ukuran file maksimal 10MB'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _attachment = file;
+      _attachmentName = name;
+    });
+  }
+
+  Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      setState(() {
-        _attachment = File(image.path);
-      });
+      await _setAttachment(File(image.path), image.name);
     }
+  }
+
+  Future<void> _pickPdf() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      final path = result.files.single.path!;
+      await _setAttachment(File(path), result.files.single.name);
+    }
+  }
+
+  void _pickFile() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.picture_as_pdf_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text('Pilih File PDF'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickPdf();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   void _submitForm() {
@@ -103,7 +182,15 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
       final today = DateUtils.dateOnly(DateTime.now());
       if (_startDate!.isBefore(today)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tanggal mulai tidak boleh sebelum hari ini')),
+          const SnackBar(
+            content: Text('Tanggal mulai tidak boleh sebelum hari ini'),
+          ),
+        );
+        return;
+      }
+      if (_isHalfDay && _halfDayType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pilih waktu setengah hari')),
         );
         return;
       }
@@ -111,9 +198,15 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
       final request = LeaveRequestModel(
         leaveTypeId: _selectedLeaveType!.id,
         startDate: _startDateController.text,
-        endDate: _endDateController.text,
+        endDate: _isHalfDay
+            ? _startDateController.text
+            : _endDateController.text,
+        isHalfDay: _isHalfDay,
+        halfDayType: _isHalfDay ? _halfDayType : null,
         reason: _reasonController.text,
-        emergencyContact: _emergencyContactController.text,
+        emergencyContact: _emergencyContactController.text.isEmpty
+            ? null
+            : _emergencyContactController.text,
         attachment: _attachment,
       );
 
@@ -233,14 +326,19 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
                         children: [
                           _buildLabel('Tanggal Selesai'),
                           TextFormField(
-                            controller: _endDateController,
+                            controller: _isHalfDay
+                                ? _startDateController
+                                : _endDateController,
                             readOnly: true,
+                            enabled: !_isHalfDay,
                             decoration: const InputDecoration(
                               hintText: 'YYYY-MM-DD',
                               suffixIcon: Icon(Icons.calendar_today),
                               border: OutlineInputBorder(),
                             ),
-                            onTap: () => _selectDate(context, false),
+                            onTap: _isHalfDay
+                                ? null
+                                : () => _selectDate(context, false),
                             validator: (value) =>
                                 value!.isEmpty ? 'Wajib diisi' : null,
                           ),
@@ -249,6 +347,57 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+
+                CheckboxListTile(
+                  value: _isHalfDay,
+                  onChanged: (value) {
+                    setState(() {
+                      _isHalfDay = value ?? false;
+                      if (!_isHalfDay) {
+                        _halfDayType = null;
+                      }
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Setengah Hari',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  subtitle: const Text(
+                    'Centang jika hanya mengambil cuti setengah hari.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+                if (_isHalfDay) ...[
+                  const SizedBox(height: 4),
+                  _buildLabel('Tipe Setengah Hari'),
+                  DropdownButtonFormField<String>(
+                    initialValue: _halfDayType,
+                    decoration: const InputDecoration(
+                      hintText: 'Pilih Waktu',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'morning',
+                        child: Text('Pagi (08:00 - 12:00)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'afternoon',
+                        child: Text('Siang (13:00 - 17:00)'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _halfDayType = value;
+                      });
+                    },
+                    validator: (value) =>
+                        _isHalfDay && value == null ? 'Wajib diisi' : null,
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 _buildLabel('Alasan Cuti'),
@@ -263,7 +412,7 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                _buildLabel('Kontak Darurat'),
+                _buildLabel('Kontak Darurat (Opsional)'),
                 TextFormField(
                   controller: _emergencyContactController,
                   keyboardType: TextInputType.phone,
@@ -271,7 +420,6 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
                     hintText: 'Nomor yang bisa dihubungi',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) => value!.isEmpty ? 'Wajib diisi' : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -293,9 +441,8 @@ class _LeaveFormScreenState extends State<LeaveFormScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _attachment != null
-                                ? _attachment!.path.split('/').last
-                                : 'Upload Dokumen Pendukung',
+                            _attachmentName ??
+                                'Upload Dokumen Pendukung (JPG, PNG, PDF)',
                             style: TextStyle(
                               color: _attachment != null
                                   ? AppColors.textPrimary

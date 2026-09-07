@@ -17,11 +17,39 @@ class LeaveListScreen extends StatefulWidget {
 }
 
 class _LeaveListScreenState extends State<LeaveListScreen> {
+  final ScrollController _scrollController = ScrollController();
+  int _currentPage = 1;
+
   @override
   void initState() {
     super.initState();
     context.read<LeaveListBloc>().add(GetLeaveList());
     context.read<LeaveBalanceBloc>().add(GetLeaveBalance());
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final threshold = _scrollController.position.maxScrollExtent - 200;
+    if (_scrollController.position.pixels < threshold) return;
+
+    final state = context.read<LeaveListBloc>().state;
+    if (state is LeaveListLoaded && !state.hasReachedMax) {
+      _currentPage++;
+      context.read<LeaveListBloc>().add(GetLeaveList(page: _currentPage));
+    }
+  }
+
+  void _refreshList() {
+    _currentPage = 1;
+    context.read<LeaveListBloc>().add(GetLeaveList());
   }
 
   @override
@@ -37,7 +65,7 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
           // Refresh list when coming back
           if (!mounted) return;
           if (context.mounted) {
-            context.read<LeaveListBloc>().add(GetLeaveList());
+            _refreshList();
             context.read<LeaveBalanceBloc>().add(GetLeaveBalance());
           }
         },
@@ -62,9 +90,7 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
                         Text(state.message),
                         const SizedBox(height: 8),
                         ElevatedButton(
-                          onPressed: () {
-                            context.read<LeaveListBloc>().add(GetLeaveList());
-                          },
+                          onPressed: _refreshList,
                           child: const Text('Coba Lagi'),
                         ),
                       ],
@@ -76,6 +102,7 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
                     return const Center(child: Text('Belum ada riwayat cuti'));
                   }
                   return ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     itemCount: state.leaves.length,
                     itemBuilder: (context, index) {
@@ -264,7 +291,7 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
             );
 
             if (result == true && mounted) {
-              context.read<LeaveListBloc>().add(GetLeaveList());
+              _refreshList();
               context.read<LeaveBalanceBloc>().add(GetLeaveBalance());
             }
           },

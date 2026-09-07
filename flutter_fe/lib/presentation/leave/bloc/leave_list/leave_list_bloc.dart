@@ -12,6 +12,9 @@ class LeaveListBloc extends Bloc<LeaveListEvent, LeaveListState> {
     on<GetLeaveList>(_onGetLeaveList);
   }
 
+  /// Backend page size (`LeaveController::index()` calls `paginate(15)`).
+  static const int _pageSize = 15;
+
   Future<void> _onGetLeaveList(
     GetLeaveList event,
     Emitter<LeaveListState> emit,
@@ -21,11 +24,20 @@ class LeaveListBloc extends Bloc<LeaveListEvent, LeaveListState> {
     }
 
     try {
-      final leaves = await datasource.getLeaves(page: event.page);
+      final leaves = await datasource.getLeaves(
+        page: event.page,
+        status: event.status,
+        year: event.year,
+      );
 
-      bool hasReachedMax = leaves.isEmpty || leaves.length < 10;
+      final hasReachedMax = leaves.length < _pageSize;
 
-      emit(LeaveListLoaded(leaves, hasReachedMax: hasReachedMax));
+      final currentState = state;
+      final allLeaves = event.page > 1 && currentState is LeaveListLoaded
+          ? [...currentState.leaves, ...leaves]
+          : leaves;
+
+      emit(LeaveListLoaded(allLeaves, hasReachedMax: hasReachedMax));
     } catch (e) {
       emit(LeaveListError(e.toString().replaceAll('Exception: ', '')));
     }

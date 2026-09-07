@@ -66,4 +66,77 @@ void main() {
     act: (bloc) => bloc.add(GetLeaveList()),
     expect: () => [LeaveListLoading(), const LeaveListError('Failed to fetch')],
   );
+
+  blocTest<LeaveListBloc, LeaveListState>(
+    'does not mark a full 15-item page as the last page (backend page size is 15, not 10)',
+    build: () {
+      when(
+        () => mockDatasource.getLeaves(page: 1),
+      ).thenAnswer((_) async => List.filled(15, tLeaveModel));
+      return bloc;
+    },
+    act: (bloc) => bloc.add(GetLeaveList()),
+    expect: () => [
+      LeaveListLoading(),
+      LeaveListLoaded(List.filled(15, tLeaveModel), hasReachedMax: false),
+    ],
+  );
+
+  blocTest<LeaveListBloc, LeaveListState>(
+    'marks a page with fewer than 15 items as the last page',
+    build: () {
+      when(
+        () => mockDatasource.getLeaves(page: 1),
+      ).thenAnswer((_) async => List.filled(12, tLeaveModel));
+      return bloc;
+    },
+    act: (bloc) => bloc.add(GetLeaveList()),
+    expect: () => [
+      LeaveListLoading(),
+      LeaveListLoaded(List.filled(12, tLeaveModel), hasReachedMax: true),
+    ],
+  );
+
+  blocTest<LeaveListBloc, LeaveListState>(
+    'appends page 2 results to the existing list instead of replacing it',
+    build: () {
+      when(
+        () => mockDatasource.getLeaves(page: 1),
+      ).thenAnswer((_) async => [tLeaveModel]);
+      when(
+        () => mockDatasource.getLeaves(page: 2),
+      ).thenAnswer((_) async => [tLeaveModel, tLeaveModel]);
+      return bloc;
+    },
+    act: (bloc) async {
+      bloc.add(GetLeaveList());
+      await Future.delayed(Duration.zero);
+      bloc.add(GetLeaveList(page: 2));
+    },
+    expect: () => [
+      LeaveListLoading(),
+      const LeaveListLoaded([tLeaveModel], hasReachedMax: true),
+      const LeaveListLoaded([
+        tLeaveModel,
+        tLeaveModel,
+        tLeaveModel,
+      ], hasReachedMax: true),
+    ],
+  );
+
+  blocTest<LeaveListBloc, LeaveListState>(
+    'forwards status and year filters to the datasource',
+    build: () {
+      when(
+        () => mockDatasource.getLeaves(page: 1, status: 'approved', year: 2026),
+      ).thenAnswer((_) async => [tLeaveModel]);
+      return bloc;
+    },
+    act: (bloc) => bloc.add(GetLeaveList(status: 'approved', year: 2026)),
+    verify: (_) {
+      verify(
+        () => mockDatasource.getLeaves(page: 1, status: 'approved', year: 2026),
+      ).called(1);
+    },
+  );
 }

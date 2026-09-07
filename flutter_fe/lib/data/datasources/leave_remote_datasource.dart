@@ -53,10 +53,22 @@ class LeaveRemoteDatasource {
     }
   }
 
-  Future<List<LeaveModel>> getLeaves({int page = 1}) async {
+  Future<List<LeaveModel>> getLeaves({
+    int page = 1,
+    String? status,
+    int? year,
+  }) async {
     final token = await authLocalDatasource.getToken();
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      if (status != null) 'status': status,
+      if (year != null) 'year': year.toString(),
+    };
+    final uri = Uri.parse(
+      '${Variables.apiBaseUrl}/leaves',
+    ).replace(queryParameters: queryParams);
     final response = await client.get(
-      Uri.parse('${Variables.apiBaseUrl}/leaves?page=$page'),
+      uri,
       headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
     );
 

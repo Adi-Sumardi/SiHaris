@@ -27,7 +27,10 @@
             @csrf
 
             {{-- Employee & Type --}}
-            <div class="card mb-6">
+            {{-- overflow: visible (inline, scoped to this card only) so the
+                 employee search dropdown below isn't clipped by .card's
+                 overflow: hidden (needed elsewhere for rounded corners). --}}
+            <div class="card mb-6" style="overflow: visible;">
                 <div class="card-header">
                     <h3 class="card-title">Informasi Pengajuan</h3>
                 </div>

@@ -34,18 +34,39 @@
                 <div class="card-body space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {{-- Employee --}}
-                        <div>
-                            <label for="employee_id" class="block text-sm font-medium text-secondary-700 mb-1">
+                        <div x-data="{
+                                employeeId: '{{ old('employee_id', '') }}',
+                                employeeQuery: '{{ old('employee_id') ? addslashes((optional($employees->firstWhere('id', (int) old('employee_id')))->full_name ?? '').' ('.(optional($employees->firstWhere('id', (int) old('employee_id')))->employee_id ?? '').')') : '' }}',
+                                employeeOpen: false,
+                            }">
+                            <label for="employee_search" class="block text-sm font-medium text-secondary-700 mb-1">
                                 Karyawan <span class="text-danger-500">*</span>
                             </label>
-                            <select name="employee_id" id="employee_id" class="input w-full @error('employee_id') border-danger-500 @enderror" required>
-                                <option value="">Pilih Karyawan</option>
-                                @foreach($employees as $employee)
-                                    <option value="{{ $employee->id }}" {{ old('employee_id') == $employee->id ? 'selected' : '' }}>
-                                        {{ $employee->full_name }} ({{ $employee->employee_id }})
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative" @click.outside="employeeOpen = false" @keydown.escape.window="employeeOpen = false">
+                                <input type="text" id="employee_search" autocomplete="off"
+                                       x-model="employeeQuery"
+                                       @focus="employeeOpen = true"
+                                       @input="employeeOpen = true; employeeId = ''"
+                                       placeholder="Cari nama atau ID karyawan..."
+                                       class="input w-full @error('employee_id') border-danger-500 @enderror">
+                                <input type="hidden" name="employee_id" :value="employeeId">
+
+                                <div x-show="employeeOpen" x-cloak
+                                     class="absolute z-20 mt-1 w-full max-h-60 overflow-y-auto bg-white border border-secondary-200 rounded-lg shadow-lg">
+                                    @forelse($employees as $employee)
+                                        <button type="button"
+                                                data-search="{{ Str::lower($employee->full_name.' '.$employee->employee_id) }}"
+                                                x-show="employeeQuery === '' || $el.dataset.search.includes(employeeQuery.toLowerCase())"
+                                                @click="employeeId = '{{ $employee->id }}'; employeeQuery = '{{ addslashes($employee->full_name.' ('.$employee->employee_id.')') }}'; employeeOpen = false"
+                                                class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50"
+                                                :class="employeeId == '{{ $employee->id }}' ? 'bg-primary-50 text-primary-700 font-medium' : 'text-secondary-700'">
+                                            {{ $employee->full_name }} ({{ $employee->employee_id }})
+                                        </button>
+                                    @empty
+                                        <p class="px-3 py-2 text-sm text-secondary-400">Tidak ada karyawan.</p>
+                                    @endforelse
+                                </div>
+                            </div>
                             @error('employee_id')
                                 <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                             @enderror

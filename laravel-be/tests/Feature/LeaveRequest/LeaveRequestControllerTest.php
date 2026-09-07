@@ -105,6 +105,14 @@ describe('LeaveRequest Create', function () {
         $response->assertViewHas('leaveTypes');
     });
 
+    test('create form has a searchable employee field', function () {
+        $response = $this->get(route('leave-requests.create'));
+
+        $response->assertStatus(200)
+            ->assertSee('Cari nama atau ID karyawan...')
+            ->assertSee($this->employee->full_name);
+    });
+
     test('can create leave request', function () {
         LeaveBalance::factory()->create([
             'company_id' => $this->company->id,

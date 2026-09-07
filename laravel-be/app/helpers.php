@@ -44,6 +44,22 @@ if (! function_exists('brand_asset')) {
     }
 }
 
+if (! function_exists('format_days')) {
+    /**
+     * Format a day-count value for display: whole numbers render with no
+     * decimal places, fractional values (e.g. a half-day balance of 0.5)
+     * keep one decimal place.
+     */
+    function format_days(float|int|string $value): string
+    {
+        $value = (float) $value;
+
+        return $value == floor($value)
+            ? number_format($value, 0)
+            : number_format($value, 1);
+    }
+}
+
 if (! function_exists('brand_color')) {
     /**
      * Return a brand color by key (e.g. primary, accent).

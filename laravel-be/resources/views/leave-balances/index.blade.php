@@ -113,28 +113,28 @@
                         </td>
                         <td class="text-secondary-700">{{ $balance->leaveType->name }}</td>
                         <td class="text-center font-medium text-secondary-900">{{ $balance->year }}</td>
-                        <td class="text-center font-medium text-secondary-900">{{ number_format($balance->entitled_days, 1) }}</td>
-                        <td class="text-center text-secondary-600">{{ number_format($balance->carried_forward_days, 1) }}</td>
+                        <td class="text-center font-medium text-secondary-900">{{ format_days($balance->entitled_days) }}</td>
+                        <td class="text-center text-secondary-600">{{ format_days($balance->carried_forward_days) }}</td>
                         <td class="text-center">
                             @if($balance->adjustment_days != 0)
                                 <span class="{{ $balance->adjustment_days > 0 ? 'text-success-600' : 'text-danger-600' }}">
-                                    {{ $balance->adjustment_days > 0 ? '+' : '' }}{{ number_format($balance->adjustment_days, 1) }}
+                                    {{ $balance->adjustment_days > 0 ? '+' : '' }}{{ format_days($balance->adjustment_days) }}
                                 </span>
                             @else
                                 <span class="text-secondary-400">-</span>
                             @endif
                         </td>
-                        <td class="text-center text-danger-600 font-medium">{{ number_format($balance->used_days, 1) }}</td>
+                        <td class="text-center text-danger-600 font-medium">{{ format_days($balance->used_days) }}</td>
                         <td class="text-center">
                             @if($balance->pending_days > 0)
-                                <span class="text-warning-600 font-medium">{{ number_format($balance->pending_days, 1) }}</span>
+                                <span class="text-warning-600 font-medium">{{ format_days($balance->pending_days) }}</span>
                             @else
                                 <span class="text-secondary-400">-</span>
                             @endif
                         </td>
                         <td class="text-center">
                             <span class="font-bold {{ $balance->remaining_days > 0 ? 'text-success-600' : 'text-danger-600' }}">
-                                {{ number_format($balance->remaining_days, 1) }}
+                                {{ format_days($balance->remaining_days) }}
                             </span>
                         </td>
                         <td>

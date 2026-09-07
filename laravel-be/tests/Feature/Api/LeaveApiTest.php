@@ -122,10 +122,16 @@ describe('POST /api/v1/leaves', function () {
     it('can create leave request', function () {
         Sanctum::actingAs($this->user);
 
+        // A Mon-Wed range guaranteed not to cross a weekend, since
+        // total_days now excludes weekends (see LeaveDayCalculatorService)
+        // and this employee has no work schedule to override that default.
+        $start = now()->next(\Carbon\Carbon::MONDAY);
+        $end = $start->copy()->addDays(2);
+
         $response = $this->postJson('/api/v1/leaves', [
             'leave_type_id' => $this->leaveType->id,
-            'start_date' => today()->addDays(7)->toDateString(),
-            'end_date' => today()->addDays(9)->toDateString(),
+            'start_date' => $start->toDateString(),
+            'end_date' => $end->toDateString(),
             'reason' => 'Family vacation',
         ]);
 
@@ -189,16 +195,48 @@ describe('POST /api/v1/leaves', function () {
         expect($leaveRequest->attachment)->not->toBeNull();
     });
 
+    it('rolls back the leave request and balance if something fails mid-transaction', function () {
+        Sanctum::actingAs($this->user);
+
+        $this->partialMock(\App\Services\ApprovalService::class, function ($mock) {
+            $mock->shouldReceive('initializeWorkflow')->andThrow(new \Exception('boom'));
+        });
+
+        $start = now()->next(\Carbon\Carbon::MONDAY);
+        $end = $start->copy()->addDays(2);
+
+        $this->withoutExceptionHandling();
+
+        try {
+            $this->postJson('/api/v1/leaves', [
+                'leave_type_id' => $this->leaveType->id,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+                'reason' => 'Family vacation',
+            ]);
+        } catch (\Exception $e) {
+            // expected — the mocked service always throws
+        }
+
+        $this->assertDatabaseMissing('leave_requests', [
+            'employee_id' => $this->employee->id,
+        ]);
+        expect($this->leaveBalance->fresh()->pending_days)->toEqual(0);
+    });
+
     it('validates leave balance', function () {
         Sanctum::actingAs($this->user);
 
         // Use all balance
         $this->leaveBalance->update(['used_days' => 12]);
 
+        $start = now()->next(\Carbon\Carbon::MONDAY);
+        $end = $start->copy()->addDays(2);
+
         $response = $this->postJson('/api/v1/leaves', [
             'leave_type_id' => $this->leaveType->id,
-            'start_date' => today()->addDays(7)->toDateString(),
-            'end_date' => today()->addDays(9)->toDateString(),
+            'start_date' => $start->toDateString(),
+            'end_date' => $end->toDateString(),
             'reason' => 'Vacation',
         ]);
 
@@ -268,7 +306,7 @@ describe('GET /api/v1/leaves/{id}', function () {
                 'data' => [
                     'id',
                     'request_number',
-                    'leave_type',
+                    'leave_type' => ['id', 'name', 'quota', 'is_paid', 'requires_attachment'],
                     'start_date',
                     'end_date',
                     'total_days',
@@ -283,6 +321,17 @@ describe('GET /api/v1/leaves/{id}', function () {
                     'created_at',
                 ],
             ]);
+
+        // Regression guard: leave_type must be an object here just like on
+        // index(), not a bare string — mismatched shapes between endpoints
+        // is exactly what previously crashed the mobile JSON parser.
+        expect($response->json('data.leave_type'))->toBe([
+            'id' => $this->leaveType->id,
+            'name' => 'Cuti Tahunan',
+            'quota' => 12,
+            'is_paid' => (bool) $this->leaveType->is_paid,
+            'requires_attachment' => (bool) $this->leaveType->requires_attachment,
+        ]);
     });
 
     it('returns 404 for other employee leave', function () {

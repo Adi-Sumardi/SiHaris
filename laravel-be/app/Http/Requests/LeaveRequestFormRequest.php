@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Employee;
 use App\Models\LeaveBalance;
+use App\Services\LeaveDayCalculatorService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LeaveRequestFormRequest extends FormRequest
@@ -22,7 +25,7 @@ class LeaveRequestFormRequest extends FormRequest
             'is_half_day' => ['nullable', 'boolean'],
             'half_day_type' => ['required_if:is_half_day,true', 'nullable', 'in:morning,afternoon'],
             'reason' => ['required', 'string', 'max:1000'],
-            'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'emergency_contact' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -58,13 +61,28 @@ class LeaveRequestFormRequest extends FormRequest
         $endDate = $this->input('end_date');
         $isHalfDay = $this->boolean('is_half_day');
 
-        if ($isHalfDay) {
-            $totalDays = 0.5;
-        } else {
-            $start = new \DateTime($startDate);
-            $end = new \DateTime($endDate);
-            $totalDays = $start->diff($end)->days + 1;
+        $employee = Employee::where('company_id', auth()->user()->company_id)
+            ->find($this->input('employee_id'));
+
+        if (! $employee) {
+            // employee_id already failed the 'exists' rule above and
+            // short-circuited before this runs; this is just a safety net.
+            return;
         }
+
+        // Use the same day-count LeaveRequestController::store()/update()
+        // actually deduct from the balance (excludes weekends and active
+        // company holidays) — previously this used a naive calendar-day
+        // diff, so a long date range (e.g. 90-calendar-day maternity
+        // leave, ~65 working days) could be wrongly rejected as
+        // "insufficient balance" even though the real deduction would
+        // have easily fit.
+        $totalDays = app(LeaveDayCalculatorService::class)->calculate(
+            $employee,
+            Carbon::parse($startDate),
+            Carbon::parse($endDate),
+            $isHalfDay
+        );
 
         $year = (new \DateTime($startDate))->format('Y');
 
@@ -73,13 +91,14 @@ class LeaveRequestFormRequest extends FormRequest
             ->where('year', $year)
             ->first();
 
-        if (!$balance) {
-            $validator->errors()->add('leave_type_id', 'Tidak ada saldo cuti untuk jenis cuti ini di tahun ' . $year);
+        if (! $balance) {
+            $validator->errors()->add('leave_type_id', 'Tidak ada saldo cuti untuk jenis cuti ini di tahun '.$year);
+
             return;
         }
 
-        if (!$balance->hasEnoughBalance($totalDays)) {
-            $validator->errors()->add('leave_type_id', 'Saldo cuti tidak mencukupi. Tersedia: ' . $balance->remaining_days . ' hari');
+        if (! $balance->hasEnoughBalance($totalDays)) {
+            $validator->errors()->add('leave_type_id', 'Saldo cuti tidak mencukupi. Tersedia: '.$balance->remaining_days.' hari');
         }
     }
 }

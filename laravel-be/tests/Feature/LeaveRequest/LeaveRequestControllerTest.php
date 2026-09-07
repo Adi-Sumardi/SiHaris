@@ -93,6 +93,38 @@ describe('LeaveRequest Index', function () {
             return $requests->count() === 1 && $requests->first()->employee_id === $this->employee->id;
         });
     });
+
+    test('shows edit and delete actions for a pending leave request', function () {
+        $leaveRequest = LeaveRequest::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $this->leaveType->id,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->get(route('leave-requests.index'));
+
+        // The destroy route shares its URL with the always-present "show"
+        // link (distinguished only by the _method=DELETE spoof field), so
+        // assert on the delete confirm-dialog's own text instead of the URL.
+        $response->assertOk()
+            ->assertSee(route('leave-requests.edit', $leaveRequest))
+            ->assertSee('Hapus Pengajuan Cuti');
+    });
+
+    test('hides the edit action for a non-pending leave request but still allows delete', function () {
+        $leaveRequest = LeaveRequest::factory()->approved()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $this->leaveType->id,
+        ]);
+
+        $response = $this->get(route('leave-requests.index'));
+
+        $response->assertOk()
+            ->assertDontSee(route('leave-requests.edit', $leaveRequest))
+            ->assertSee('Hapus Pengajuan Cuti');
+    });
 });
 
 describe('LeaveRequest Create', function () {
@@ -174,6 +206,45 @@ describe('LeaveRequest Create', function () {
 
         $this->post(route('leave-requests.store'), $data);
 
+        $this->assertDatabaseHas('leave_requests', [
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'total_days' => 2,
+        ]);
+    });
+
+    test('balance validation uses working days, not naive calendar days, so a weekend-spanning request is not wrongly rejected', function () {
+        // Regression test: validateLeaveBalance() previously computed
+        // total_days as a naive calendar-day diff (counting Sat/Sun),
+        // while the actual save (LeaveDayCalculatorService, used by
+        // store()) excludes weekends. For a Fri->Mon range that's 4
+        // naive days but only 2 working days — a balance of 3 should be
+        // enough (2 <= 3) even though the old naive count (4) would have
+        // wrongly failed it.
+        $friday = now()->addWeek()->next(\Carbon\Carbon::FRIDAY);
+        $monday = $friday->copy()->addDays(3);
+
+        LeaveBalance::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $this->leaveType->id,
+            'year' => $friday->year,
+            'entitled_days' => 3,
+            'used_days' => 0,
+            'pending_days' => 0,
+        ]);
+
+        $data = [
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $this->leaveType->id,
+            'start_date' => $friday->format('Y-m-d'),
+            'end_date' => $monday->format('Y-m-d'),
+            'reason' => 'Liburan panjang',
+        ];
+
+        $response = $this->post(route('leave-requests.store'), $data);
+
+        $response->assertSessionDoesntHaveErrors('leave_type_id');
         $this->assertDatabaseHas('leave_requests', [
             'company_id' => $this->company->id,
             'employee_id' => $this->employee->id,

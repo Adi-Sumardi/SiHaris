@@ -216,7 +216,7 @@ class LeaveRequestController extends Controller
             'is_half_day' => ['nullable', 'boolean'],
             'half_day_type' => ['required_if:is_half_day,true', 'nullable', 'in:morning,afternoon'],
             'reason' => ['required', 'string', 'max:1000'],
-            'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'emergency_contact' => ['nullable', 'string', 'max:255'],
         ]);
 

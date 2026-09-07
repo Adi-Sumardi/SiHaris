@@ -7,9 +7,12 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Services\ApprovalService;
+use App\Services\LeaveDayCalculatorService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
 class LeaveController extends Controller
@@ -161,7 +164,7 @@ class LeaveController extends Controller
                         new OA\Property(property: 'is_half_day', type: 'boolean', example: false, description: 'Apakah cuti setengah hari'),
                         new OA\Property(property: 'half_day_type', type: 'string', enum: ['morning', 'afternoon'], description: 'Jenis setengah hari (wajib jika is_half_day=true)'),
                         new OA\Property(property: 'reason', type: 'string', maxLength: 500, example: 'Liburan keluarga', description: 'Alasan pengajuan cuti'),
-                        new OA\Property(property: 'attachment', type: 'string', format: 'binary', description: 'Lampiran (jpg, jpeg, png, pdf, max 2MB)'),
+                        new OA\Property(property: 'attachment', type: 'string', format: 'binary', description: 'Lampiran (jpg, jpeg, png, pdf, max 10MB)'),
                         new OA\Property(property: 'emergency_contact', type: 'string', maxLength: 100, example: '081234567890', description: 'Kontak darurat selama cuti'),
                     ]
                 )
@@ -213,7 +216,7 @@ class LeaveController extends Controller
             'is_half_day' => 'nullable|boolean',
             'half_day_type' => 'nullable|string|in:morning,afternoon|required_if:is_half_day,true',
             'reason' => 'required|string|max:500',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'emergency_contact' => 'nullable|string|max:100',
         ]);
 
@@ -221,10 +224,18 @@ class LeaveController extends Controller
         $employee = $user->employee;
         $company = $user->company;
 
-        // Calculate total days
+        // Calculate total days the same way the web/admin flow does
+        // (excludes weekends and active company holidays per the
+        // employee's work schedule) so mobile and admin-entered leave
+        // requests deduct identical balances for identical dates.
         $startDate = Carbon::parse($request->start_date);
         $endDate = Carbon::parse($request->end_date);
-        $totalDays = $request->is_half_day ? 0.5 : ($startDate->diffInDays($endDate) + 1);
+        $totalDays = app(LeaveDayCalculatorService::class)->calculate(
+            $employee,
+            $startDate,
+            $endDate,
+            (bool) $request->is_half_day
+        );
 
         // Check leave balance
         $balance = LeaveBalance::where('employee_id', $employee->id)
@@ -269,33 +280,54 @@ class LeaveController extends Controller
                 ->store('leave-attachments/'.$company->id, 'public');
         }
 
-        // Create leave request
-        $leaveRequest = LeaveRequest::create([
-            'company_id' => $company->id,
-            'employee_id' => $employee->id,
-            'leave_type_id' => $request->leave_type_id,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'total_days' => $totalDays,
-            'is_half_day' => $request->is_half_day ?? false,
-            'half_day_type' => $request->half_day_type,
-            'reason' => $request->reason,
-            'attachment' => $attachmentPath,
-            'emergency_contact' => $request->emergency_contact,
-            'status' => 'pending',
-        ]);
+        try {
+            $leaveRequest = DB::transaction(function () use (
+                $request,
+                $company,
+                $employee,
+                $startDate,
+                $endDate,
+                $totalDays,
+                $attachmentPath,
+                $balance
+            ) {
+                // Create leave request
+                $leaveRequest = LeaveRequest::create([
+                    'company_id' => $company->id,
+                    'employee_id' => $employee->id,
+                    'leave_type_id' => $request->leave_type_id,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'total_days' => $totalDays,
+                    'is_half_day' => $request->is_half_day ?? false,
+                    'half_day_type' => $request->half_day_type,
+                    'reason' => $request->reason,
+                    'attachment' => $attachmentPath,
+                    'emergency_contact' => $request->emergency_contact,
+                    'status' => 'pending',
+                ]);
 
-        // Update pending days in balance
-        if ($balance) {
-            $balance->increment('pending_days', $totalDays);
+                // Update pending days in balance
+                if ($balance) {
+                    $balance->increment('pending_days', $totalDays);
+                }
+
+                // Initialize approval workflow if configured
+                app(ApprovalService::class)->initializeWorkflow(
+                    $leaveRequest,
+                    ApprovalWorkflow::TYPE_LEAVE_REQUEST,
+                    $company->id
+                );
+
+                return $leaveRequest;
+            });
+        } catch (\Throwable $e) {
+            if ($attachmentPath) {
+                Storage::disk('public')->delete($attachmentPath);
+            }
+
+            throw $e;
         }
-
-        // Initialize approval workflow if configured
-        app(ApprovalService::class)->initializeWorkflow(
-            $leaveRequest,
-            ApprovalWorkflow::TYPE_LEAVE_REQUEST,
-            $company->id
-        );
 
         $leaveRequest->load('leaveType');
 
@@ -342,7 +374,17 @@ class LeaveController extends Controller
                             properties: [
                                 new OA\Property(property: 'id', type: 'integer', example: 1),
                                 new OA\Property(property: 'request_number', type: 'string', example: 'LV20260001'),
-                                new OA\Property(property: 'leave_type', type: 'string', example: 'Cuti Tahunan'),
+                                new OA\Property(
+                                    property: 'leave_type',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                                        new OA\Property(property: 'name', type: 'string', example: 'Cuti Tahunan'),
+                                        new OA\Property(property: 'quota', type: 'integer', example: 12),
+                                        new OA\Property(property: 'is_paid', type: 'boolean', example: true),
+                                        new OA\Property(property: 'requires_attachment', type: 'boolean', example: false),
+                                    ]
+                                ),
                                 new OA\Property(property: 'start_date', type: 'string', format: 'date', example: '2026-03-01'),
                                 new OA\Property(property: 'end_date', type: 'string', format: 'date', example: '2026-03-05'),
                                 new OA\Property(property: 'total_days', type: 'number', format: 'float', example: 5.0),
@@ -392,7 +434,13 @@ class LeaveController extends Controller
             'data' => [
                 'id' => $leave->id,
                 'request_number' => $leave->request_number,
-                'leave_type' => $leave->leaveType->name,
+                'leave_type' => [
+                    'id' => $leave->leaveType->id,
+                    'name' => $leave->leaveType->name,
+                    'quota' => $leave->leaveType->default_days,
+                    'is_paid' => $leave->leaveType->is_paid,
+                    'requires_attachment' => $leave->leaveType->requires_attachment ?? false,
+                ],
                 'start_date' => $leave->start_date->toDateString(),
                 'end_date' => $leave->end_date->toDateString(),
                 'total_days' => (float) $leave->total_days,

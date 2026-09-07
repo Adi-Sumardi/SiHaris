@@ -201,7 +201,7 @@
                         <input type="file" name="attachment" id="attachment"
                                class="input w-full @error('attachment') border-danger-500 @enderror"
                                accept=".pdf,.jpg,.jpeg,.png">
-                        <p class="mt-1 text-sm text-secondary-500">Format: PDF, JPG, PNG. Maksimal 2MB.</p>
+                        <p class="mt-1 text-sm text-secondary-500">Format: PDF, JPG, PNG. Maksimal 10MB.</p>
                         @error('attachment')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                         @enderror

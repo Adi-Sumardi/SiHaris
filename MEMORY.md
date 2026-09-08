@@ -582,6 +582,24 @@ Audit ketiga di pola yang sama (setelah Cuti & Izin §32/33 dan Reimbursement §
 - Test: `PayrollCalculationServiceTest.php` +6 (pembulatan per-baris BPJS TK, PTKP/tarif dari DB, gross-up), `TaxForm1721A1ControllerTest.php` +1 (regression `str_contains`), `PayslipApiTest.php` +3 (PPh21 muncul di deductions, invariant A−B=net, average_net_salary dibulatkan), `BpjsTkSettingTest.php` +1 (JkkRiskRate override). Flutter: `payslip_models_test.dart` +1 (parsing defensif nilai pecahan). **Insiden kecil saat testing**: satu test Reimbursement dari sesi sebelumnya (§35) ternyata flaky — `ReimbursementCategoryFactory` random-kan `requires_receipt` 80% true, dan satu test baru tidak pin field itu meski submit tanpa lampiran; diperbaiki dengan pin eksplisit `requires_receipt: false`. Full suite backend 2299 passed (1 flaky pre-existing tidak terkait), Flutter 989 passed.
 - **Rilis**: backend-only, deploy langsung tanpa migration baru (tidak ada perubahan skema). Perubahan Flutter di sesi ini (parsing defensif model payslip) murni lapisan pertahanan kedua, tidak ada perubahan perilaku terlihat — SENGAJA tidak dibuild APK baru untuk ini sendirian, akan ikut naik di rilis berikutnya yang memang ada perubahan user-facing.
 
+---
+
+## 37. Diagnosis: Kode OTP WhatsApp Tidak Masuk (BUKAN Bug Kode — Device Gateway Disconnect)
+
+- User laporan: kode OTP SiHaris via WhatsApp tidak sampai. Investigasi ke `storage/logs/laravel.log` production nemu akar masalahnya persis: `WhatsAppNotificationService::sendMessage()` (manggil gateway pihak ketiga **SendaGo**, `api-sendago.adilabs.id`) dapat response `400 {"error":"No active/connected device found to send message from. Please connect a device via scan QR first."}` — device WhatsApp yang jadi "jembatan" pengiriman di gateway SendaGo **terputus/logout**, bukan bug di aplikasi. `SENDAGO_API_KEY` di `.env` production sudah benar terisi (bukan kasus test-mode `WhatsAppNotificationService::$isTestMode`).
+- **Tindakan yang diperlukan** (di luar kendali kode): buka dashboard SendaGo dan scan ulang QR code untuk menyambungkan kembali device WhatsApp pengirimnya. Butuh akses akun SendaGo yang tidak saya punya.
+- **Bug kode kecil yang IKUT ketemu saat investigasi (belum diperbaiki, nunggu konfirmasi user)**: `OtpService::requestOtp()` SELALU balas `success: true` + pesan "Kode OTP berhasil dikirim ke WhatsApp Anda" ke frontend, walaupun `$waService->sendMessage()` gagal — kegagalan cuma di-`Log::warning()`, tidak pernah disampaikan ke user. Ini bikin user tidak sadar OTP-nya sebenarnya gagal terkirim (mengira harus nunggu, padahal tidak akan pernah datang). Kalau user minta diperbaiki: ubah response jadi `success: false` dengan pesan jelas kalau `$waResult['success']` false, supaya user bisa langsung coba lagi/pakai email alih-alih menunggu kode yang tidak akan datang.
+
+---
+
+## 38. Simplifikasi Active Liveness Detection Jadi Blink-Only
+
+- Permintaan user: liveness check di verifikasi wajah absensi (`face_verify_attendance_screen.dart`) sebelumnya random pilih 2 dari 4 tantangan (`blink`, `turnLeft`, `turnRight`, `smile`) tiap sesi — user minta disederhanakan jadi **kedip mata saja**, tidak perlu senyum/tengok kiri/tengok kanan.
+- **Fix**: `ActiveLivenessDetector._generateDefaultChallenges()` — pool tantangan default dipangkas jadi cuma `[LivenessChallengeType.blink]`, parameter default `challengeCount` di constructor diubah dari 2 → 1. Satu-satunya call site (`face_verify_attendance_screen.dart`) diupdate eksplisit jadi `randomized: false, challengeCount: 1`, plus initial dummy `LivenessFrameResult` (`totalSteps`) disamakan dari 2 → 1 supaya UI step-indicator tidak salah hitung di frame pertama sebelum data asli masuk.
+- Enum `LivenessChallengeType` (termasuk `turnLeft`/`turnRight`/`smile`/`nod`) dan evaluator-nya (`_evaluateTurnLeft`, `_evaluateSmile`, dst) SENGAJA tidak dihapus — cuma tidak lagi dipilih secara default. Infrastrukturnya tetap ada kalau suatu saat mau diaktifkan lagi (misal lewat custom `challenges:` param), tapi sekarang jalur default (satu-satunya yang benar-benar dipakai app) cuma blink.
+- Test: `active_liveness_detector_test.dart` +2 (pool default cuma berisi blink & 1 step, dan siklus blink lengkap tanpa senyum/tengok berhasil `allCompleted`). Full suite Flutter 991 passed.
+- **Rilis**: mobile app **v1.2.6+24**, dibuild & dipublish ke `/download/android`.
+
 
 
 

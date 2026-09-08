@@ -102,5 +102,89 @@ void main() {
 
       expect(find.text('Cuti Tahunan'), findsNothing);
     });
+
+    testWidgets(
+      'no longer shows the old combined Jatah/Sisa/Terpakai summary cards',
+      (tester) async {
+        when(() => mockDatasource.getLeaveBalances()).thenAnswer(
+          (_) async => const [
+            LeaveBalanceModel(
+              leaveTypeId: 1,
+              leaveTypeName: 'Cuti Tahunan',
+              year: 2026,
+              entitledDays: 12,
+              usedDays: 4,
+              pendingDays: 0,
+              remainingDays: 8,
+            ),
+          ],
+        );
+
+        await pumpScreen(tester);
+
+        expect(find.text('Jatah Cuti'), findsNothing);
+        expect(find.text('Sisa Cuti'), findsNothing);
+        expect(find.text('Terpakai'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'scales to any number of leave types (e.g. a newly added "Cuti Haji") without code changes',
+      (tester) async {
+        when(() => mockDatasource.getLeaveBalances()).thenAnswer(
+          (_) async => const [
+            LeaveBalanceModel(
+              leaveTypeId: 1,
+              leaveTypeName: 'Cuti Tahunan',
+              year: 2026,
+              entitledDays: 12,
+              usedDays: 4,
+              pendingDays: 0,
+              remainingDays: 8,
+            ),
+            LeaveBalanceModel(
+              leaveTypeId: 2,
+              leaveTypeName: 'Cuti Umroh',
+              year: 2026,
+              entitledDays: 9,
+              usedDays: 0,
+              pendingDays: 0,
+              remainingDays: 9,
+            ),
+            LeaveBalanceModel(
+              leaveTypeId: 3,
+              leaveTypeName: 'Cuti Sakit',
+              year: 2026,
+              entitledDays: 14,
+              usedDays: 3,
+              pendingDays: 0,
+              remainingDays: 11,
+            ),
+            LeaveBalanceModel(
+              leaveTypeId: 5,
+              leaveTypeName: 'Cuti Haji',
+              year: 2026,
+              entitledDays: 40,
+              usedDays: 0,
+              pendingDays: 0,
+              remainingDays: 40,
+            ),
+          ],
+        );
+
+        await pumpScreen(tester);
+
+        expect(find.text('Cuti Tahunan'), findsOneWidget);
+        expect(find.text('Cuti Umroh'), findsOneWidget);
+        expect(find.text('Cuti Sakit'), findsOneWidget);
+        expect(find.text('Cuti Haji'), findsOneWidget);
+
+        final richTexts = tester
+            .widgetList<RichText>(find.byType(RichText))
+            .map((w) => w.text.toPlainText())
+            .toList();
+        expect(richTexts, contains('40 / 40 hari'));
+      },
+    );
   });
 }

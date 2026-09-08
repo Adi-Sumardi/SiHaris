@@ -77,42 +77,38 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
         children: [
           _buildHeader(),
           const JagoHeaderBand(),
-          _buildLeaveTypeBalanceList(),
+          // Balance grid + history are ONE scrollable region (not a fixed
+          // header above an Expanded list) — with enough leave types
+          // (e.g. after admin adds "Cuti Haji" on top of the existing
+          // ones) a non-scrolling grid could push past the screen height
+          // and overflow on smaller devices.
           Expanded(
             child: BlocBuilder<LeaveListBloc, LeaveListState>(
               builder: (context, state) {
-                if (state is LeaveListLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (state is LeaveListError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(state.message),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: _refreshList,
-                          child: const Text('Coba Lagi'),
+                return CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(child: _buildLeaveBalanceSection()),
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'RIWAYAT CUTI',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.secondary500,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  );
-                }
-                if (state is LeaveListLoaded) {
-                  if (state.leaves.isEmpty) {
-                    return const Center(child: Text('Belum ada riwayat cuti'));
-                  }
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: state.leaves.length,
-                    itemBuilder: (context, index) {
-                      return _buildLeaveItem(state.leaves[index]);
-                    },
-                  );
-                }
-                return const SizedBox();
+                    ..._buildHistorySlivers(state),
+                  ],
+                );
               },
             ),
           ),
@@ -121,117 +117,143 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
     );
   }
 
+  List<Widget> _buildHistorySlivers(LeaveListState state) {
+    if (state is LeaveListLoading) {
+      return [
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+    if (state is LeaveListError) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(state.message),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _refreshList,
+                  child: const Text('Coba Lagi'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
+    }
+    if (state is LeaveListLoaded) {
+      if (state.leaves.isEmpty) {
+        return [
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: Text('Belum ada riwayat cuti')),
+          ),
+        ];
+      }
+      return [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          sliver: SliverList.builder(
+            itemCount: state.leaves.length,
+            itemBuilder: (context, index) {
+              return _buildLeaveItem(state.leaves[index]);
+            },
+          ),
+        ),
+      ];
+    }
+    return const [SliverToBoxAdapter(child: SizedBox())];
+  }
+
   Widget _buildHeader() {
     return Container(
       decoration: const BoxDecoration(gradient: AppColors.headerGradient),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
       child: SafeArea(
         bottom: false,
-        child: Column(
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Cuti & Izin',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 40), // Balance the back button
-                ],
+            IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            const Expanded(
+              child: Text(
+                'Cuti & Izin',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            BlocBuilder<LeaveBalanceBloc, LeaveBalanceState>(
-              builder: (context, state) {
-                if (state is LeaveBalanceLoaded) {
-                  // Calculate totals from all balances
-                  final totalEntitled = state.balances.fold(
-                    0.0,
-                    (sum, b) => sum + b.entitledDays,
-                  );
-                  final totalRemaining = state.balances.fold(
-                    0.0,
-                    (sum, b) => sum + b.remainingDays,
-                  );
-                  final totalUsed = state.balances.fold(
-                    0.0,
-                    (sum, b) => sum + b.usedDays,
-                  );
-
-                  return Row(
-                    children: [
-                      _buildBalanceCard(
-                        'Jatah Cuti',
-                        '${totalEntitled.toInt()}',
-                        Colors.white.withValues(alpha: 0.2),
-                      ),
-                      const SizedBox(width: 12),
-                      _buildBalanceCard(
-                        'Sisa Cuti',
-                        '${totalRemaining.toInt()}',
-                        Colors.white.withValues(alpha: 0.2),
-                        isHighlight: true,
-                      ),
-                      const SizedBox(width: 12),
-                      _buildBalanceCard(
-                        'Terpakai',
-                        '${totalUsed.toInt()}',
-                        Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ],
-                  );
-                }
-                return const SizedBox(
-                  height: 80,
-                  child: Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                );
-              },
-            ),
+            const SizedBox(width: 40), // Balance the back button
           ],
         ),
       ),
     );
   }
 
-  /// Rincian saldo per jenis cuti — kartu ringkasan di atas cuma total
-  /// gabungan semua jenis, jadi karyawan tidak tahu jenis cuti apa yang
-  /// masih tersisa. Baris ini menampilkan tiap jenis cuti (mis. "Cuti
-  /// Tahunan: 8 dari 12 hari") secara terpisah.
-  Widget _buildLeaveTypeBalanceList() {
+  /// Rincian saldo per jenis cuti — satu kartu per jenis cuti (mis. "Cuti
+  /// Tahunan: 8 / 12 hari"), MENGGANTIKAN kartu ringkasan gabungan
+  /// (Jatah/Sisa/Terpakai total semua jenis) yang sebelumnya ada di header
+  /// biru. Grid 2 kolom yang wrap otomatis — jenis cuti baru yang
+  /// ditambahkan admin (mis. "Cuti Haji") langsung dapat kartu sendiri di
+  /// sini tanpa perlu perubahan kode, karena dibangun dari
+  /// `state.balances` (respons API), bukan daftar tetap.
+  Widget _buildLeaveBalanceSection() {
     return BlocBuilder<LeaveBalanceBloc, LeaveBalanceState>(
       builder: (context, state) {
+        if (state is LeaveBalanceLoading || state is LeaveBalanceInitial) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
         if (state is! LeaveBalanceLoaded || state.balances.isEmpty) {
           return const SizedBox.shrink();
         }
 
-        return SizedBox(
-          height: 106,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            itemCount: state.balances.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              return _buildLeaveTypeBalanceCard(state.balances[index]);
-            },
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'SALDO CUTI',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.secondary500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: 10),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: state.balances.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 1.75,
+                ),
+                itemBuilder: (context, index) {
+                  return _buildLeaveTypeBalanceCard(state.balances[index]);
+                },
+              ),
+            ],
           ),
         );
       },
@@ -253,12 +275,17 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
     final color = _leaveTypeColor(balance.leaveTypeId);
 
     return Container(
-      width: 136,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondary200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,46 +337,6 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBalanceCard(
-    String title,
-    String value,
-    Color color, {
-    bool isHighlight = false,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
-          border: isHighlight
-              ? Border.all(color: Colors.white, width: 1)
-              : null,
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

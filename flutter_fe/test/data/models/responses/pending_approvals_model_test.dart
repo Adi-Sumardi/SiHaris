@@ -30,7 +30,13 @@ void main() {
         'reimbursements': [
           {
             'id': 5,
-            'category': 'transport',
+            'category': {
+              'id': 2,
+              'name': 'Transport',
+              'description': 'Transportation expenses',
+              'max_amount': 500000,
+              'requires_receipt': true,
+            },
             'amount': 50000,
             'formatted_amount': 'Rp 50.000',
             'description': 'Taxi to client office',

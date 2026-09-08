@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,8 +9,13 @@ import '../../../core/constants/text_styles.dart';
 import '../../../core/constants/spacing.dart';
 import '../../../core/components/widgets.dart';
 import '../../../data/models/requests/reimbursement_request_model.dart';
+import '../../../data/models/responses/reimbursement_category_model.dart';
 import '../bloc/reimbursement_category/reimbursement_category_bloc.dart';
 import '../bloc/reimbursement_request/reimbursement_request_bloc.dart';
+
+/// Backend's `receipt` validation rule (Api\V1\ReimbursementController::store):
+/// `mimes:jpg,jpeg,png,pdf|max:10240` (10240 KB = 10 MB).
+const int _kMaxReceiptBytes = 10 * 1024 * 1024;
 
 class ReimbursementFormScreen extends StatefulWidget {
   const ReimbursementFormScreen({super.key});
@@ -26,9 +32,15 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
   final _dateController = TextEditingController();
 
   int? _selectedCategoryId;
+  ReimbursementCategoryModel? _selectedCategory;
   DateTime? _selectedDate;
   File? _receiptFile;
+  String? _receiptFileName;
   final _picker = ImagePicker();
+
+  bool get _isReceiptPdf => (_receiptFileName ?? _receiptFile?.path ?? '')
+      .toLowerCase()
+      .endsWith('.pdf');
 
   @override
   void initState() {
@@ -62,6 +74,25 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
     }
   }
 
+  Future<void> _setReceipt(File file, String name) async {
+    final size = await file.length();
+    if (size > _kMaxReceiptBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ukuran file maksimal 10MB'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _receiptFile = file;
+      _receiptFileName = name;
+    });
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final pickedFile = await _picker.pickImage(
@@ -72,15 +103,35 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
       );
 
       if (pickedFile != null) {
-        setState(() {
-          _receiptFile = File(pickedFile.path);
-        });
+        await _setReceipt(File(pickedFile.path), pickedFile.name);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Gagal mengambil gambar: $e')));
+      }
+    }
+  }
+
+  Future<void> _pickPdf() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        await _setReceipt(
+          File(result.files.single.path!),
+          result.files.single.name,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal mengambil file: $e')));
       }
     }
   }
@@ -105,6 +156,14 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined),
+              title: const Text('File PDF'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickPdf();
               },
             ),
           ],
@@ -139,6 +198,29 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Jumlah tidak valid')));
+      return;
+    }
+
+    final category = _selectedCategory;
+    if (category != null &&
+        category.maxAmount > 0 &&
+        amount > category.maxAmount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Jumlah melebihi batas maksimal kategori (Rp ${NumberFormat('#,###', 'id_ID').format(category.maxAmount)})',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (category?.requiresReceipt == true && _receiptFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bukti/struk wajib diunggah untuk kategori ini'),
+        ),
+      );
       return;
     }
 
@@ -211,6 +293,7 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
                                 _selectedCategoryId = selected
                                     ? category.id
                                     : null;
+                                _selectedCategory = selected ? category : null;
                               });
                             },
                             selectedColor: AppColors.primary600,
@@ -227,6 +310,27 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
                     return const Text('Gagal memuat kategori');
                   },
                 ),
+                if (_selectedCategory != null &&
+                    _selectedCategory!.maxAmount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      'Maksimal Rp ${NumberFormat('#,###', 'id_ID').format(_selectedCategory!.maxAmount)} untuk kategori ini',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                if (_selectedCategory?.requiresReceipt == true)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      'Bukti/struk wajib diunggah untuk kategori ini',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: AppSpacing.lg),
                 // Amount
                 Text('Jumlah', style: AppTextStyles.labelMedium),
@@ -307,7 +411,40 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
                 // Receipt upload
                 Text('Bukti Pembayaran', style: AppTextStyles.labelMedium),
                 const SizedBox(height: AppSpacing.sm),
-                if (_receiptFile != null)
+                if (_receiptFile != null && _isReceiptPdf)
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.border),
+                      borderRadius: AppSpacing.borderRadiusMd,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.picture_as_pdf_outlined,
+                          color: AppColors.danger,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            _receiptFileName ?? 'Berkas PDF',
+                            style: AppTextStyles.bodyMedium,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _receiptFile = null;
+                              _receiptFileName = null;
+                            });
+                          },
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (_receiptFile != null)
                   Stack(
                     children: [
                       ClipRRect(
@@ -326,6 +463,7 @@ class _ReimbursementFormScreenState extends State<ReimbursementFormScreen> {
                           onPressed: () {
                             setState(() {
                               _receiptFile = null;
+                              _receiptFileName = null;
                             });
                           },
                           icon: const Icon(Icons.close),

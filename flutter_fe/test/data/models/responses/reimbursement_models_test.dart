@@ -5,9 +5,24 @@ import 'package:gaji_pro/data/models/responses/reimbursement_summary_model.dart'
 
 void main() {
   group('ReimbursementModel', () {
+    const tCategory = ReimbursementCategoryModel(
+      id: 2,
+      name: 'Transport',
+      description: 'Transportation expenses',
+      maxAmount: 500000,
+      requiresReceipt: true,
+    );
+    final tCategoryJson = {
+      'id': 2,
+      'name': 'Transport',
+      'description': 'Transportation expenses',
+      'max_amount': 500000,
+      'requires_receipt': true,
+    };
+
     const tReimbursementModel = ReimbursementModel(
       id: 1,
-      category: 'Transport',
+      category: tCategory,
       amount: 150000,
       formattedAmount: 'Rp 150.000',
       description: 'Taxi to client meeting',
@@ -25,7 +40,7 @@ void main() {
 
     final tJson = {
       'id': 1,
-      'category': 'Transport',
+      'category': tCategoryJson,
       'amount': 150000,
       'formatted_amount': 'Rp 150.000',
       'description': 'Taxi to client meeting',
@@ -54,7 +69,7 @@ void main() {
     test('should support equality comparison', () {
       const model1 = ReimbursementModel(
         id: 1,
-        category: 'Transport',
+        category: tCategory,
         amount: 150000,
         formattedAmount: 'Rp 150.000',
         description: 'Taxi',
@@ -71,7 +86,7 @@ void main() {
       );
       const model2 = ReimbursementModel(
         id: 1,
-        category: 'Transport',
+        category: tCategory,
         amount: 150000,
         formattedAmount: 'Rp 150.000',
         description: 'Taxi',

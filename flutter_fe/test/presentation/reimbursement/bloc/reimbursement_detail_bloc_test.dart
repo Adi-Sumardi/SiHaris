@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gaji_pro/data/datasources/reimbursement_remote_datasource.dart';
+import 'package:gaji_pro/data/models/responses/reimbursement_category_model.dart';
 import 'package:gaji_pro/data/models/responses/reimbursement_model.dart';
 import 'package:gaji_pro/presentation/reimbursement/bloc/reimbursement_detail/reimbursement_detail_bloc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,9 +22,17 @@ void main() {
     bloc.close();
   });
 
+  const tCategory = ReimbursementCategoryModel(
+    id: 1,
+    name: 'Transport',
+    description: 'Transportation expenses',
+    maxAmount: 500000,
+    requiresReceipt: true,
+  );
+
   const tReimbursement = ReimbursementModel(
     id: 1,
-    category: 'Transport',
+    category: tCategory,
     amount: 150000,
     formattedAmount: 'Rp 150.000',
     description: 'Taxi to client meeting',

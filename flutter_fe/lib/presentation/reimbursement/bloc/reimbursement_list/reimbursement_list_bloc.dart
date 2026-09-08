@@ -15,22 +15,37 @@ class ReimbursementListBloc
     on<RefreshReimbursements>(_onRefreshReimbursements);
   }
 
+  /// Backend page size (`Api\V1\ReimbursementController::index()` calls `paginate(15)`).
+  static const int _pageSize = 15;
+
   Future<void> _onLoadReimbursements(
     LoadReimbursements event,
     Emitter<ReimbursementListState> emit,
   ) async {
-    try {
+    if (event.page == 1) {
       emit(ReimbursementListLoading());
+    }
+
+    try {
       final reimbursements = await datasource.getReimbursements(
         status: event.status,
         startDate: event.startDate,
         endDate: event.endDate,
         page: event.page,
       );
+
+      final hasReachedMax = reimbursements.length < _pageSize;
+
+      final currentState = state;
+      final allReimbursements =
+          event.page > 1 && currentState is ReimbursementListLoaded
+          ? [...currentState.reimbursements, ...reimbursements]
+          : reimbursements;
+
       emit(
         ReimbursementListLoaded(
-          reimbursements,
-          hasReachedMax: reimbursements.isEmpty,
+          allReimbursements,
+          hasReachedMax: hasReachedMax,
         ),
       );
     } catch (e) {
@@ -53,7 +68,7 @@ class ReimbursementListBloc
       emit(
         ReimbursementListLoaded(
           reimbursements,
-          hasReachedMax: reimbursements.isEmpty,
+          hasReachedMax: reimbursements.length < _pageSize,
         ),
       );
     } catch (e) {

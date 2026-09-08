@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gaji_pro/data/datasources/reimbursement_remote_datasource.dart';
+import 'package:gaji_pro/data/models/responses/reimbursement_category_model.dart';
 import 'package:gaji_pro/data/models/responses/reimbursement_model.dart';
 import 'package:gaji_pro/presentation/reimbursement/bloc/reimbursement_list/reimbursement_list_bloc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,10 +22,18 @@ void main() {
     bloc.close();
   });
 
+  const tCategory = ReimbursementCategoryModel(
+    id: 1,
+    name: 'Transport',
+    description: 'Transportation expenses',
+    maxAmount: 500000,
+    requiresReceipt: true,
+  );
+
   const tReimbursements = [
     ReimbursementModel(
       id: 1,
-      category: 'Transport',
+      category: tCategory,
       amount: 150000,
       formattedAmount: 'Rp 150.000',
       description: 'Taxi',
@@ -62,7 +71,7 @@ void main() {
       act: (bloc) => bloc.add(const LoadReimbursements()),
       expect: () => [
         ReimbursementListLoading(),
-        const ReimbursementListLoaded(tReimbursements, hasReachedMax: false),
+        const ReimbursementListLoaded(tReimbursements, hasReachedMax: true),
       ],
     );
 
@@ -82,7 +91,58 @@ void main() {
       act: (bloc) => bloc.add(const LoadReimbursements(status: 'approved')),
       expect: () => [
         ReimbursementListLoading(),
-        const ReimbursementListLoaded(tReimbursements, hasReachedMax: false),
+        const ReimbursementListLoaded(tReimbursements, hasReachedMax: true),
+      ],
+    );
+
+    blocTest<ReimbursementListBloc, ReimbursementListState>(
+      'hasReachedMax is false when a full page (15 items) is returned',
+      build: () {
+        when(
+          () => mockDatasource.getReimbursements(
+            status: any(named: 'status'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+            page: any(named: 'page'),
+          ),
+        ).thenAnswer(
+          (_) async => List.generate(15, (i) => tReimbursements.first),
+        );
+        return bloc;
+      },
+      act: (bloc) => bloc.add(const LoadReimbursements()),
+      expect: () => [
+        ReimbursementListLoading(),
+        ReimbursementListLoaded(
+          List.generate(15, (i) => tReimbursements.first),
+          hasReachedMax: false,
+        ),
+      ],
+    );
+
+    blocTest<ReimbursementListBloc, ReimbursementListState>(
+      'appends to the existing list instead of replacing it when loading page 2',
+      build: () {
+        when(
+          () => mockDatasource.getReimbursements(
+            status: any(named: 'status'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+            page: 2,
+          ),
+        ).thenAnswer((_) async => tReimbursements);
+        return bloc;
+      },
+      seed: () => const ReimbursementListLoaded(
+        tReimbursements,
+        hasReachedMax: false,
+      ),
+      act: (bloc) => bloc.add(const LoadReimbursements(page: 2)),
+      expect: () => [
+        ReimbursementListLoaded(
+          [...tReimbursements, ...tReimbursements],
+          hasReachedMax: true,
+        ),
       ],
     );
 
@@ -124,7 +184,7 @@ void main() {
       act: (bloc) => bloc.add(const RefreshReimbursements()),
       expect: () => [
         ReimbursementListLoading(),
-        const ReimbursementListLoaded(tReimbursements, hasReachedMax: false),
+        const ReimbursementListLoaded(tReimbursements, hasReachedMax: true),
       ],
     );
   });

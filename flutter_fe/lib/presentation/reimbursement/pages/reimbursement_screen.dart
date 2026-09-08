@@ -19,14 +19,39 @@ class ReimbursementScreen extends StatefulWidget {
 
 class _ReimbursementScreenState extends State<ReimbursementScreen> {
   String? _selectedStatus;
+  final ScrollController _scrollController = ScrollController();
+  int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final threshold = _scrollController.position.maxScrollExtent - 200;
+    if (_scrollController.position.pixels < threshold) return;
+
+    final state = context.read<ReimbursementListBloc>().state;
+    if (state is ReimbursementListLoaded && !state.hasReachedMax) {
+      _currentPage++;
+      context.read<ReimbursementListBloc>().add(
+        LoadReimbursements(status: _selectedStatus, page: _currentPage),
+      );
+    }
   }
 
   void _loadData() {
+    _currentPage = 1;
     final now = DateTime.now();
     context.read<ReimbursementSummaryBloc>().add(
       LoadReimbursementSummary(month: now.month, year: now.year),
@@ -64,6 +89,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         child: SingleChildScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -290,6 +316,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
         setState(() {
           _selectedStatus = value;
         });
+        _currentPage = 1;
         context.read<ReimbursementListBloc>().add(
           LoadReimbursements(status: value),
         );
@@ -408,11 +435,14 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(item.category, style: AppTextStyles.titleSmall),
+            Text(item.category.name, style: AppTextStyles.titleSmall),
             const SizedBox(height: AppSpacing.sm),
             Text(item.description, style: AppTextStyles.bodyMedium),
             const SizedBox(height: AppSpacing.md),
-            _buildDetailRow('Tanggal Pengeluaran', _formatDate(item.expenseDate)),
+            _buildDetailRow(
+              'Tanggal Pengeluaran',
+              _formatDate(item.expenseDate),
+            ),
             _buildDetailRow('Nominal', item.formattedAmount),
             _buildDetailRow('Status', item.statusLabel),
             if (item.approvedBy != null)
@@ -453,7 +483,9 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
           Expanded(
             child: Text(
               value,
-              style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -510,7 +542,7 @@ class _ReimbursementScreenState extends State<ReimbursementScreen> {
                     borderRadius: AppSpacing.borderRadiusSm,
                   ),
                   child: Text(
-                    item.category,
+                    item.category.name,
                     style: AppTextStyles.labelSmall.copyWith(
                       color: AppColors.primary600,
                       fontWeight: FontWeight.w600,

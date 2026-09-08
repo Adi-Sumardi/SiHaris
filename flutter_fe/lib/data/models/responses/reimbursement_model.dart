@@ -1,6 +1,8 @@
+import 'package:gaji_pro/data/models/responses/reimbursement_category_model.dart';
+
 class ReimbursementModel {
   final int id;
-  final String category;
+  final ReimbursementCategoryModel category;
   final int amount;
   final String formattedAmount;
   final String description;
@@ -36,7 +38,9 @@ class ReimbursementModel {
   factory ReimbursementModel.fromJson(Map<String, dynamic> json) {
     return ReimbursementModel(
       id: json['id'] as int,
-      category: json['category'] as String,
+      category: ReimbursementCategoryModel.fromJson(
+        json['category'] as Map<String, dynamic>,
+      ),
       amount: (json['amount'] as num).toInt(),
       formattedAmount: json['formatted_amount'] as String,
       description: json['description'] as String,
@@ -56,7 +60,7 @@ class ReimbursementModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'category': category,
+      'category': category.toJson(),
       'amount': amount,
       'formatted_amount': formattedAmount,
       'description': description,

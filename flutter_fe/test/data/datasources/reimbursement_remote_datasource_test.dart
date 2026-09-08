@@ -31,11 +31,21 @@ void main() {
 
   const tToken = 'test_token';
 
+  const tCategory = ReimbursementCategoryModel(
+    id: 1,
+    name: 'Transport',
+    description: 'Transportation expenses',
+    maxAmount: 500000,
+    requiresReceipt: true,
+  );
+  const tCategoryJson =
+      '{"id": 1, "name": "Transport", "description": "Transportation expenses", "max_amount": 500000, "requires_receipt": true}';
+
   group('getReimbursements', () {
     final tReimbursements = [
       const ReimbursementModel(
         id: 1,
-        category: 'Transport',
+        category: tCategory,
         amount: 150000,
         formattedAmount: 'Rp 150.000',
         description: 'Taxi',
@@ -60,7 +70,7 @@ void main() {
         () => mockHttpClient.get(any(), headers: any(named: 'headers')),
       ).thenAnswer(
         (_) async => http.Response(
-          '{"data": [{"id": 1, "category": "Transport", "amount": 150000, "formatted_amount": "Rp 150.000", "description": "Taxi", "expense_date": "2026-02-15", "receipt_url": null, "status": "pending", "status_label": "Pending", "approved_by": null, "approved_at": null, "rejection_reason": null, "paid_at": null, "payment_method": null, "created_at": "2026-02-15T09:00:00Z"}]}',
+          '{"data": [{"id": 1, "category": $tCategoryJson, "amount": 150000, "formatted_amount": "Rp 150.000", "description": "Taxi", "expense_date": "2026-02-15", "receipt_url": null, "status": "pending", "status_label": "Pending", "approved_by": null, "approved_at": null, "rejection_reason": null, "paid_at": null, "payment_method": null, "created_at": "2026-02-15T09:00:00Z"}]}',
           200,
         ),
       );
@@ -105,7 +115,7 @@ void main() {
   group('getReimbursementDetail', () {
     const tReimbursement = ReimbursementModel(
       id: 1,
-      category: 'Transport',
+      category: tCategory,
       amount: 150000,
       formattedAmount: 'Rp 150.000',
       description: 'Taxi',
@@ -132,7 +142,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => http.Response(
-          '{"data": {"id": 1, "category": "Transport", "amount": 150000, "formatted_amount": "Rp 150.000", "description": "Taxi", "expense_date": "2026-02-15", "receipt_url": "https://example.com/receipt.jpg", "status": "approved", "status_label": "Disetujui", "approved_by": "Manager", "approved_at": "2026-02-16T10:00:00Z", "rejection_reason": null, "paid_at": null, "payment_method": null, "created_at": "2026-02-15T09:00:00Z"}}',
+          '{"data": {"id": 1, "category": $tCategoryJson, "amount": 150000, "formatted_amount": "Rp 150.000", "description": "Taxi", "expense_date": "2026-02-15", "receipt_url": "https://example.com/receipt.jpg", "status": "approved", "status_label": "Disetujui", "approved_by": "Manager", "approved_at": "2026-02-16T10:00:00Z", "rejection_reason": null, "paid_at": null, "payment_method": null, "created_at": "2026-02-15T09:00:00Z"}}',
           200,
         ),
       );

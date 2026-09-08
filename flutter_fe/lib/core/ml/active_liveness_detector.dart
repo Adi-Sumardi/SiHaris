@@ -4,13 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 /// Jenis tantangan interaktif untuk Active Liveness Detection
-enum LivenessChallengeType {
-  blink,
-  turnLeft,
-  turnRight,
-  smile,
-  nod,
-}
+enum LivenessChallengeType { blink, turnLeft, turnRight, smile, nod }
 
 /// Model untuk 1 langkah tantangan liveness
 class LivenessChallenge {
@@ -26,7 +20,10 @@ class LivenessChallenge {
     this.timeoutSeconds = 8,
   });
 
-  factory LivenessChallenge.fromType(LivenessChallengeType type, {int timeoutSeconds = 8}) {
+  factory LivenessChallenge.fromType(
+    LivenessChallengeType type, {
+    int timeoutSeconds = 8,
+  }) {
     switch (type) {
       case LivenessChallengeType.blink:
         return LivenessChallenge(
@@ -126,19 +123,17 @@ class ActiveLivenessDetector {
   ActiveLivenessDetector({
     List<LivenessChallenge>? challenges,
     this.randomized = true,
-    this.challengeCount = 2,
+    this.challengeCount = 1,
   }) : customChallenges = challenges {
     reset();
   }
 
   /// Generate tantangan default (acak atau urut)
-  static List<LivenessChallenge> _generateDefaultChallenges(bool random, int count) {
-    final pool = [
-      LivenessChallengeType.blink,
-      LivenessChallengeType.turnLeft,
-      LivenessChallengeType.turnRight,
-      LivenessChallengeType.smile,
-    ];
+  static List<LivenessChallenge> _generateDefaultChallenges(
+    bool random,
+    int count,
+  ) {
+    final pool = [LivenessChallengeType.blink];
 
     if (random) {
       pool.shuffle(Random());

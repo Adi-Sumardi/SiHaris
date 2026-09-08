@@ -98,7 +98,7 @@ class _FaceVerifyAttendanceScreenState
     status: LivenessStatus.waitingForFace,
     message: 'Posisikan wajah Anda di dalam lingkaran',
     currentStep: 1,
-    totalSteps: 2,
+    totalSteps: 1,
   );
 
   @override
@@ -106,7 +106,10 @@ class _FaceVerifyAttendanceScreenState
     super.initState();
 
     recognizer = Recognizer();
-    _livenessDetector = ActiveLivenessDetector(randomized: true, challengeCount: 2);
+    _livenessDetector = ActiveLivenessDetector(
+      randomized: false,
+      challengeCount: 1,
+    );
     _loadStoredEmbedding();
     _initializeFaceDetector();
   }
@@ -114,7 +117,9 @@ class _FaceVerifyAttendanceScreenState
   Future<void> _loadStoredEmbedding() async {
     _storedEmbedding = await AuthLocalDatasource().getFaceEmbedding();
     if (kDebugMode) {
-      log('Loaded stored embedding: ${_storedEmbedding?.length ?? 0} dimensions');
+      log(
+        'Loaded stored embedding: ${_storedEmbedding?.length ?? 0} dimensions',
+      );
     }
   }
 
@@ -366,7 +371,8 @@ class _FaceVerifyAttendanceScreenState
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                  'Wajah belum terdaftar. Silakan daftarkan wajah terlebih dahulu.'),
+                'Wajah belum terdaftar. Silakan daftarkan wajah terlebih dahulu.',
+              ),
               backgroundColor: AppColors.danger,
             ),
           );
@@ -403,10 +409,19 @@ class _FaceVerifyAttendanceScreenState
       });
       final Rect faceRect = face.boundingBox;
 
-      final cropLeft = faceRect.left.toInt().clamp(0, (rotatedColorImage.width - 1).clamp(0, 99999));
-      final cropTop = faceRect.top.toInt().clamp(0, (rotatedColorImage.height - 1).clamp(0, 99999));
+      final cropLeft = faceRect.left.toInt().clamp(
+        0,
+        (rotatedColorImage.width - 1).clamp(0, 99999),
+      );
+      final cropTop = faceRect.top.toInt().clamp(
+        0,
+        (rotatedColorImage.height - 1).clamp(0, 99999),
+      );
       final maxCropWidth = (rotatedColorImage.width - cropLeft).clamp(1, 99999);
-      final maxCropHeight = (rotatedColorImage.height - cropTop).clamp(1, 99999);
+      final maxCropHeight = (rotatedColorImage.height - cropTop).clamp(
+        1,
+        99999,
+      );
 
       // Crop face with safe bounds checking
       img.Image croppedFace = img.copyCrop(
@@ -426,9 +441,13 @@ class _FaceVerifyAttendanceScreenState
 
       // Compare with stored embedding using cosine similarity (metrik & threshold
       // sama persis dengan backend). Match bila similarity >= threshold.
-      final faceSimilarity =
-          recognizer.cosineSimilarity(_storedEmbedding!, recognition.embedding);
-      final threshold = widget.matchThreshold > 0.50 ? 0.50 : widget.matchThreshold;
+      final faceSimilarity = recognizer.cosineSimilarity(
+        _storedEmbedding!,
+        recognition.embedding,
+      );
+      final threshold = widget.matchThreshold > 0.50
+          ? 0.50
+          : widget.matchThreshold;
       final isValid = faceSimilarity >= threshold;
 
       if (kDebugMode) {
@@ -512,7 +531,9 @@ class _FaceVerifyAttendanceScreenState
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.isClockIn ? 'Verifikasi Clock In' : 'Verifikasi Clock Out';
+    final title = widget.isClockIn
+        ? 'Verifikasi Clock In'
+        : 'Verifikasi Clock Out';
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -551,7 +572,11 @@ class _FaceVerifyAttendanceScreenState
                     SizedBox(height: 16),
                     Text(
                       'Memverifikasi biometrik wajah...',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -562,7 +587,10 @@ class _FaceVerifyAttendanceScreenState
     );
   }
 
-  Future<void> _processImage(InputImage inputImage, CameraImage cameraImage) async {
+  Future<void> _processImage(
+    InputImage inputImage,
+    CameraImage cameraImage,
+  ) async {
     try {
       frame = cameraImage;
 

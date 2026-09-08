@@ -33,15 +33,10 @@ void main() {
 
     test('initial state with no face returns waitingForFace', () {
       final detector = ActiveLivenessDetector(
-        challenges: [
-          LivenessChallenge.fromType(LivenessChallengeType.blink),
-        ],
+        challenges: [LivenessChallenge.fromType(LivenessChallengeType.blink)],
       );
 
-      final result = detector.processFrame(
-        faces: [],
-        imageSize: imageSize,
-      );
+      final result = detector.processFrame(faces: [], imageSize: imageSize);
 
       expect(result.status, LivenessStatus.waitingForFace);
       expect(result.isLivenessPassed, isFalse);
@@ -49,9 +44,7 @@ void main() {
 
     test('multiple faces returns faceInvalid', () {
       final detector = ActiveLivenessDetector(
-        challenges: [
-          LivenessChallenge.fromType(LivenessChallengeType.blink),
-        ],
+        challenges: [LivenessChallenge.fromType(LivenessChallengeType.blink)],
       );
 
       final face1 = createMockFace(trackingId: 1);
@@ -68,9 +61,7 @@ void main() {
 
     test('face too small returns faceInvalid', () {
       final detector = ActiveLivenessDetector(
-        challenges: [
-          LivenessChallenge.fromType(LivenessChallengeType.blink),
-        ],
+        challenges: [LivenessChallenge.fromType(LivenessChallengeType.blink)],
       );
 
       // Face width is only 20px / 480px = ~4% (< 15%)
@@ -89,15 +80,16 @@ void main() {
 
     test('blink challenge completes on open -> closed -> open cycle', () {
       final detector = ActiveLivenessDetector(
-        challenges: [
-          LivenessChallenge.fromType(LivenessChallengeType.blink),
-        ],
+        challenges: [LivenessChallenge.fromType(LivenessChallengeType.blink)],
       );
 
       // Frame 1: Eyes open
       var res = detector.processFrame(
         faces: [
-          createMockFace(leftEyeOpenProbability: 0.9, rightEyeOpenProbability: 0.9),
+          createMockFace(
+            leftEyeOpenProbability: 0.9,
+            rightEyeOpenProbability: 0.9,
+          ),
         ],
         imageSize: imageSize,
       );
@@ -106,7 +98,10 @@ void main() {
       // Frame 2: Eyes closed
       res = detector.processFrame(
         faces: [
-          createMockFace(leftEyeOpenProbability: 0.1, rightEyeOpenProbability: 0.1),
+          createMockFace(
+            leftEyeOpenProbability: 0.1,
+            rightEyeOpenProbability: 0.1,
+          ),
         ],
         imageSize: imageSize,
       );
@@ -115,7 +110,10 @@ void main() {
       // Frame 3: Eyes open again -> Success!
       res = detector.processFrame(
         faces: [
-          createMockFace(leftEyeOpenProbability: 0.9, rightEyeOpenProbability: 0.9),
+          createMockFace(
+            leftEyeOpenProbability: 0.9,
+            rightEyeOpenProbability: 0.9,
+          ),
         ],
         imageSize: imageSize,
       );
@@ -171,9 +169,7 @@ void main() {
 
     test('smile challenge completes on neutral -> smiling transition', () {
       final detector = ActiveLivenessDetector(
-        challenges: [
-          LivenessChallenge.fromType(LivenessChallengeType.smile),
-        ],
+        challenges: [LivenessChallenge.fromType(LivenessChallengeType.smile)],
       );
 
       // Frame 1: Neutral expression
@@ -192,27 +188,79 @@ void main() {
       expect(res.isLivenessPassed, isTrue);
     });
 
-    test('multi-step challenge transitions through steps before allCompleted', () {
-      final detector = ActiveLivenessDetector(
-        challenges: [
-          LivenessChallenge.fromType(LivenessChallengeType.smile),
-          LivenessChallenge.fromType(LivenessChallengeType.turnLeft),
-        ],
-      );
+    test(
+      'multi-step challenge transitions through steps before allCompleted',
+      () {
+        final detector = ActiveLivenessDetector(
+          challenges: [
+            LivenessChallenge.fromType(LivenessChallengeType.smile),
+            LivenessChallenge.fromType(LivenessChallengeType.turnLeft),
+          ],
+        );
 
-      expect(detector.totalSteps, 2);
+        expect(detector.totalSteps, 2);
 
-      // Step 1: Smile neutral -> smile
-      detector.processFrame(
-        faces: [createMockFace(smilingProbability: 0.1)],
-        imageSize: imageSize,
-      );
-      final res1 = detector.processFrame(
-        faces: [createMockFace(smilingProbability: 0.85)],
-        imageSize: imageSize,
-      );
-      expect(res1.status, LivenessStatus.stepCompleted);
-      expect(res1.currentStep, 1);
-    });
+        // Step 1: Smile neutral -> smile
+        detector.processFrame(
+          faces: [createMockFace(smilingProbability: 0.1)],
+          imageSize: imageSize,
+        );
+        final res1 = detector.processFrame(
+          faces: [createMockFace(smilingProbability: 0.85)],
+          imageSize: imageSize,
+        );
+        expect(res1.status, LivenessStatus.stepCompleted);
+        expect(res1.currentStep, 1);
+      },
+    );
+
+    test(
+      'default challenge pool is blink-only (no smile/turn/nod) with exactly 1 step',
+      () {
+        final detector = ActiveLivenessDetector();
+
+        expect(detector.totalSteps, 1);
+        expect(detector.currentChallenge?.type, LivenessChallengeType.blink);
+      },
+    );
+
+    test(
+      'default pool passes with just a blink, without requiring smile or head turn',
+      () {
+        final detector = ActiveLivenessDetector();
+
+        // Eyes open, then closed, then open again — a full blink cycle.
+        detector.processFrame(
+          faces: [
+            createMockFace(
+              leftEyeOpenProbability: 0.9,
+              rightEyeOpenProbability: 0.9,
+            ),
+          ],
+          imageSize: imageSize,
+        );
+        detector.processFrame(
+          faces: [
+            createMockFace(
+              leftEyeOpenProbability: 0.1,
+              rightEyeOpenProbability: 0.1,
+            ),
+          ],
+          imageSize: imageSize,
+        );
+        final result = detector.processFrame(
+          faces: [
+            createMockFace(
+              leftEyeOpenProbability: 0.9,
+              rightEyeOpenProbability: 0.9,
+            ),
+          ],
+          imageSize: imageSize,
+        );
+
+        expect(result.status, LivenessStatus.allCompleted);
+        expect(result.isLivenessPassed, isTrue);
+      },
+    );
   });
 }

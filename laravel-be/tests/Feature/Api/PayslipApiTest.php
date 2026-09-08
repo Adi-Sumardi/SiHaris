@@ -174,6 +174,57 @@ describe('GET /api/v1/payslips/{id}', function () {
             ]);
     });
 
+    it('includes PPh21 in the deductions list and folds it into total_deductions so A - B = net_salary', function () {
+        // Regression: PPh21 is stored on its own tax_amount column, never
+        // as a payroll_item_details row — so it never appeared in the
+        // mobile payslip's deductions list, and "Total Potongan" didn't
+        // add up against the displayed Take Home Pay for anyone who owes
+        // PPh21.
+        Sanctum::actingAs($this->user);
+
+        $this->payrollItem->update([
+            'basic_salary' => 5000000,
+            'total_earnings' => 500000,
+            'total_deductions' => 200000, // BPJS only, excludes tax
+            'tax_amount' => 100000,
+            'net_salary' => 5200000, // 5,500,000 - 200,000 - 100,000
+        ]);
+
+        $response = $this->getJson("/api/v1/payslips/{$this->payrollItem->id}");
+
+        $response->assertOk();
+
+        $deductions = collect($response->json('data.deductions'));
+        $pph21 = $deductions->firstWhere('name', 'PPh 21');
+
+        expect($pph21)->not->toBeNull();
+        expect($pph21['amount'])->toEqual(100000.0);
+
+        expect($response->json('data.total_deductions'))->toEqual(300000.0); // 200,000 + 100,000
+        expect($response->json('data.formatted_total_deductions'))->toBe('Rp 300.000');
+
+        $baseSalary = $response->json('data.base_salary');
+        $totalEarnings = $response->json('data.total_earnings');
+        $totalDeductions = $response->json('data.total_deductions');
+        $netSalary = $response->json('data.net_salary');
+
+        expect($baseSalary + $totalEarnings - $totalDeductions)->toEqual($netSalary);
+    });
+
+    it('does not add a PPh21 entry when tax_amount is zero', function () {
+        Sanctum::actingAs($this->user);
+
+        $this->payrollItem->update(['tax_amount' => 0]);
+
+        $response = $this->getJson("/api/v1/payslips/{$this->payrollItem->id}");
+
+        $response->assertOk();
+
+        $deductions = collect($response->json('data.deductions'));
+        expect($deductions->firstWhere('name', 'PPh 21'))->toBeNull();
+        expect($response->json('data.total_deductions'))->toEqual((float) $this->payrollItem->total_deductions);
+    });
+
     it('returns 404 for other employee payslip', function () {
         Sanctum::actingAs($this->user);
 
@@ -324,5 +375,41 @@ describe('GET /api/v1/payslips/summary', function () {
                     ],
                 ],
             ]);
+    });
+
+    it('folds tax_amount into total_deductions and rounds average_net_salary to whole Rupiah', function () {
+        Sanctum::actingAs($this->user);
+
+        $this->payrollItem->update([
+            'total_deductions' => 200000,
+            'tax_amount' => 100000,
+            'net_salary' => 5200000,
+        ]);
+
+        // A second month with a net salary that doesn't divide evenly by
+        // the month count — regression: average_net_salary used to be
+        // rounded to 2 decimals (e.g. 5,200,000.33), which crashes the
+        // mobile summary screen's `int`-typed field.
+        $payroll2 = Payroll::factory()->create([
+            'company_id' => $this->company->id,
+            'period_month' => now()->month === 1 ? 2 : 1,
+            'period_year' => now()->year,
+            'status' => 'paid',
+        ]);
+        PayrollItem::factory()->create([
+            'payroll_id' => $payroll2->id,
+            'employee_id' => $this->employee->id,
+            'net_salary' => 5200001,
+            'total_deductions' => 200000,
+            'tax_amount' => 100000,
+        ]);
+
+        $response = $this->getJson('/api/v1/payslips/summary?year='.now()->year);
+
+        $response->assertOk();
+
+        expect($response->json('data.total_deductions'))->toEqual(600000.0); // (200,000+100,000) x 2
+        expect($response->json('data.average_net_salary'))
+            ->toEqual(round((5200000 + 5200001) / 2, 0));
     });
 });

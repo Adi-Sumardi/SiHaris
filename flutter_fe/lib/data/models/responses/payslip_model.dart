@@ -28,7 +28,7 @@ class PayslipModel {
       period: json['period'] ?? '',
       periodMonth: json['period_month'] ?? 0,
       periodYear: json['period_year'] ?? 0,
-      netSalary: json['net_salary'] ?? 0,
+      netSalary: (json['net_salary'] as num?)?.round() ?? 0,
       formattedNetSalary: json['formatted_net_salary'] ?? '',
       paymentDate: json['payment_date'] ?? '',
       status: json['status'] ?? '',

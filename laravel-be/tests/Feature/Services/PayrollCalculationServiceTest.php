@@ -108,6 +108,112 @@ describe('PayrollCalculationService', function () {
 
             expect($pph21)->toBe(0.0);
         });
+
+        it('uses the company-configured PTKP amount instead of the hardcoded default when one exists', function () {
+            Pph21Setting::create([
+                'company_id' => $this->company->id,
+                'is_gross_up' => false,
+                'use_ter' => false,
+                'npwp_discount_rate' => 20,
+                'effective_year' => now()->year,
+            ]);
+
+            // Company sets a much higher PTKP for TK/0 than the 2024 default
+            // (54,000,000/year = 4,500,000/month) — this alone should push
+            // the taxable income to zero for a gross salary that would
+            // otherwise be taxed under the hardcoded default.
+            \App\Models\PtkpSetting::create([
+                'company_id' => $this->company->id,
+                'status_code' => 'TK/0',
+                'description' => 'Custom',
+                'annual_amount' => 200000000, // 16,666,667/month
+                'year' => now()->year,
+                'is_active' => true,
+            ]);
+
+            $pph21 = $this->service->calculatePph21($this->company->id, $this->employee, 10000000);
+
+            expect($pph21)->toBe(0.0);
+        });
+
+        it('uses the company-configured progressive rate brackets instead of the hardcoded default when they exist', function () {
+            Pph21Setting::create([
+                'company_id' => $this->company->id,
+                'is_gross_up' => false,
+                'use_ter' => false,
+                'npwp_discount_rate' => 20,
+                'effective_year' => now()->year,
+            ]);
+
+            // A single flat 10% bracket covering all income, replacing the
+            // default progressive 5/15/25/30/35% brackets.
+            \App\Models\Pph21Rate::create([
+                'company_id' => $this->company->id,
+                'min_amount' => 0,
+                'max_amount' => null,
+                'rate' => 10,
+                'year' => now()->year,
+                'is_active' => true,
+            ]);
+
+            // PTKP TK/0 monthly (default, unconfigured): 4,500,000
+            // PKP monthly: 10,000,000 - 4,500,000 = 5,500,000
+            // PKP annual: 66,000,000 * 10% = 6,600,000 annual = 550,000 monthly
+            $pph21 = $this->service->calculatePph21($this->company->id, $this->employee, 10000000);
+
+            expect($pph21)->toBe(550000.0);
+        });
+    });
+
+    describe('Gross-up (PPh21 ditanggung perusahaan)', function () {
+        it('does not deduct PPh21 from net salary when is_gross_up is enabled', function () {
+            Pph21Setting::create([
+                'company_id' => $this->company->id,
+                'is_gross_up' => true,
+                'use_ter' => false,
+                'npwp_discount_rate' => 20,
+                'effective_year' => now()->year,
+            ]);
+
+            $salaryData = [
+                'gross_salary' => 10000000,
+                'basic_salary' => 10000000,
+                'total_earnings' => 0,
+                'taxable_earnings' => 0,
+                'total_deductions' => 0,
+            ];
+
+            $result = $this->service->calculate($this->employee, $salaryData, $this->company->id);
+
+            expect($result['pph21'])->toBeGreaterThan(0);
+            expect($result['is_gross_up'])->toBeTrue();
+            // Net salary = gross - other deductions only, PPh21 excluded.
+            expect($result['net_salary'])->toEqual(10000000 - $result['total_deductions']);
+        });
+
+        it('still deducts PPh21 from net salary when is_gross_up is disabled (default)', function () {
+            Pph21Setting::create([
+                'company_id' => $this->company->id,
+                'is_gross_up' => false,
+                'use_ter' => false,
+                'npwp_discount_rate' => 20,
+                'effective_year' => now()->year,
+            ]);
+
+            $salaryData = [
+                'gross_salary' => 10000000,
+                'basic_salary' => 10000000,
+                'total_earnings' => 0,
+                'taxable_earnings' => 0,
+                'total_deductions' => 0,
+            ];
+
+            $result = $this->service->calculate($this->employee, $salaryData, $this->company->id);
+
+            expect($result['pph21'])->toBeGreaterThan(0);
+            expect($result['is_gross_up'])->toBeFalse();
+            expect($result['net_salary'])->toEqual(10000000 - $result['total_deductions'] - $result['pph21']);
+        });
     });
 
     describe('BPJS Kesehatan Calculation', function () {
@@ -218,6 +324,46 @@ describe('PayrollCalculationService', function () {
             expect($bpjsTk['jht_employee'])->toBe(200000.0);
             expect($bpjsTk['jp_employee'])->toBe(100000.0);
             expect($bpjsTk['employee_total'])->toBe(300000.0);
+        });
+
+        it('rounds every individual JHT/JP/JKK/JKM line to whole Rupiah, not just the aggregate', function () {
+            // Regression: these per-line values are stored as-is in
+            // payroll_item_details and parsed as an int on the mobile
+            // payslip screen — an unrounded fractional value there used to
+            // crash the app the moment a salary didn't divide evenly by
+            // the configured percentages.
+            BpjsTkSetting::create([
+                'company_id' => $this->company->id,
+                'jht_company_rate' => 3.70,
+                'jht_employee_rate' => 2.00,
+                'jht_enabled' => true,
+                'jkk_rate' => 0.24,
+                'jkk_risk_level' => 'very_low',
+                'jkk_enabled' => true,
+                'jkm_rate' => 0.30,
+                'jkm_enabled' => true,
+                'jp_company_rate' => 2.00,
+                'jp_employee_rate' => 1.00,
+                'jp_max_salary' => 10042300,
+                'jp_enabled' => true,
+                'effective_year' => 2024,
+                'is_active' => true,
+            ]);
+
+            // A gross salary that does not divide evenly by 2%/3.7%/1%/2%.
+            $bpjsTk = $this->service->calculateBpjsKetenagakerjaan($this->company->id, 5754321);
+
+            foreach (['jht_employee', 'jht_company', 'jp_employee', 'jp_company', 'jkk_company', 'jkm_company'] as $key) {
+                expect($bpjsTk[$key])->toBe((float) round($bpjsTk[$key]), "{$key} should already be a whole number");
+            }
+        });
+
+        it('rounds every individual line to whole Rupiah with default rates too (no BpjsTkSetting configured)', function () {
+            $bpjsTk = $this->service->calculateBpjsKetenagakerjaan($this->company->id, 5754321);
+
+            foreach (['jht_employee', 'jht_company', 'jp_employee', 'jp_company', 'jkk_company', 'jkm_company'] as $key) {
+                expect($bpjsTk[$key])->toBe((float) round($bpjsTk[$key]), "{$key} should already be a whole number");
+            }
         });
     });
 

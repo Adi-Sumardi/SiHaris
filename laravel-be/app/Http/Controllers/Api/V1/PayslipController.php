@@ -274,6 +274,22 @@ class PayslipController extends Controller
             }
         }
 
+        // PPh21 isn't stored as a payroll_item_details row (it's tracked in
+        // its own tax_amount column), so it never shows up in the loop
+        // above — add it explicitly, matching how the admin-facing payslip
+        // view (resources/views/payroll-items/show.blade.php) already
+        // does this. Without it, "Total Potongan" wouldn't add up against
+        // net_salary for anyone who owes PPh21.
+        $taxAmount = (float) $payslip->tax_amount;
+        if ($taxAmount > 0) {
+            $deductions[] = [
+                'name' => 'PPh 21',
+                'amount' => $taxAmount,
+                'formatted_amount' => 'Rp '.number_format($taxAmount, 0, ',', '.'),
+            ];
+        }
+        $totalDeductionsWithTax = (float) $payslip->total_deductions + $taxAmount;
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -304,11 +320,11 @@ class PayslipController extends Controller
                 'earnings' => $earnings,
                 'deductions' => $deductions,
                 'total_earnings' => (float) $payslip->total_earnings,
-                'total_deductions' => (float) $payslip->total_deductions,
+                'total_deductions' => $totalDeductionsWithTax,
                 'net_salary' => (float) $payslip->net_salary,
                 'formatted_base_salary' => 'Rp '.number_format($payslip->basic_salary, 0, ',', '.'),
                 'formatted_total_earnings' => 'Rp '.number_format($payslip->total_earnings, 0, ',', '.'),
-                'formatted_total_deductions' => 'Rp '.number_format($payslip->total_deductions, 0, ',', '.'),
+                'formatted_total_deductions' => 'Rp '.number_format($totalDeductionsWithTax, 0, ',', '.'),
                 'formatted_net_salary' => 'Rp '.number_format($payslip->net_salary, 0, ',', '.'),
                 'payment_date' => $payroll->payment_date?->toDateString(),
                 'payment_method' => $payslip->payment_method ?? 'Transfer Bank',
@@ -448,6 +464,16 @@ class PayslipController extends Controller
             }
         }
 
+        // PPh21 isn't a payroll_item_details row (see show() above for the
+        // same fix) — add it explicitly so the printed "Total Potongan"
+        // matches the actual take-home pay deduction.
+        if ((float) $payslip->tax_amount > 0) {
+            $deductions[] = [
+                'name' => 'PPh 21',
+                'amount' => (float) $payslip->tax_amount,
+            ];
+        }
+
         $pdf = Pdf::loadView('pdf.payslip', [
             'payslip' => $payslip,
             'payroll' => $payroll,
@@ -571,7 +597,7 @@ class PayslipController extends Controller
             ->selectRaw('
                 COUNT(*) as months_count,
                 COALESCE(SUM(payroll_items.total_earnings), 0) as total_earnings,
-                COALESCE(SUM(payroll_items.total_deductions), 0) as total_deductions,
+                COALESCE(SUM(payroll_items.total_deductions), 0) + COALESCE(SUM(payroll_items.tax_amount), 0) as total_deductions,
                 COALESCE(SUM(payroll_items.net_salary), 0) as total_net_salary
             ')
             ->first();
@@ -615,7 +641,7 @@ class PayslipController extends Controller
                 'total_earnings' => $totalEarnings,
                 'total_deductions' => $totalDeductions,
                 'total_net_salary' => $totalNetSalary,
-                'average_net_salary' => $monthsCount > 0 ? round($totalNetSalary / $monthsCount, 2) : 0,
+                'average_net_salary' => $monthsCount > 0 ? round($totalNetSalary / $monthsCount, 0) : 0,
                 'formatted_total_earnings' => 'Rp '.number_format($totalEarnings, 0, ',', '.'),
                 'formatted_total_deductions' => 'Rp '.number_format($totalDeductions, 0, ',', '.'),
                 'formatted_total_net_salary' => 'Rp '.number_format($totalNetSalary, 0, ',', '.'),

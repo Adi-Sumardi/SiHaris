@@ -15,7 +15,7 @@ class MonthlyBreakdown {
     return MonthlyBreakdown(
       month: json['month'] ?? 0,
       monthName: json['month_name'] ?? '',
-      netSalary: json['net_salary'] ?? 0,
+      netSalary: (json['net_salary'] as num?)?.round() ?? 0,
     );
   }
 
@@ -59,11 +59,12 @@ class PayslipSummaryModel {
   factory PayslipSummaryModel.fromJson(Map<String, dynamic> json) {
     return PayslipSummaryModel(
       totalMonths: json['total_months'] ?? 0,
-      totalEarnings: json['total_earnings'] ?? 0,
-      totalDeductions: json['total_deductions'] ?? 0,
-      totalNetSalary: json['total_net_salary'] ?? 0,
-      averageNetSalary: json['average_net_salary'] ?? 0,
-      monthlyBreakdown: (json['monthly_breakdown'] as List?)
+      totalEarnings: (json['total_earnings'] as num?)?.round() ?? 0,
+      totalDeductions: (json['total_deductions'] as num?)?.round() ?? 0,
+      totalNetSalary: (json['total_net_salary'] as num?)?.round() ?? 0,
+      averageNetSalary: (json['average_net_salary'] as num?)?.round() ?? 0,
+      monthlyBreakdown:
+          (json['monthly_breakdown'] as List?)
               ?.map((e) => MonthlyBreakdown.fromJson(e))
               .toList() ??
           [],

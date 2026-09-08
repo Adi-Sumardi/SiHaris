@@ -223,7 +223,13 @@
 <body>
     @php
         $totalGross = $payslip->gross_salary ?? $payslip->total_earnings ?? ($payslip->basic_salary + collect($earnings)->sum('amount'));
-        $totalDeductions = $payslip->total_deductions ?? collect($deductions)->sum('amount');
+        // Summed from $deductions (which the controller already appends a
+        // PPh 21 entry to) rather than trusted straight from the
+        // total_deductions column, which deliberately excludes tax — using
+        // the column here would make "Total Potongan (B)" not match what's
+        // actually printed above it, and "A - B" would no longer equal
+        // net_salary for anyone who owes PPh21.
+        $totalDeductions = collect($deductions)->sum('amount');
         $netSalary = $payslip->net_salary ?? ($totalGross - $totalDeductions);
     @endphp
 

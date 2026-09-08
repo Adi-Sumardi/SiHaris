@@ -171,7 +171,7 @@ class Spt1721Service
                 $totals['pph21_disetor'] += (float) $item->tax_amount;
 
                 // Check if employee has NPWP
-                $employee = Employee::find($item->employee_id);
+                $employee = Employee::where('company_id', $spt->company_id)->find($item->employee_id);
                 if ($employee && ! empty($employee->npwp)) {
                     $totals['employee_count_npwp']++;
                 }

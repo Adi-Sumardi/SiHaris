@@ -250,6 +250,11 @@ describe('POST /api/v1/reimbursements', function () {
     it('initializes the approval workflow when one is configured for the company', function () {
         Sanctum::actingAs($this->user);
 
+        // Pin explicitly: ReimbursementCategoryFactory randomizes
+        // requires_receipt (80% true), and this test intentionally submits
+        // without a receipt — leaving it random made this test flaky.
+        $this->category->update(['requires_receipt' => false]);
+
         $approver = User::factory()->create(['company_id' => $this->company->id]);
 
         $workflow = \App\Models\ApprovalWorkflow::factory()->create([

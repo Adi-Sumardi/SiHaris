@@ -71,7 +71,7 @@ class EarningItem {
   factory EarningItem.fromJson(Map<String, dynamic> json) {
     return EarningItem(
       name: json['name'] ?? '',
-      amount: json['amount'] ?? 0,
+      amount: (json['amount'] as num?)?.round() ?? 0,
       formattedAmount: json['formatted_amount'] ?? '',
     );
   }
@@ -114,7 +114,7 @@ class DeductionItem {
   factory DeductionItem.fromJson(Map<String, dynamic> json) {
     return DeductionItem(
       name: json['name'] ?? '',
-      amount: json['amount'] ?? 0,
+      amount: (json['amount'] as num?)?.round() ?? 0,
       formattedAmount: json['formatted_amount'] ?? '',
     );
   }
@@ -194,19 +194,21 @@ class PayslipDetailModel {
       periodMonth: json['period_month'] ?? 0,
       periodYear: json['period_year'] ?? 0,
       employee: EmployeeInfo.fromJson(json['employee'] ?? {}),
-      baseSalary: json['base_salary'] ?? 0,
+      baseSalary: (json['base_salary'] as num?)?.round() ?? 0,
       formattedBaseSalary: json['formatted_base_salary'] ?? '',
-      earnings: (json['earnings'] as List?)
+      earnings:
+          (json['earnings'] as List?)
               ?.map((e) => EarningItem.fromJson(e))
               .toList() ??
           [],
-      deductions: (json['deductions'] as List?)
+      deductions:
+          (json['deductions'] as List?)
               ?.map((e) => DeductionItem.fromJson(e))
               .toList() ??
           [],
-      totalEarnings: json['total_earnings'] ?? 0,
-      totalDeductions: json['total_deductions'] ?? 0,
-      netSalary: json['net_salary'] ?? 0,
+      totalEarnings: (json['total_earnings'] as num?)?.round() ?? 0,
+      totalDeductions: (json['total_deductions'] as num?)?.round() ?? 0,
+      netSalary: (json['net_salary'] as num?)?.round() ?? 0,
       formattedTotalEarnings: json['formatted_total_earnings'] ?? '',
       formattedTotalDeductions: json['formatted_total_deductions'] ?? '',
       formattedNetSalary: json['formatted_net_salary'] ?? '',

@@ -8,23 +8,13 @@ use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Models\TaxForm1721A1;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class TaxForm1721A1Service
 {
-    protected array $ptkpRates = [
-        'TK/0' => 54000000,
-        'TK/1' => 58500000,
-        'TK/2' => 63000000,
-        'TK/3' => 67500000,
-        'K/0' => 58500000,
-        'K/1' => 63000000,
-        'K/2' => 67500000,
-        'K/3' => 72000000,
-        'K/I/0' => 112500000,
-        'K/I/1' => 117000000,
-        'K/I/2' => 121500000,
-        'K/I/3' => 126000000,
-    ];
+    public function __construct(
+        protected PayrollCalculationService $calculationService
+    ) {}
 
     /**
      * Generate 1721-A1 tax form for a single employee
@@ -80,10 +70,12 @@ class TaxForm1721A1Service
 
         $taxForms = collect();
 
-        foreach ($employees as $employee) {
-            $taxForm = $this->generateForEmployee($employee, $taxYear, $generatedBy);
-            $taxForms->push($taxForm);
-        }
+        DB::transaction(function () use ($employees, $taxYear, $generatedBy, &$taxForms) {
+            foreach ($employees as $employee) {
+                $taxForm = $this->generateForEmployee($employee, $taxYear, $generatedBy);
+                $taxForms->push($taxForm);
+            }
+        });
 
         return $taxForms;
     }
@@ -156,12 +148,16 @@ class TaxForm1721A1Service
             $annualGrossSalary += (float) $item->gross_salary;
             $annualTaxAmount += (float) $item->tax_amount;
 
-            // Get BPJS contributions from details
+            // Get BPJS contributions from details. Matched by the exact
+            // component_code every addDetail() call site uses for these
+            // (BPJS-JHT/BPJS-JP) — a substring match on component_name was
+            // used here previously and could wrongly match an unrelated
+            // custom component whose name merely contained "JHT"/"JP".
             foreach ($item->details as $detail) {
-                if ($detail->component_code === 'BPJS-JHT' || str_contains($detail->component_name, 'JHT')) {
+                if ($detail->component_code === 'BPJS-JHT') {
                     $annualBpjsJht += (float) $detail->amount;
                 }
-                if ($detail->component_code === 'BPJS-JP' || str_contains($detail->component_name, 'JP')) {
+                if ($detail->component_code === 'BPJS-JP') {
                     $annualBpjsJp += (float) $detail->amount;
                 }
             }
@@ -180,13 +176,13 @@ class TaxForm1721A1Service
 
         // PTKP
         $ptkpStatus = $employee->tax_status ?? 'TK/0';
-        $ptkp = $this->ptkpRates[$ptkpStatus] ?? 54000000;
+        $ptkp = $this->calculationService->getPtkpAnnual($employee->company_id, $ptkpStatus);
 
         // PKP (Penghasilan Kena Pajak)
         $pkp = max(0, $netoSalary - $ptkp);
 
         // PPh21 Terutang (recalculated using progressive rate)
-        $pph21Terutang = $this->calculateProgressiveTax($pkp);
+        $pph21Terutang = $this->calculationService->calculateProgressiveTax($employee->company_id, $pkp);
 
         return [
             'work_start_month' => $workStartMonth,
@@ -218,7 +214,7 @@ class TaxForm1721A1Service
     protected function getEmptyCalculations(Employee $employee): array
     {
         $ptkpStatus = $employee->tax_status ?? 'TK/0';
-        $ptkp = $this->ptkpRates[$ptkpStatus] ?? 54000000;
+        $ptkp = $this->calculationService->getPtkpAnnual($employee->company_id, $ptkpStatus);
 
         return [
             'work_start_month' => 1,
@@ -242,50 +238,6 @@ class TaxForm1721A1Service
             'pph21_dipotong_sebelumnya' => 0,
             'total_pph21_withheld' => 0,
         ];
-    }
-
-    /**
-     * Calculate progressive tax based on annual PKP
-     */
-    protected function calculateProgressiveTax(float $pkp): float
-    {
-        if ($pkp <= 0) {
-            return 0;
-        }
-
-        $tax = 0;
-
-        // Bracket 1: 0 - 60 juta (5%)
-        if ($pkp > 0) {
-            $bracket1 = min($pkp, 60000000);
-            $tax += $bracket1 * 0.05;
-        }
-
-        // Bracket 2: 60 juta - 250 juta (15%)
-        if ($pkp > 60000000) {
-            $bracket2 = min($pkp - 60000000, 190000000);
-            $tax += $bracket2 * 0.15;
-        }
-
-        // Bracket 3: 250 juta - 500 juta (25%)
-        if ($pkp > 250000000) {
-            $bracket3 = min($pkp - 250000000, 250000000);
-            $tax += $bracket3 * 0.25;
-        }
-
-        // Bracket 4: 500 juta - 5 milyar (30%)
-        if ($pkp > 500000000) {
-            $bracket4 = min($pkp - 500000000, 4500000000);
-            $tax += $bracket4 * 0.30;
-        }
-
-        // Bracket 5: > 5 milyar (35%)
-        if ($pkp > 5000000000) {
-            $bracket5 = $pkp - 5000000000;
-            $tax += $bracket5 * 0.35;
-        }
-
-        return $tax;
     }
 
     /**

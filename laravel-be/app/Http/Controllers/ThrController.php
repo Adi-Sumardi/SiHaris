@@ -8,6 +8,7 @@ use App\Services\ThrCalculationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ThrController extends Controller
@@ -127,53 +128,55 @@ class ThrController extends Controller
         $created = 0;
         $skipped = 0;
 
-        foreach ($employeeIds as $employeeId) {
-            // Check if already exists
-            $exists = ThrPayment::where('company_id', $tenant->id)
-                ->where('employee_id', $employeeId)
-                ->where('year', $year)
-                ->where('religious_holiday', $religiousHoliday)
-                ->exists();
+        DB::transaction(function () use ($tenant, $setting, $employeeIds, $year, $religiousHoliday, $paymentDate, &$created, &$skipped) {
+            foreach ($employeeIds as $employeeId) {
+                // Check if already exists
+                $exists = ThrPayment::where('company_id', $tenant->id)
+                    ->where('employee_id', $employeeId)
+                    ->where('year', $year)
+                    ->where('religious_holiday', $religiousHoliday)
+                    ->exists();
 
-            if ($exists) {
-                $skipped++;
+                if ($exists) {
+                    $skipped++;
 
-                continue;
+                    continue;
+                }
+
+                $employee = \App\Models\Employee::where('company_id', $tenant->id)
+                    ->where('id', $employeeId)
+                    ->first();
+
+                if (! $employee) {
+                    $skipped++;
+
+                    continue;
+                }
+                $calculation = $this->calculationService->calculateForEmployee($employee, $setting, \Carbon\Carbon::parse($paymentDate));
+
+                if (! ($calculation['eligible'] ?? false)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                ThrPayment::create([
+                    'company_id' => $tenant->id,
+                    'employee_id' => $employeeId,
+                    'year' => $year,
+                    'religious_holiday' => $religiousHoliday,
+                    'base_salary' => $calculation['base_salary'],
+                    'allowances' => $calculation['allowances'],
+                    'amount' => $calculation['thr_amount'],
+                    'service_months' => $calculation['service_months'],
+                    'calculation_method' => $calculation['calculation_method'],
+                    'status' => ThrPayment::STATUS_PENDING,
+                    'payment_date' => $paymentDate,
+                ]);
+
+                $created++;
             }
-
-            $employee = \App\Models\Employee::where('company_id', $tenant->id)
-                ->where('id', $employeeId)
-                ->first();
-
-            if (! $employee) {
-                $skipped++;
-
-                continue;
-            }
-            $calculation = $this->calculationService->calculateForEmployee($employee, $setting, \Carbon\Carbon::parse($paymentDate));
-
-            if (! ($calculation['eligible'] ?? false)) {
-                $skipped++;
-
-                continue;
-            }
-
-            ThrPayment::create([
-                'company_id' => $tenant->id,
-                'employee_id' => $employeeId,
-                'year' => $year,
-                'religious_holiday' => $religiousHoliday,
-                'base_salary' => $calculation['base_salary'],
-                'allowances' => $calculation['allowances'],
-                'amount' => $calculation['thr_amount'],
-                'service_months' => $calculation['service_months'],
-                'calculation_method' => $calculation['calculation_method'],
-                'status' => ThrPayment::STATUS_PENDING,
-                'payment_date' => $paymentDate,
-            ]);
-
-            $created++;
-        }
+        });
 
         if ($skipped > 0 && $created === 0) {
             return redirect()->route('thr.index')

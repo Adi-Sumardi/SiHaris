@@ -65,9 +65,20 @@ class BpjsTkSettingController extends Controller
 
         $companyId = auth()->user()->company_id;
 
-        // Get JKK rate based on risk level
+        // Get JKK rate based on risk level — prefer the company's own
+        // JkkRiskRate record for the effective year (editable via
+        // "Initialize Tarif JKK"), falling back to the hardcoded defaults
+        // when the company hasn't initialized rates for that year yet.
+        $jkkRiskRate = JkkRiskRate::where('company_id', $companyId)
+            ->where('risk_level', $request->jkk_risk_level)
+            ->where('year', $request->effective_year)
+            ->where('is_active', true)
+            ->first();
+
         $jkkRiskOptions = BpjsTkSetting::getJkkRiskOptions();
-        $jkkRate = $jkkRiskOptions[$request->jkk_risk_level]['rate'];
+        $jkkRate = $jkkRiskRate
+            ? (float) $jkkRiskRate->rate
+            : $jkkRiskOptions[$request->jkk_risk_level]['rate'];
 
         BpjsTkSetting::updateOrCreate(
             ['company_id' => $companyId],

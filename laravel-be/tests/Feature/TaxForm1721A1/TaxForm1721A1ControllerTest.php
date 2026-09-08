@@ -516,4 +516,45 @@ describe('Tax Form 1721-A1 Calculation', function () {
         expect((float) $taxForm->ptkp)->toEqual(67500000.0);
         expect($taxForm->ptkp_status)->toBe('K/2');
     });
+
+    test('iuran pensiun only counts BPJS-JHT/BPJS-JP by exact component_code, not by name substring', function () {
+        $employee = Employee::factory()->create(['company_id' => $this->company->id]);
+        $employeeSalary = EmployeeSalary::factory()->active()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $employee->id,
+        ]);
+
+        $payroll = Payroll::factory()->paid()->forPeriod(2025, 1)->create([
+            'company_id' => $this->company->id,
+            'created_by' => $this->user->id,
+        ]);
+
+        $payrollItem = PayrollItem::factory()->paid()->create([
+            'payroll_id' => $payroll->id,
+            'employee_id' => $employee->id,
+            'employee_salary_id' => $employeeSalary->id,
+            'gross_salary' => 10000000,
+            'tax_amount' => 200000,
+        ]);
+
+        // Real BPJS JHT/JP contributions (matched by code).
+        $payrollItem->addDetail(null, 'BPJS JHT', 'BPJS-JHT', 'deduction', 'bpjs', 200000, false);
+        $payrollItem->addDetail(null, 'BPJS JP', 'BPJS-JP', 'deduction', 'bpjs', 100000, false);
+
+        // A custom component whose name merely contains "JP" — regression:
+        // this used to be wrongly counted into iuran_pensiun via a
+        // str_contains($name, 'JP') fallback match.
+        $payrollItem->addDetail(null, 'Tunjangan JPT', 'ALLOW-JPT', 'earning', 'allowance', 500000, true);
+
+        $response = $this->post(route('tax-forms.1721a1.store'), [
+            'employee_id' => $employee->id,
+            'tax_year' => 2025,
+        ]);
+
+        $taxForm = TaxForm1721A1::where('employee_id', $employee->id)
+            ->where('tax_year', 2025)
+            ->first();
+
+        expect((float) $taxForm->iuran_pensiun)->toEqual(300000.0);
+    });
 });

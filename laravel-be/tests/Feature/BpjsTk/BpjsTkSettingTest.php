@@ -187,6 +187,50 @@ describe('BPJS TK Settings Update', function () {
         ]);
     });
 
+    it('uses the company-configured JkkRiskRate for the effective year instead of the hardcoded default', function () {
+        // Regression: JkkRiskRate (editable per year via "Initialize Tarif
+        // JKK") used to be completely disconnected from the actual rate
+        // saved here — this controller always pulled from the hardcoded
+        // BpjsTkSetting::getJkkRiskOptions() array regardless of what an
+        // admin configured in the JkkRiskRate table.
+        \App\Models\JkkRiskRate::create([
+            'company_id' => $this->company->id,
+            'risk_level' => 'very_high',
+            'description' => 'Custom higher rate for 2026',
+            'rate' => 2.50, // Not the hardcoded 1.74 default
+            'year' => 2026,
+            'is_active' => true,
+        ]);
+
+        BpjsTkSetting::factory()->create([
+            'company_id' => $this->company->id,
+            'jkk_risk_level' => 'very_low',
+            'jkk_rate' => 0.24,
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $this->put(route('bpjs-tk-settings.update'), [
+            'jht_company_rate' => 3.70,
+            'jht_employee_rate' => 2.00,
+            'jkk_risk_level' => 'very_high',
+            'jkk_enabled' => true,
+            'jkm_rate' => 0.30,
+            'jkm_enabled' => true,
+            'jp_company_rate' => 2.00,
+            'jp_employee_rate' => 1.00,
+            'jp_max_salary' => 10042300,
+            'jp_enabled' => true,
+            'effective_year' => 2026,
+        ]);
+
+        $this->assertDatabaseHas('bpjs_tk_settings', [
+            'company_id' => $this->company->id,
+            'jkk_risk_level' => 'very_high',
+            'jkk_rate' => 2.50,
+        ]);
+    });
+
     it('can disable individual programs', function () {
         BpjsTkSetting::factory()->create([
             'company_id' => $this->company->id,

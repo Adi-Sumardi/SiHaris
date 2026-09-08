@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\BpjsKesSetting;
 use App\Models\BpjsTkSetting;
 use App\Models\Employee;
+use App\Models\Pph21Rate;
 use App\Models\Pph21Setting;
 use App\Models\Pph21TerRate;
+use App\Models\PtkpSetting;
 
 class PayrollCalculationService
 {
@@ -53,8 +55,14 @@ class PayrollCalculationService
         $totalDeductions += $bpjsKes['employee'];
         $totalDeductions += $bpjsTk['employee_total'];
 
-        // Net salary = Gross - Deductions - PPh21
-        $netSalary = $grossSalary - $totalDeductions - $pph21;
+        // When PPh21 is borne by the company ("Ditanggung Perusahaan"), the
+        // employee's take-home pay isn't reduced by it — the tax is still
+        // calculated and reported (tax_amount, for SPT/Bukti Potong
+        // compliance), it just isn't deducted from net salary.
+        $isGrossUp = (bool) (Pph21Setting::where('company_id', $companyId)->first()?->is_gross_up ?? false);
+        $netSalary = $isGrossUp
+            ? $grossSalary - $totalDeductions
+            : $grossSalary - $totalDeductions - $pph21;
 
         return [
             'pph21' => round($pph21, 0),
@@ -65,6 +73,7 @@ class PayrollCalculationService
             'bpjs_tk_details' => $bpjsTk,
             'total_deductions' => round($totalDeductions, 0),
             'net_salary' => round($netSalary, 0),
+            'is_gross_up' => $isGrossUp,
         ];
     }
 
@@ -93,11 +102,11 @@ class PayrollCalculationService
                 $pph21 = $grossSalary * ($terRate / 100);
             } else {
                 // Fallback to simplified calculation
-                $pph21 = $this->calculatePph21Progressive($grossSalary, $taxStatus);
+                $pph21 = $this->calculatePph21Progressive($companyId, $grossSalary, $taxStatus);
             }
         } else {
             // Use progressive rate
-            $pph21 = $this->calculatePph21Progressive($grossSalary, $taxStatus);
+            $pph21 = $this->calculatePph21Progressive($companyId, $grossSalary, $taxStatus);
         }
 
         // Apply NPWP discount (20% higher if no NPWP)
@@ -161,10 +170,9 @@ class PayrollCalculationService
      * Calculate PPh21 using progressive rate (fallback)
      * Simplified version based on monthly gross salary
      */
-    protected function calculatePph21Progressive(float $grossSalary, string $taxStatus): float
+    protected function calculatePph21Progressive(int $companyId, float $grossSalary, string $taxStatus): float
     {
-        // PTKP per month (2024 rates)
-        $ptkpMonthly = $this->getPtkpMonthly($taxStatus);
+        $ptkpMonthly = $this->getPtkpMonthly($companyId, $taxStatus);
 
         // Calculate taxable income (PKP)
         $pkp = max(0, $grossSalary - $ptkpMonthly);
@@ -176,65 +184,94 @@ class PayrollCalculationService
         // Annual PKP estimation
         $annualPkp = $pkp * 12;
 
-        // Progressive tax calculation (2024 rates)
+        // Return monthly tax
+        return $this->calculateProgressiveTax($companyId, $annualPkp) / 12;
+    }
+
+    /**
+     * Calculate PPh21 owed on an annual PKP (Penghasilan Kena Pajak) using
+     * the company's configured progressive brackets (Pph21Rate), falling
+     * back to the PP 58/2023 Pasal 17 default brackets when the company
+     * hasn't configured rates for the current year.
+     */
+    public function calculateProgressiveTax(int $companyId, float $annualPkp): float
+    {
+        if ($annualPkp <= 0) {
+            return 0;
+        }
+
         $tax = 0;
-        if ($annualPkp > 0) {
-            // 5% for first 60 million
-            $bracket1 = min($annualPkp, 60000000);
-            $tax += $bracket1 * 0.05;
 
-            // 15% for 60-250 million
-            if ($annualPkp > 60000000) {
-                $bracket2 = min($annualPkp - 60000000, 190000000);
-                $tax += $bracket2 * 0.15;
+        foreach ($this->getProgressiveTaxBrackets($companyId) as $bracket) {
+            if ($annualPkp <= $bracket['min_amount']) {
+                break;
             }
 
-            // 25% for 250-500 million
-            if ($annualPkp > 250000000) {
-                $bracket3 = min($annualPkp - 250000000, 250000000);
-                $tax += $bracket3 * 0.25;
-            }
+            $upperBound = $bracket['max_amount'] ?? $annualPkp;
+            $taxableInBracket = min($annualPkp, $upperBound) - $bracket['min_amount'];
 
-            // 30% for 500 million - 5 billion
-            if ($annualPkp > 500000000) {
-                $bracket4 = min($annualPkp - 500000000, 4500000000);
-                $tax += $bracket4 * 0.30;
-            }
-
-            // 35% for above 5 billion
-            if ($annualPkp > 5000000000) {
-                $bracket5 = $annualPkp - 5000000000;
-                $tax += $bracket5 * 0.35;
+            if ($taxableInBracket > 0) {
+                $tax += $taxableInBracket * ($bracket['rate'] / 100);
             }
         }
 
-        // Return monthly tax
-        return $tax / 12;
+        return $tax;
+    }
+
+    /**
+     * Get the progressive tax brackets configured for the company (via
+     * Pph21SettingController), falling back to the 2024 defaults when none
+     * are configured for the current year.
+     *
+     * @return array<int, array{min_amount: float, max_amount: ?float, rate: float}>
+     */
+    protected function getProgressiveTaxBrackets(int $companyId): array
+    {
+        $rates = Pph21Rate::where('company_id', $companyId)
+            ->where('year', now()->year)
+            ->where('is_active', true)
+            ->orderBy('min_amount')
+            ->get();
+
+        if ($rates->isNotEmpty()) {
+            return $rates->map(fn ($rate) => [
+                'min_amount' => (float) $rate->min_amount,
+                'max_amount' => $rate->max_amount !== null ? (float) $rate->max_amount : null,
+                'rate' => (float) $rate->rate,
+            ])->all();
+        }
+
+        return Pph21Rate::getDefaultRates2024();
     }
 
     /**
      * Get PTKP monthly amount based on status
      */
-    protected function getPtkpMonthly(string $status): float
+    protected function getPtkpMonthly(int $companyId, string $status): float
     {
-        // PTKP 2024 annual amounts
-        $ptkpAnnual = match ($status) {
-            'TK/0' => 54000000,
-            'TK/1' => 58500000,
-            'TK/2' => 63000000,
-            'TK/3' => 67500000,
-            'K/0' => 58500000,
-            'K/1' => 63000000,
-            'K/2' => 67500000,
-            'K/3' => 72000000,
-            'K/I/0' => 112500000,
-            'K/I/1' => 117000000,
-            'K/I/2' => 121500000,
-            'K/I/3' => 126000000,
-            default => 54000000,
-        };
+        return $this->getPtkpAnnual($companyId, $status) / 12;
+    }
 
-        return $ptkpAnnual / 12;
+    /**
+     * Get the company's configured annual PTKP amount for a tax status
+     * (via Pph21SettingController), falling back to the 2024 default
+     * amounts when the company hasn't configured this status/year.
+     */
+    public function getPtkpAnnual(int $companyId, string $status): float
+    {
+        $setting = PtkpSetting::where('company_id', $companyId)
+            ->where('status_code', $status)
+            ->where('year', now()->year)
+            ->where('is_active', true)
+            ->first();
+
+        if ($setting) {
+            return (float) $setting->annual_amount;
+        }
+
+        $default = collect(PtkpSetting::getDefaultPtkp2024())->firstWhere('status_code', $status);
+
+        return (float) ($default['annual_amount'] ?? 54000000);
     }
 
     /**
@@ -270,12 +307,12 @@ class PayrollCalculationService
 
         if (! $settings) {
             // Default rates if no settings
-            $jhtEmployee = $grossSalary * 0.02;
-            $jhtCompany = $grossSalary * 0.037;
-            $jpEmployee = $grossSalary * 0.01;
-            $jpCompany = $grossSalary * 0.02;
-            $jkkCompany = $grossSalary * 0.0024;
-            $jkmCompany = $grossSalary * 0.003;
+            $jhtEmployee = round($grossSalary * 0.02, 0);
+            $jhtCompany = round($grossSalary * 0.037, 0);
+            $jpEmployee = round($grossSalary * 0.01, 0);
+            $jpCompany = round($grossSalary * 0.02, 0);
+            $jkkCompany = round($grossSalary * 0.0024, 0);
+            $jkmCompany = round($grossSalary * 0.003, 0);
 
             return [
                 'jht_employee' => $jhtEmployee,
@@ -292,15 +329,25 @@ class PayrollCalculationService
         $employeeContribution = $settings->calculateEmployeeContribution($grossSalary);
         $companyContribution = $settings->calculateCompanyContribution($grossSalary);
 
+        // Round each line item (not just the aggregate) — these individual
+        // values are stored as-is in payroll_item_details and surfaced to
+        // the mobile payslip, which expects whole-Rupiah amounts.
+        $jhtEmployee = round($employeeContribution['jht'], 0);
+        $jhtCompany = round($companyContribution['jht'], 0);
+        $jpEmployee = round($employeeContribution['jp'], 0);
+        $jpCompany = round($companyContribution['jp'], 0);
+        $jkkCompany = round($companyContribution['jkk'], 0);
+        $jkmCompany = round($companyContribution['jkm'], 0);
+
         return [
-            'jht_employee' => $employeeContribution['jht'],
-            'jht_company' => $companyContribution['jht'],
-            'jp_employee' => $employeeContribution['jp'],
-            'jp_company' => $companyContribution['jp'],
-            'jkk_company' => $companyContribution['jkk'],
-            'jkm_company' => $companyContribution['jkm'],
-            'employee_total' => $employeeContribution['total'],
-            'company_total' => $companyContribution['total'],
+            'jht_employee' => $jhtEmployee,
+            'jht_company' => $jhtCompany,
+            'jp_employee' => $jpEmployee,
+            'jp_company' => $jpCompany,
+            'jkk_company' => $jkkCompany,
+            'jkm_company' => $jkmCompany,
+            'employee_total' => $jhtEmployee + $jpEmployee,
+            'company_total' => $jhtCompany + $jpCompany + $jkkCompany + $jkmCompany,
         ];
     }
 

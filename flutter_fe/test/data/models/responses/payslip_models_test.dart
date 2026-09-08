@@ -181,6 +181,57 @@ void main() {
       expect(result['deductions'].length, 2);
       expect(result['net_salary'], 7500000);
     });
+
+    test(
+      'does not crash when the backend sends fractional (unrounded) amounts',
+      () {
+        // Regression: BPJS JHT/JP detail rows used to be stored unrounded
+        // on the backend (e.g. salary 5,754,321 x 2% = 115,086.42), which
+        // crashed this int-typed model the moment JSON decoded a double
+        // for 'amount'. The backend now rounds these, but the model
+        // parses defensively too so a future backend regression degrades
+        // to a rounded value instead of crashing the payslip screen.
+        final jsonMap = {
+          'id': 1,
+          'payroll_id': 101,
+          'period': 'Februari 2026',
+          'period_month': 2,
+          'period_year': 2026,
+          'employee': {
+            'id': 1,
+            'employee_id': 'EMP001',
+            'full_name': 'Ahmad Bahri',
+            'department': 'Engineering',
+            'position': 'Senior Developer',
+          },
+          'base_salary': 8000000.0,
+          'formatted_base_salary': 'Rp 8.000.000',
+          'earnings': [],
+          'deductions': [
+            {
+              'name': 'BPJS JHT',
+              'amount': 115086.42,
+              'formatted_amount': 'Rp 115.086',
+            },
+          ],
+          'total_earnings': 8500000.0,
+          'total_deductions': 115086.42,
+          'net_salary': 7500000.58,
+          'formatted_total_earnings': 'Rp 8.500.000',
+          'formatted_total_deductions': 'Rp 115.086',
+          'formatted_net_salary': 'Rp 7.500.001',
+          'payment_date': '2026-02-28',
+          'payment_method': 'Bank Transfer',
+          'status': 'paid',
+        };
+
+        final result = PayslipDetailModel.fromJson(jsonMap);
+
+        expect(result.deductions.first.amount, 115086);
+        expect(result.totalDeductions, 115086);
+        expect(result.netSalary, 7500001);
+      },
+    );
   });
 
   group('PayslipDownloadModel', () {

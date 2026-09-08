@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Models\ApprovalWorkflow;
 use App\Models\Reimbursement;
 use App\Models\ReimbursementCategory;
+use App\Services\ApprovalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
 class ReimbursementController extends Controller
@@ -145,7 +149,13 @@ class ReimbursementController extends Controller
             'data' => $reimbursements->map(function ($reimbursement) {
                 return [
                     'id' => $reimbursement->id,
-                    'category' => $reimbursement->category?->name,
+                    'category' => $reimbursement->category ? [
+                        'id' => $reimbursement->category->id,
+                        'name' => $reimbursement->category->name,
+                        'description' => $reimbursement->category->description,
+                        'max_amount' => (float) $reimbursement->category->max_amount,
+                        'requires_receipt' => $reimbursement->category->requires_receipt,
+                    ] : null,
                     'amount' => (float) $reimbursement->amount,
                     'formatted_amount' => $reimbursement->formatted_amount,
                     'description' => $reimbursement->description,
@@ -205,7 +215,7 @@ class ReimbursementController extends Controller
                         ),
                         new OA\Property(
                             property: 'receipt',
-                            description: 'File bukti struk/kwitansi (opsional). Format: JPG, PNG, atau PDF. Maksimal 2MB.',
+                            description: 'File bukti struk/kwitansi (opsional). Format: JPG, PNG, atau PDF. Maksimal 10MB.',
                             type: 'string',
                             format: 'binary',
                             nullable: true
@@ -267,7 +277,7 @@ class ReimbursementController extends Controller
             'amount' => 'required|numeric|min:1',
             'description' => 'required|string|max:500',
             'expense_date' => 'required|date',
-            'receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
         $user = $request->user();
@@ -294,6 +304,13 @@ class ReimbursementController extends Controller
             ], 422);
         }
 
+        if ($category->requires_receipt && ! $request->hasFile('receipt')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bukti/struk wajib diunggah untuk kategori ini.',
+            ], 422);
+        }
+
         // Upload receipt if provided
         $receiptPath = null;
         if ($request->hasFile('receipt')) {
@@ -301,17 +318,34 @@ class ReimbursementController extends Controller
                 ->store('reimbursement-receipts/'.$company->id, 'public');
         }
 
-        // Create reimbursement
-        $reimbursement = Reimbursement::create([
-            'company_id' => $company->id,
-            'employee_id' => $employee->id,
-            'category_id' => $request->category_id,
-            'amount' => $request->amount,
-            'description' => $request->description,
-            'expense_date' => $request->expense_date,
-            'receipt_path' => $receiptPath,
-            'status' => Reimbursement::STATUS_PENDING,
-        ]);
+        try {
+            $reimbursement = DB::transaction(function () use ($company, $employee, $request, $receiptPath) {
+                $reimbursement = Reimbursement::create([
+                    'company_id' => $company->id,
+                    'employee_id' => $employee->id,
+                    'category_id' => $request->category_id,
+                    'amount' => $request->amount,
+                    'description' => $request->description,
+                    'expense_date' => $request->expense_date,
+                    'receipt_path' => $receiptPath,
+                    'status' => Reimbursement::STATUS_PENDING,
+                ]);
+
+                app(ApprovalService::class)->initializeWorkflow(
+                    $reimbursement,
+                    ApprovalWorkflow::TYPE_REIMBURSEMENT,
+                    $company->id
+                );
+
+                return $reimbursement;
+            });
+        } catch (\Throwable $e) {
+            if ($receiptPath) {
+                Storage::disk('public')->delete($receiptPath);
+            }
+
+            throw $e;
+        }
 
         $reimbursement->load('category');
 
@@ -320,13 +354,20 @@ class ReimbursementController extends Controller
             'message' => 'Pengajuan reimbursement berhasil dibuat.',
             'data' => [
                 'id' => $reimbursement->id,
-                'category' => $reimbursement->category->name,
+                'category' => [
+                    'id' => $reimbursement->category->id,
+                    'name' => $reimbursement->category->name,
+                    'description' => $reimbursement->category->description,
+                    'max_amount' => (float) $reimbursement->category->max_amount,
+                    'requires_receipt' => $reimbursement->category->requires_receipt,
+                ],
                 'amount' => (float) $reimbursement->amount,
                 'formatted_amount' => $reimbursement->formatted_amount,
                 'description' => $reimbursement->description,
                 'expense_date' => $reimbursement->expense_date->toDateString(),
                 'receipt_url' => $receiptPath ? asset('storage/'.$receiptPath) : null,
                 'status' => $reimbursement->status,
+                'status_label' => $reimbursement->status_label,
             ],
         ], 201);
     }
@@ -423,10 +464,13 @@ class ReimbursementController extends Controller
             'success' => true,
             'data' => [
                 'id' => $reimbursement->id,
-                'category' => [
-                    'id' => $reimbursement->category?->id,
-                    'name' => $reimbursement->category?->name,
-                ],
+                'category' => $reimbursement->category ? [
+                    'id' => $reimbursement->category->id,
+                    'name' => $reimbursement->category->name,
+                    'description' => $reimbursement->category->description,
+                    'max_amount' => (float) $reimbursement->category->max_amount,
+                    'requires_receipt' => $reimbursement->category->requires_receipt,
+                ] : null,
                 'amount' => (float) $reimbursement->amount,
                 'formatted_amount' => $reimbursement->formatted_amount,
                 'description' => $reimbursement->description,

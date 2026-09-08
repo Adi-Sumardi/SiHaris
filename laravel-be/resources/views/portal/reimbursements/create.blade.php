@@ -19,7 +19,10 @@
 
         {{-- Form --}}
         <div class="card">
-            <form action="{{ route('portal.reimbursements.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('portal.reimbursements.store') }}" method="POST" enctype="multipart/form-data"
+                  x-data="{
+                      requiresReceipt: {{ old('category_id') && optional($categories->firstWhere('id', (int) old('category_id')))->requires_receipt ? 'true' : 'false' }},
+                  }">
                 @csrf
                 <div class="card-body space-y-4">
                     <div>
@@ -28,6 +31,7 @@
                         </label>
                         <select name="category_id" id="category_id"
                                 class="input w-full @error('category_id') border-danger-500 @enderror"
+                                @change="requiresReceipt = $event.target.selectedOptions[0].dataset.requiresReceipt === '1'"
                                 required>
                             <option value="">Pilih Kategori</option>
                             @foreach($categories as $category)
@@ -92,12 +96,16 @@
 
                     <div>
                         <label for="receipt" class="block text-sm font-medium text-secondary-700 mb-1">
-                            Bukti/Struk
+                            Bukti/Struk <span class="text-danger-500" x-show="requiresReceipt" x-cloak>*</span>
                         </label>
                         <input type="file" name="receipt" id="receipt"
-                               accept="image/*"
+                               accept="image/jpeg,image/png,application/pdf"
+                               :required="requiresReceipt"
                                class="input w-full @error('receipt') border-danger-500 @enderror">
-                        <p class="mt-1 text-sm text-secondary-500">Format: JPG, PNG, GIF. Maksimal 5MB</p>
+                        <p class="mt-1 text-sm text-secondary-500">Format: JPG, PNG, PDF. Maksimal 10MB.</p>
+                        <p class="mt-1 text-sm text-warning-600" x-show="requiresReceipt" x-cloak>
+                            Bukti/struk wajib diunggah untuk kategori ini.
+                        </p>
                         @error('receipt')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                         @enderror

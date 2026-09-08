@@ -6,6 +6,7 @@ use App\Traits\LogsActivityTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Reimbursement extends Model
 {
@@ -35,8 +36,13 @@ class Reimbursement extends Model
         'expense_date',
         'receipt_path',
         'status',
+        'approval_workflow_id',
+        'current_approval_step',
         'approved_by',
         'approved_at',
+        'approval_notes',
+        'rejected_by',
+        'rejected_at',
         'rejection_reason',
         'paid_at',
         'payment_method',
@@ -50,6 +56,7 @@ class Reimbursement extends Model
             'amount' => 'decimal:2',
             'expense_date' => 'date',
             'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'paid_at' => 'datetime',
         ];
     }
@@ -74,9 +81,29 @@ class Reimbursement extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function rejectedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
     public function payrollItem(): BelongsTo
     {
         return $this->belongsTo(PayrollItem::class);
+    }
+
+    public function approvalWorkflow(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalWorkflow::class);
+    }
+
+    public function approvalRecords(): MorphMany
+    {
+        return $this->morphMany(ApprovalRecord::class, 'approvable')->orderBy('step_order');
+    }
+
+    public function hasWorkflow(): bool
+    {
+        return $this->approval_workflow_id !== null;
     }
 
     // Accessors
@@ -112,19 +139,22 @@ class Reimbursement extends Model
     }
 
     // Actions
-    public function approve(int $approverId): void
+    public function approve(?int $userId, ?string $notes = null): void
     {
         $this->update([
             'status' => self::STATUS_APPROVED,
-            'approved_by' => $approverId,
+            'approved_by' => $userId,
             'approved_at' => now(),
+            'approval_notes' => $notes,
         ]);
     }
 
-    public function reject(string $reason): void
+    public function reject(int $userId, ?string $reason = null): void
     {
         $this->update([
             'status' => self::STATUS_REJECTED,
+            'rejected_by' => $userId,
+            'rejected_at' => now(),
             'rejection_reason' => $reason,
         ]);
     }

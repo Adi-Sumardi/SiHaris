@@ -114,22 +114,57 @@ class ApprovalController extends Controller
                 'created_at' => $overtime->created_at->toIso8601String(),
             ]);
 
-        // Pending reimbursements from subordinates
-        $reimbursements = Reimbursement::with(['employee'])
+        // Pending reimbursements: subordinates (legacy) + workflow-based where user is current approver
+        $reimbursements = Reimbursement::with(['employee', 'category', 'approver'])
             ->where('company_id', $user->company_id)
-            ->whereIn('employee_id', $subordinateIds)
             ->where('status', 'pending')
+            ->where(function ($q) use ($subordinateIds) {
+                // Legacy: subordinate-based
+                $q->where(function ($q2) use ($subordinateIds) {
+                    $q2->whereIn('employee_id', $subordinateIds)
+                        ->whereNull('approval_workflow_id');
+                })
+                // Workflow-based: user is authorized for current step
+                    ->orWhereNotNull('approval_workflow_id');
+            })
             ->orderBy('created_at', 'desc')
             ->get()
+            ->filter(function ($reimbursement) use ($approvalService, $user, $subordinateIds) {
+                if ($reimbursement->hasWorkflow()) {
+                    return $approvalService->canUserApprove($reimbursement, $user);
+                }
+
+                // Legacy: must be subordinate
+                return in_array($reimbursement->employee_id, $subordinateIds);
+            })
             ->map(fn ($reimbursement) => [
                 'id' => $reimbursement->id,
                 'employee_id' => $reimbursement->employee_id,
                 'employee_name' => $reimbursement->employee->full_name,
-                'category' => $reimbursement->category,
-                'amount' => $reimbursement->amount,
+                'category' => $reimbursement->category ? [
+                    'id' => $reimbursement->category->id,
+                    'name' => $reimbursement->category->name,
+                    'description' => $reimbursement->category->description,
+                    'max_amount' => (float) $reimbursement->category->max_amount,
+                    'requires_receipt' => $reimbursement->category->requires_receipt,
+                ] : null,
+                'amount' => (float) $reimbursement->amount,
+                'formatted_amount' => $reimbursement->formatted_amount,
                 'description' => $reimbursement->description,
+                'expense_date' => $reimbursement->expense_date->toDateString(),
+                'receipt_url' => $reimbursement->receipt_path ? asset('storage/'.$reimbursement->receipt_path) : null,
+                'status' => $reimbursement->status,
+                'status_label' => $reimbursement->status_label,
+                'approved_by' => $reimbursement->approver?->name,
+                'approved_at' => $reimbursement->approved_at?->toDateTimeString(),
+                'rejection_reason' => $reimbursement->rejection_reason,
+                'paid_at' => $reimbursement->paid_at?->toDateTimeString(),
+                'payment_method' => $reimbursement->payment_method,
+                'has_workflow' => $reimbursement->hasWorkflow(),
+                'current_step' => $reimbursement->current_approval_step,
                 'created_at' => $reimbursement->created_at->toIso8601String(),
-            ]);
+            ])
+            ->values();
 
         return response()->json([
             'success' => true,
@@ -399,21 +434,37 @@ class ApprovalController extends Controller
 
         $reimbursement = Reimbursement::where('company_id', $user->company_id)
             ->where('id', $id)
+            ->where('status', 'pending')
             ->first();
 
-        if (! $reimbursement || ! $this->canApprove($employee, $reimbursement->employee_id)) {
+        if (! $reimbursement) {
             return response()->json([
                 'success' => false,
-                'message' => 'Reimbursement not found or unauthorized',
+                'message' => 'Reimbursement not found',
             ], 404);
         }
 
-        $reimbursement->update([
-            'status' => 'approved',
-            'approved_by' => $user->id,
-            'approved_at' => now(),
-            'approval_notes' => $request->input('notes'),
-        ]);
+        // Workflow-based approval
+        if ($reimbursement->hasWorkflow()) {
+            $result = app(ApprovalService::class)->processApproval(
+                $reimbursement, $user, 'approve', $request->input('notes')
+            );
+
+            return response()->json([
+                'success' => $result['success'],
+                'message' => $result['message'],
+            ], $result['success'] ? 200 : 403);
+        }
+
+        // Legacy: check subordinate
+        if (! $this->canApprove($employee, $reimbursement->employee_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        $reimbursement->approve($user->id, $request->input('notes'));
 
         return response()->json([
             'success' => true,
@@ -454,21 +505,37 @@ class ApprovalController extends Controller
 
         $reimbursement = Reimbursement::where('company_id', $user->company_id)
             ->where('id', $id)
+            ->where('status', 'pending')
             ->first();
 
-        if (! $reimbursement || ! $this->canApprove($employee, $reimbursement->employee_id)) {
+        if (! $reimbursement) {
             return response()->json([
                 'success' => false,
-                'message' => 'Reimbursement not found or unauthorized',
+                'message' => 'Reimbursement not found',
             ], 404);
         }
 
-        $reimbursement->update([
-            'status' => 'rejected',
-            'approved_by' => $user->id,
-            'approved_at' => now(),
-            'approval_notes' => $request->input('notes'),
-        ]);
+        // Workflow-based rejection
+        if ($reimbursement->hasWorkflow()) {
+            $result = app(ApprovalService::class)->processApproval(
+                $reimbursement, $user, 'reject', $request->input('notes')
+            );
+
+            return response()->json([
+                'success' => $result['success'],
+                'message' => $result['message'],
+            ], $result['success'] ? 200 : 403);
+        }
+
+        // Legacy: check subordinate
+        if (! $this->canApprove($employee, $reimbursement->employee_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        $reimbursement->reject($user->id, $request->input('notes'));
 
         return response()->json([
             'success' => true,
@@ -562,9 +629,11 @@ class ApprovalController extends Controller
         // Reimbursements approved/rejected by this manager
         $reimbursementHistory = Reimbursement::with(['employee'])
             ->where('company_id', $user->company_id)
-            ->where('approved_by', $user->id)
+            ->where(function ($q) use ($user) {
+                $q->where('approved_by', $user->id)->orWhere('rejected_by', $user->id);
+            })
             ->whereIn('status', ['approved', 'rejected'])
-            ->orderBy('approved_at', 'desc')
+            ->orderByRaw('COALESCE(approved_at, rejected_at) desc')
             ->limit(50)
             ->get()
             ->map(fn ($reimbursement) => [
@@ -572,7 +641,7 @@ class ApprovalController extends Controller
                 'id' => $reimbursement->id,
                 'employee_name' => $reimbursement->employee->full_name,
                 'status' => $reimbursement->status,
-                'approved_at' => $reimbursement->approved_at?->toIso8601String(),
+                'approved_at' => ($reimbursement->approved_at ?? $reimbursement->rejected_at)?->toIso8601String(),
             ]);
 
         $history = $history->merge($reimbursementHistory);

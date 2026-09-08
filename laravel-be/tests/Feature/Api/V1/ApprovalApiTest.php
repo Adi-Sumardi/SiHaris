@@ -104,7 +104,28 @@ describe('GET /api/v1/approvals/pending', function () {
 
         $response = $this->getJson('/api/v1/approvals/pending');
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'reimbursements' => [
+                        '*' => [
+                            'id',
+                            'employee_id',
+                            'employee_name',
+                            'category',
+                            'amount',
+                            'formatted_amount',
+                            'description',
+                            'expense_date',
+                            'status',
+                            'status_label',
+                            'has_workflow',
+                            'current_step',
+                            'created_at',
+                        ],
+                    ],
+                ],
+            ]);
         expect(count($response->json('data.reimbursements')))->toBe(2);
     });
 });
@@ -254,6 +275,21 @@ describe('POST /api/v1/approvals/reimbursement/{id}/approve', function () {
 
         expect($reimbursement->fresh()->status)->toBe('approved');
     });
+
+    it('cannot approve a reimbursement that is not pending', function () {
+        Sanctum::actingAs($this->managerUser);
+
+        $reimbursement = Reimbursement::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'status' => 'rejected',
+        ]);
+
+        $response = $this->postJson("/api/v1/approvals/reimbursement/{$reimbursement->id}/approve");
+
+        $response->assertStatus(404);
+        expect($reimbursement->fresh()->status)->toBe('rejected');
+    });
 });
 
 describe('POST /api/v1/approvals/reimbursement/{id}/reject', function () {
@@ -271,7 +307,31 @@ describe('POST /api/v1/approvals/reimbursement/{id}/reject', function () {
         ]);
 
         $response->assertOk();
-        expect($reimbursement->fresh()->status)->toBe('rejected');
+
+        $fresh = $reimbursement->fresh();
+        expect($fresh->status)->toBe('rejected');
+        expect($fresh->rejected_by)->toBe($this->managerUser->id);
+        expect($fresh->rejection_reason)->toBe('Invalid receipt');
+        // Regression: rejecting must not mis-attribute approved_by/approved_at.
+        expect($fresh->approved_by)->toBeNull();
+        expect($fresh->approved_at)->toBeNull();
+    });
+
+    it('cannot reject a reimbursement that is not pending', function () {
+        Sanctum::actingAs($this->managerUser);
+
+        $reimbursement = Reimbursement::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'status' => 'approved',
+        ]);
+
+        $response = $this->postJson("/api/v1/approvals/reimbursement/{$reimbursement->id}/reject", [
+            'notes' => 'Too late',
+        ]);
+
+        $response->assertStatus(404);
+        expect($reimbursement->fresh()->status)->toBe('approved');
     });
 });
 
@@ -344,5 +404,25 @@ describe('GET /api/v1/approvals/history', function () {
         $response = $this->getJson('/api/v1/approvals/history');
         $response->assertOk();
         expect(count($response->json('data')))->toBe(2);
+    });
+
+    it('includes a rejected reimbursement in this manager\'s history', function () {
+        Sanctum::actingAs($this->managerUser);
+
+        $reimbursement = Reimbursement::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'status' => 'pending',
+        ]);
+        $this->postJson("/api/v1/approvals/reimbursement/{$reimbursement->id}/reject", [
+            'notes' => 'Missing receipt',
+        ])->assertOk();
+
+        $response = $this->getJson('/api/v1/approvals/history');
+
+        $response->assertOk();
+        $entries = collect($response->json('data'))->where('type', 'reimbursement');
+        expect($entries)->toHaveCount(1);
+        expect($entries->first()['status'])->toBe('rejected');
     });
 });

@@ -197,6 +197,59 @@ describe('Reimbursement Requests', function () {
         expect($reimbursement->receipt_path)->not->toBeNull();
     });
 
+    it('accepts a PDF receipt', function () {
+        $this->actingAs($this->admin);
+
+        $file = UploadedFile::fake()->create('receipt.pdf', 500, 'application/pdf');
+
+        $response = $this->post(route('reimbursements.store'), [
+            'employee_id' => $this->employee->id,
+            'category_id' => $this->category->id,
+            'amount' => 250000,
+            'description' => 'Test',
+            'expense_date' => now()->toDateString(),
+            'receipt' => $file,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors('receipt');
+    });
+
+    it('initializes the approval workflow when one is configured for the company', function () {
+        $this->actingAs($this->admin);
+
+        $approver = \App\Models\User::factory()->create(['company_id' => $this->company->id]);
+
+        $workflow = \App\Models\ApprovalWorkflow::factory()->create([
+            'company_id' => $this->company->id,
+            'type' => \App\Models\ApprovalWorkflow::TYPE_REIMBURSEMENT,
+            'is_active' => true,
+        ]);
+
+        \App\Models\ApprovalWorkflowStep::factory()->create([
+            'approval_workflow_id' => $workflow->id,
+            'step_order' => 1,
+            'approver_type' => \App\Models\ApprovalWorkflowStep::APPROVER_TYPE_SPECIFIC_USER,
+            'approver_user_id' => $approver->id,
+        ]);
+
+        $response = $this->post(route('reimbursements.store'), [
+            'employee_id' => $this->employee->id,
+            'category_id' => $this->category->id,
+            'amount' => 250000,
+            'description' => 'Test',
+            'expense_date' => now()->toDateString(),
+            'receipt' => UploadedFile::fake()->image('receipt.jpg'),
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors();
+
+        $reimbursement = Reimbursement::where('employee_id', $this->employee->id)->first();
+        expect($reimbursement)->not->toBeNull();
+        expect($reimbursement->approval_workflow_id)->toBe($workflow->id);
+    });
+
     it('validates amount against category max', function () {
         $this->actingAs($this->admin);
 
@@ -374,6 +427,8 @@ describe('Reimbursement Approval', function () {
         $reimbursement->refresh();
         expect($reimbursement->status)->toBe('rejected');
         expect($reimbursement->rejection_reason)->toBe('Bukti tidak lengkap');
+        expect($reimbursement->rejected_by)->toBe($this->admin->id);
+        expect($reimbursement->approved_by)->toBeNull();
     });
 
     it('marks reimbursement as paid', function () {

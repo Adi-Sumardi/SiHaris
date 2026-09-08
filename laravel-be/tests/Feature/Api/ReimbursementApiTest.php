@@ -48,7 +48,10 @@ describe('GET /api/v1/reimbursements', function () {
                 'data' => [
                     '*' => [
                         'id',
-                        'category',
+                        'category' => [
+                            'id',
+                            'name',
+                        ],
                         'amount',
                         'formatted_amount',
                         'description',
@@ -137,13 +140,17 @@ describe('POST /api/v1/reimbursements', function () {
                 'message',
                 'data' => [
                     'id',
-                    'category',
+                    'category' => [
+                        'id',
+                        'name',
+                    ],
                     'amount',
                     'formatted_amount',
                     'description',
                     'expense_date',
                     'receipt_url',
                     'status',
+                    'status_label',
                 ],
             ]);
 
@@ -198,6 +205,85 @@ describe('POST /api/v1/reimbursements', function () {
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['receipt']);
+    });
+
+    it('accepts a PDF receipt up to 10MB', function () {
+        Sanctum::actingAs($this->user);
+
+        $receipt = UploadedFile::fake()->create('receipt.pdf', 9 * 1024);
+
+        $response = $this->postJson('/api/v1/reimbursements', [
+            'category_id' => $this->category->id,
+            'amount' => 100000,
+            'description' => 'Testing',
+            'expense_date' => today()->toDateString(),
+            'receipt' => $receipt,
+        ]);
+
+        $response->assertStatus(201);
+    });
+
+    it('rejects a category that requires a receipt when none is provided', function () {
+        Sanctum::actingAs($this->user);
+
+        $this->category->update(['requires_receipt' => true]);
+
+        $response = $this->postJson('/api/v1/reimbursements', [
+            'category_id' => $this->category->id,
+            'amount' => 100000,
+            'description' => 'Testing',
+            'expense_date' => today()->toDateString(),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Bukti/struk wajib diunggah untuk kategori ini.',
+            ]);
+
+        $this->assertDatabaseMissing('reimbursements', [
+            'employee_id' => $this->employee->id,
+            'amount' => 100000,
+        ]);
+    });
+
+    it('initializes the approval workflow when one is configured for the company', function () {
+        Sanctum::actingAs($this->user);
+
+        $approver = User::factory()->create(['company_id' => $this->company->id]);
+
+        $workflow = \App\Models\ApprovalWorkflow::factory()->create([
+            'company_id' => $this->company->id,
+            'type' => \App\Models\ApprovalWorkflow::TYPE_REIMBURSEMENT,
+            'is_active' => true,
+        ]);
+
+        \App\Models\ApprovalWorkflowStep::factory()->create([
+            'approval_workflow_id' => $workflow->id,
+            'step_order' => 1,
+            'approver_type' => \App\Models\ApprovalWorkflowStep::APPROVER_TYPE_SPECIFIC_USER,
+            'approver_user_id' => $approver->id,
+        ]);
+
+        $response = $this->postJson('/api/v1/reimbursements', [
+            'category_id' => $this->category->id,
+            'amount' => 100000,
+            'description' => 'Testing',
+            'expense_date' => today()->toDateString(),
+        ]);
+
+        $response->assertStatus(201);
+
+        $reimbursement = Reimbursement::where('employee_id', $this->employee->id)->first();
+
+        expect($reimbursement->approval_workflow_id)->toBe($workflow->id);
+        expect($reimbursement->hasWorkflow())->toBeTrue();
+
+        $this->assertDatabaseHas('approval_records', [
+            'approvable_type' => Reimbursement::class,
+            'approvable_id' => $reimbursement->id,
+            'status' => 'pending',
+        ]);
     });
 });
 

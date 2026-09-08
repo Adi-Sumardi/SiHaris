@@ -9,13 +9,22 @@ use Carbon\Carbon;
 /**
  * Counts the number of leave days between two dates, excluding weekends
  * and company holidays according to the employee's own work schedule.
+ *
+ * Some leave types (e.g. statutory maternity leave, which Indonesian
+ * labor law grants as a fixed 90 CALENDAR-day period) are entitled and
+ * deducted by calendar days instead — pass $countCalendarDays for those,
+ * driven by LeaveType::count_calendar_days.
  */
 class LeaveDayCalculatorService
 {
-    public function calculate(Employee $employee, Carbon $startDate, Carbon $endDate, bool $isHalfDay = false): float
+    public function calculate(Employee $employee, Carbon $startDate, Carbon $endDate, bool $isHalfDay = false, bool $countCalendarDays = false): float
     {
         if ($isHalfDay) {
             return 0.5;
+        }
+
+        if ($countCalendarDays) {
+            return (float) $startDate->copy()->startOfDay()->diffInDays($endDate->copy()->startOfDay()) + 1;
         }
 
         $holidayDates = Holiday::where('company_id', $employee->company_id)

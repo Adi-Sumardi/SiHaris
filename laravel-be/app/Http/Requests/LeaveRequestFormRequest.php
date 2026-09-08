@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Employee;
 use App\Models\LeaveBalance;
+use App\Models\LeaveType;
 use App\Services\LeaveDayCalculatorService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,7 +21,7 @@ class LeaveRequestFormRequest extends FormRequest
         return [
             'employee_id' => ['required', 'exists:employees,id'],
             'leave_type_id' => ['required', 'exists:leave_types,id'],
-            'start_date' => ['required', 'date', 'after_or_equal:today'],
+            'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'is_half_day' => ['nullable', 'boolean'],
             'half_day_type' => ['required_if:is_half_day,true', 'nullable', 'in:morning,afternoon'],
@@ -36,7 +37,6 @@ class LeaveRequestFormRequest extends FormRequest
             'employee_id.required' => 'Karyawan wajib dipilih.',
             'leave_type_id.required' => 'Jenis cuti wajib dipilih.',
             'start_date.required' => 'Tanggal mulai wajib diisi.',
-            'start_date.after_or_equal' => 'Tanggal mulai tidak boleh sebelum hari ini.',
             'end_date.required' => 'Tanggal selesai wajib diisi.',
             'end_date.after_or_equal' => 'Tanggal selesai harus sama atau setelah tanggal mulai.',
             'half_day_type.required_if' => 'Tipe setengah hari wajib dipilih.',
@@ -70,18 +70,21 @@ class LeaveRequestFormRequest extends FormRequest
             return;
         }
 
+        $leaveType = LeaveType::find($this->input('leave_type_id'));
+
         // Use the same day-count LeaveRequestController::store()/update()
         // actually deduct from the balance (excludes weekends and active
-        // company holidays) — previously this used a naive calendar-day
-        // diff, so a long date range (e.g. 90-calendar-day maternity
-        // leave, ~65 working days) could be wrongly rejected as
-        // "insufficient balance" even though the real deduction would
-        // have easily fit.
+        // company holidays, unless the leave type is entitled by calendar
+        // days — e.g. statutory maternity leave) — previously this used a
+        // naive calendar-day diff, so a long date range could be wrongly
+        // rejected as "insufficient balance" even though the real
+        // deduction would have easily fit.
         $totalDays = app(LeaveDayCalculatorService::class)->calculate(
             $employee,
             Carbon::parse($startDate),
             Carbon::parse($endDate),
-            $isHalfDay
+            $isHalfDay,
+            (bool) $leaveType?->count_calendar_days
         );
 
         $year = (new \DateTime($startDate))->format('Y');

@@ -90,4 +90,32 @@ describe('LeaveDayCalculatorService', function () {
 
         expect($days)->toBe(2.0);
     });
+
+    it('counts every calendar day (including weekends/holidays) when countCalendarDays is true', function () {
+        $schedule = WorkSchedule::factory()->create([
+            'company_id' => $this->company->id,
+            'working_days' => [1, 2, 3, 4, 5],
+        ]);
+        $employee = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'work_schedule_id' => $schedule->id,
+        ]);
+
+        Holiday::factory()->create([
+            'company_id' => $this->company->id,
+            'date' => '2026-01-10',
+            'is_active' => true,
+        ]);
+
+        // A 90-calendar-day statutory maternity leave span.
+        $days = $this->service->calculate(
+            $employee,
+            Carbon::parse('2026-01-01'),
+            Carbon::parse('2026-03-31'),
+            false,
+            true
+        );
+
+        expect($days)->toBe(90.0);
+    });
 });

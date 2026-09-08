@@ -64,11 +64,19 @@ class LeaveController extends Controller
 
         $user = auth()->user();
         $employee = Employee::where('user_id', $user->id)->firstOrFail();
+        $leaveType = LeaveType::find($validated['leave_type_id']);
 
-        // Calculate days (excludes weekends and company holidays)
+        // Calculate days (excludes weekends and company holidays, unless
+        // the leave type is entitled by calendar days)
         $startDate = Carbon::parse($validated['start_date']);
         $endDate = Carbon::parse($validated['end_date']);
-        $days = app(LeaveDayCalculatorService::class)->calculate($employee, $startDate, $endDate);
+        $days = app(LeaveDayCalculatorService::class)->calculate(
+            $employee,
+            $startDate,
+            $endDate,
+            false,
+            (bool) $leaveType?->count_calendar_days
+        );
 
         // Check leave balance
         $company = $user->company;

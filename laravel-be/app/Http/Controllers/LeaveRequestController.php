@@ -112,8 +112,10 @@ class LeaveRequestController extends Controller
         $employee = Employee::where('company_id', auth()->user()->company_id)
             ->findOrFail($request->employee_id);
 
+        $leaveType = LeaveType::find($request->leave_type_id);
+
         $totalDays = app(LeaveDayCalculatorService::class)
-            ->calculate($employee, $startDate, $endDate, $isHalfDay);
+            ->calculate($employee, $startDate, $endDate, $isHalfDay, (bool) $leaveType?->count_calendar_days);
 
         $attachmentPath = null;
         if ($request->hasFile('attachment')) {
@@ -224,7 +226,7 @@ class LeaveRequestController extends Controller
         $endDate = Carbon::parse($validated['end_date']);
         $isHalfDay = $request->boolean('is_half_day');
         $newTotalDays = app(LeaveDayCalculatorService::class)
-            ->calculate($leaveRequest->employee, $startDate, $endDate, $isHalfDay);
+            ->calculate($leaveRequest->employee, $startDate, $endDate, $isHalfDay, (bool) $leaveRequest->leaveType?->count_calendar_days);
         $oldTotalDays = $leaveRequest->total_days;
 
         // Update balance if days changed

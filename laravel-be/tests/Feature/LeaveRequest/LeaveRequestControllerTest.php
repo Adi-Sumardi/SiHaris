@@ -252,6 +252,70 @@ describe('LeaveRequest Create', function () {
         ]);
     });
 
+    test('admin can create a leave request with a start date in the past for backfilling historical data', function () {
+        LeaveBalance::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $this->leaveType->id,
+            'year' => now()->subMonth()->year,
+            'entitled_days' => 12,
+            'used_days' => 0,
+            'pending_days' => 0,
+        ]);
+
+        $data = [
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $this->leaveType->id,
+            'start_date' => now()->subMonth()->format('Y-m-d'),
+            'end_date' => now()->subMonth()->addDay()->format('Y-m-d'),
+            'reason' => 'Input data cuti bulan lalu',
+        ];
+
+        $response = $this->post(route('leave-requests.store'), $data);
+
+        $response->assertSessionDoesntHaveErrors('start_date');
+        $response->assertRedirect(route('leave-requests.index'));
+    });
+
+    test('counts full calendar days for a leave type entitled by calendar days, not just working days', function () {
+        $calendarLeaveType = LeaveType::factory()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Cuti Melahirkan',
+            'count_calendar_days' => true,
+        ]);
+
+        LeaveBalance::factory()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $calendarLeaveType->id,
+            'year' => now()->addWeek()->year,
+            'entitled_days' => 90,
+            'used_days' => 0,
+            'pending_days' => 0,
+        ]);
+
+        $startDate = now()->addWeek()->startOfDay();
+        $endDate = $startDate->copy()->addDays(89);
+
+        $data = [
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $calendarLeaveType->id,
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
+            'reason' => 'Cuti melahirkan',
+        ];
+
+        $response = $this->post(route('leave-requests.store'), $data);
+
+        $response->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseHas('leave_requests', [
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'leave_type_id' => $calendarLeaveType->id,
+            'total_days' => 90,
+        ]);
+    });
+
     test('employee_id is required', function () {
         $data = [
             'leave_type_id' => $this->leaveType->id,

@@ -223,18 +223,21 @@ class LeaveController extends Controller
         $user = $request->user();
         $employee = $user->employee;
         $company = $user->company;
+        $leaveType = LeaveType::find($request->leave_type_id);
 
         // Calculate total days the same way the web/admin flow does
         // (excludes weekends and active company holidays per the
-        // employee's work schedule) so mobile and admin-entered leave
-        // requests deduct identical balances for identical dates.
+        // employee's work schedule, unless the leave type is entitled by
+        // calendar days) so mobile and admin-entered leave requests
+        // deduct identical balances for identical dates.
         $startDate = Carbon::parse($request->start_date);
         $endDate = Carbon::parse($request->end_date);
         $totalDays = app(LeaveDayCalculatorService::class)->calculate(
             $employee,
             $startDate,
             $endDate,
-            (bool) $request->is_half_day
+            (bool) $request->is_half_day,
+            (bool) $leaveType?->count_calendar_days
         );
 
         // Check leave balance

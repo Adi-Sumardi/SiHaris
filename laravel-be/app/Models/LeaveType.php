@@ -16,6 +16,7 @@ class LeaveType extends Model
         'code',
         'description',
         'default_days',
+        'count_calendar_days',
         'is_paid',
         'requires_approval',
         'requires_attachment',
@@ -32,6 +33,7 @@ class LeaveType extends Model
     {
         return [
             'default_days' => 'integer',
+            'count_calendar_days' => 'boolean',
             'max_consecutive_days' => 'integer',
             'min_notice_days' => 'integer',
             'max_carry_forward_days' => 'integer',

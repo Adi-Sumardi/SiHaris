@@ -110,7 +110,8 @@
                             </label>
                             <input type="date" name="start_date" id="start_date" value="{{ old('start_date') }}"
                                    class="input w-full @error('start_date') border-danger-500 @enderror"
-                                   min="{{ date('Y-m-d') }}" required>
+                                   onchange="document.getElementById('end_date').min = this.value"
+                                   required>
                             @error('start_date')
                                 <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                             @enderror
@@ -123,7 +124,7 @@
                             </label>
                             <input type="date" name="end_date" id="end_date" value="{{ old('end_date') }}"
                                    class="input w-full @error('end_date') border-danger-500 @enderror"
-                                   min="{{ date('Y-m-d') }}" required>
+                                   min="{{ old('start_date') }}" required>
                             @error('end_date')
                                 <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
                             @enderror

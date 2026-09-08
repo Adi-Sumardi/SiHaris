@@ -34,6 +34,12 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  /// True from the moment Clock In/Out is tapped until the liveness screen
+  /// is actually pushed (or the flow bails out early) — covers the GPS fix
+  /// + pre-checks, which can take a few seconds with no other visual
+  /// feedback, tempting employees to tap the button repeatedly.
+  bool _isStartingAttendance = false;
+
   @override
   void initState() {
     super.initState();
@@ -215,6 +221,25 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   }
 
   Future<void> _startAttendanceFlow({
+    required BuildContext blocContext,
+    required AttendanceType type,
+    required OfficeLocationModel? office,
+  }) async {
+    if (_isStartingAttendance) return;
+
+    setState(() => _isStartingAttendance = true);
+    try {
+      await _runAttendanceFlow(
+        blocContext: blocContext,
+        type: type,
+        office: office,
+      );
+    } finally {
+      if (mounted) setState(() => _isStartingAttendance = false);
+    }
+  }
+
+  Future<void> _runAttendanceFlow({
     required BuildContext blocContext,
     required AttendanceType type,
     required OfficeLocationModel? office,
@@ -525,7 +550,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       const SizedBox(height: 16),
                       BlocBuilder<AttendanceBloc, AttendanceState>(
                         builder: (context, blocState) {
-                          final isLoading = blocState is AttendanceLoading;
+                          final isLoading =
+                              blocState is AttendanceLoading ||
+                              _isStartingAttendance;
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

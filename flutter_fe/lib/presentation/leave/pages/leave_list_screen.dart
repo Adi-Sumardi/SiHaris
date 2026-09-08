@@ -6,6 +6,7 @@ import 'package:gaji_pro/presentation/leave/bloc/leave_balance/leave_balance_blo
 import 'package:gaji_pro/presentation/leave/pages/leave_form_screen.dart';
 import 'package:gaji_pro/presentation/leave/pages/leave_detail_screen.dart';
 import 'package:gaji_pro/data/models/responses/leave_model.dart';
+import 'package:gaji_pro/data/models/responses/leave_balance_model.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/components/jago_header_band.dart';
 
@@ -76,6 +77,7 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
         children: [
           _buildHeader(),
           const JagoHeaderBand(),
+          _buildLeaveTypeBalanceList(),
           Expanded(
             child: BlocBuilder<LeaveListBloc, LeaveListState>(
               builder: (context, state) {
@@ -205,6 +207,109 @@ class _LeaveListScreenState extends State<LeaveListScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Rincian saldo per jenis cuti — kartu ringkasan di atas cuma total
+  /// gabungan semua jenis, jadi karyawan tidak tahu jenis cuti apa yang
+  /// masih tersisa. Baris ini menampilkan tiap jenis cuti (mis. "Cuti
+  /// Tahunan: 8 dari 12 hari") secara terpisah.
+  Widget _buildLeaveTypeBalanceList() {
+    return BlocBuilder<LeaveBalanceBloc, LeaveBalanceState>(
+      builder: (context, state) {
+        if (state is! LeaveBalanceLoaded || state.balances.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return SizedBox(
+          height: 106,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            itemCount: state.balances.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              return _buildLeaveTypeBalanceCard(state.balances[index]);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Color _leaveTypeColor(int leaveTypeId) {
+    const palette = [
+      AppColors.primary,
+      AppColors.success,
+      AppColors.warning,
+      AppColors.info,
+      AppColors.error,
+    ];
+    return palette[leaveTypeId % palette.length];
+  }
+
+  Widget _buildLeaveTypeBalanceCard(LeaveBalanceModel balance) {
+    final color = _leaveTypeColor(balance.leaveTypeId);
+
+    return Container(
+      width: 136,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.secondary200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  balance.leaveTypeName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.secondary700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text:
+                      '${balance.remainingDays % 1 == 0 ? balance.remainingDays.toInt() : balance.remainingDays}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.secondary900,
+                  ),
+                ),
+                TextSpan(
+                  text: ' / ${balance.entitledDays.toInt()} hari',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.secondary500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

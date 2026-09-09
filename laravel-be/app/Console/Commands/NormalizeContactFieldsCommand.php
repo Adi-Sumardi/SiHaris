@@ -47,11 +47,22 @@ class NormalizeContactFieldsCommand extends Command
         });
 
         $accountsCreated = 0;
+        $skipped = [];
         Employee::whereNull('user_id')
             ->whereNotNull('email')
             ->where('is_active', true)
-            ->chunkById(200, function ($employees) use (&$accountsCreated) {
+            ->chunkById(200, function ($employees) use (&$accountsCreated, &$skipped) {
                 foreach ($employees as $employee) {
+                    // Two employees sharing one email is a pre-existing data-entry
+                    // mistake (not something safe to fix automatically — it would
+                    // let two different people share one login/OTP identity), so
+                    // skip and report it instead of creating a duplicate account.
+                    if (User::withTrashed()->where('email', $employee->email)->exists()) {
+                        $skipped[] = "#{$employee->id} {$employee->full_name} <{$employee->email}> — email already used by another account";
+
+                        continue;
+                    }
+
                     setPermissionsTeamId($employee->company_id);
 
                     $user = User::create([
@@ -71,6 +82,13 @@ class NormalizeContactFieldsCommand extends Command
             });
 
         $this->info("Normalized {$employeesFixed} employee record(s), {$usersFixed} user record(s), and created {$accountsCreated} missing login account(s).");
+
+        if ($skipped !== []) {
+            $this->warn('Skipped '.count($skipped).' employee(s) with a conflicting email — fix these manually:');
+            foreach ($skipped as $line) {
+                $this->line("  - {$line}");
+            }
+        }
 
         return self::SUCCESS;
     }

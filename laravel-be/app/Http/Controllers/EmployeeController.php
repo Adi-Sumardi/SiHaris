@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -190,8 +191,11 @@ class EmployeeController extends Controller
             DB::transaction(function () use ($validated, $tenant, $request, $scheduleMode, $weeklySchedules) {
                 $user = null;
 
-                // Create user account if password is provided and email exists
-                if (! empty($validated['password']) && ! empty($validated['email'])) {
+                // Create user account whenever an email is given. Login is normally
+                // OTP-based (WhatsApp/email), so a password is optional — generate
+                // one when the admin didn't set one, rather than silently leaving
+                // the employee without an account.
+                if (! empty($validated['email'])) {
                     $fullName = trim($validated['first_name'].' '.($validated['last_name'] ?? ''));
 
                     setPermissionsTeamId($tenant->id);
@@ -201,7 +205,7 @@ class EmployeeController extends Controller
                         'name' => $fullName,
                         'email' => $validated['email'],
                         'phone' => $validated['phone'] ?? null,
-                        'password' => Hash::make($validated['password']),
+                        'password' => Hash::make($validated['password'] ?? Str::random(32)),
                         'is_active' => true,
                     ]);
 
@@ -432,8 +436,10 @@ class EmployeeController extends Controller
                     }
 
                     $employee->user->update($userData);
-                } elseif (! empty($validated['password']) && ! empty($validated['email'])) {
-                    // Create new user account
+                } elseif (! empty($validated['email'])) {
+                    // Create new user account. Login is normally OTP-based (WhatsApp/email),
+                    // so a password is optional here — generate one when the admin didn't
+                    // set one, rather than silently leaving the employee without an account.
                     setPermissionsTeamId($tenant->id);
 
                     $user = User::create([
@@ -441,7 +447,7 @@ class EmployeeController extends Controller
                         'name' => $fullName,
                         'email' => $validated['email'],
                         'phone' => $validated['phone'] ?? null,
-                        'password' => Hash::make($validated['password']),
+                        'password' => Hash::make($validated['password'] ?? Str::random(32)),
                         'is_active' => true,
                     ]);
 

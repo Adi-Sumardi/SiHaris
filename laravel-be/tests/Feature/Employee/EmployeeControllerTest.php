@@ -439,6 +439,42 @@ describe('Employee Edit', function () {
             ->assertJson(['success' => true, 'data' => ['type' => 'phone']]);
     });
 
+    it('creates a login account when email is added without a password', function () {
+        $this->actingAs($this->admin);
+
+        $employee = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'user_id' => null,
+            'email' => null,
+            'phone' => null,
+        ]);
+
+        $response = $this->put("/employees/{$employee->id}", [
+            'first_name' => $employee->first_name,
+            'email' => 'fajar@company.com',
+            'phone' => '081292702075',
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'hire_date' => $employee->hire_date->format('Y-m-d'),
+            'employment_status' => 'permanent',
+        ]);
+
+        $response->assertRedirect("/employees/{$employee->id}");
+
+        $employee->refresh();
+        expect($employee->user_id)->not->toBeNull();
+        expect($employee->user->email)->toBe('fajar@company.com');
+
+        $otpResponse = $this->postJson('/api/v1/auth/request-otp', [
+            'login' => 'fajar@company.com',
+        ]);
+
+        $otpResponse->assertStatus(200)
+            ->assertJson(['success' => true, 'data' => ['type' => 'email']]);
+    });
+
     it('cannot edit employee from another company', function () {
         $this->actingAs($this->admin);
 

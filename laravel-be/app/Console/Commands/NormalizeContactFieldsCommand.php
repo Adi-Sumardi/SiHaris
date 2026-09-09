@@ -5,12 +5,14 @@ namespace App\Console\Commands;
 use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class NormalizeContactFieldsCommand extends Command
 {
     protected $signature = 'contacts:normalize';
 
-    protected $description = 'Backfill existing employee/user phone numbers into digit-only form and trim emails, so OTP login lookups can find records saved before normalization was added.';
+    protected $description = 'Backfill existing employee/user phone numbers into digit-only form, trim emails, and create login accounts for employees whose email was saved without one — so OTP login can find every eligible record.';
 
     public function handle(): int
     {
@@ -44,7 +46,31 @@ class NormalizeContactFieldsCommand extends Command
             }
         });
 
-        $this->info("Normalized {$employeesFixed} employee record(s) and {$usersFixed} user record(s).");
+        $accountsCreated = 0;
+        Employee::whereNull('user_id')
+            ->whereNotNull('email')
+            ->where('is_active', true)
+            ->chunkById(200, function ($employees) use (&$accountsCreated) {
+                foreach ($employees as $employee) {
+                    setPermissionsTeamId($employee->company_id);
+
+                    $user = User::create([
+                        'company_id' => $employee->company_id,
+                        'name' => $employee->full_name,
+                        'email' => $employee->email,
+                        'phone' => $employee->phone,
+                        'password' => Hash::make(Str::random(32)),
+                        'is_active' => true,
+                    ]);
+
+                    $user->assignRole('employee');
+                    $employee->user_id = $user->id;
+                    $employee->saveQuietly();
+                    $accountsCreated++;
+                }
+            });
+
+        $this->info("Normalized {$employeesFixed} employee record(s), {$usersFixed} user record(s), and created {$accountsCreated} missing login account(s).");
 
         return self::SUCCESS;
     }

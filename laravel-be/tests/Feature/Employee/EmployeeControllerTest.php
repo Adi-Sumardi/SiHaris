@@ -403,6 +403,42 @@ describe('Employee Edit', function () {
         expect($employee->pin)->toBe('1032');
     });
 
+    it('normalizes a punctuated phone number so the employee can request an OTP with it', function () {
+        $this->actingAs($this->admin);
+
+        $user = User::factory()->create(['company_id' => $this->company->id]);
+        $employee = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'user_id' => $user->id,
+            'phone' => null,
+        ]);
+
+        $response = $this->put("/employees/{$employee->id}", [
+            'first_name' => $employee->first_name,
+            'phone' => '0812-9270 2075',
+            'department_id' => $this->department->id,
+            'position_id' => $this->position->id,
+            'hire_date' => $employee->hire_date->format('Y-m-d'),
+            'employment_status' => 'permanent',
+        ]);
+
+        $response->assertRedirect("/employees/{$employee->id}");
+
+        $employee->refresh();
+        $user->refresh();
+        expect($employee->phone)->toBe('081292702075')
+            ->and($user->phone)->toBe('081292702075');
+
+        $otpResponse = $this->postJson('/api/v1/auth/request-otp', [
+            'login' => '081292702075',
+        ]);
+
+        $otpResponse->assertStatus(200)
+            ->assertJson(['success' => true, 'data' => ['type' => 'phone']]);
+    });
+
     it('cannot edit employee from another company', function () {
         $this->actingAs($this->admin);
 

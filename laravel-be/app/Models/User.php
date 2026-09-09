@@ -98,5 +98,17 @@ class User extends Authenticatable
                 throw new \Exception('Akun demo tidak dapat dihapus.');
             }
         });
+
+        static::saving(function (User $user) {
+            // Normalize phone/email so OTP login lookups (which compare
+            // against digit-only phone variants) can find the record.
+            if ($user->isDirty('phone')) {
+                $user->phone = Employee::normalizePhone($user->phone);
+            }
+
+            if ($user->isDirty('email') && $user->email !== null) {
+                $user->email = trim($user->email);
+            }
+        });
     }
 }

@@ -81,6 +81,16 @@ class Employee extends Model
             } elseif (! empty($employee->identity_number) && empty($employee->nik)) {
                 $employee->nik = $employee->identity_number;
             }
+
+            // Normalize phone/email so OTP login lookups (which compare
+            // against digit-only phone variants) can find the record.
+            if ($employee->isDirty('phone')) {
+                $employee->phone = static::normalizePhone($employee->phone);
+            }
+
+            if ($employee->isDirty('email') && $employee->email !== null) {
+                $employee->email = trim($employee->email);
+            }
         });
 
         static::creating(function (Employee $employee) {
@@ -108,6 +118,22 @@ class Employee extends Model
         $user = $this->user ?? User::find($this->user_id);
 
         return $user && $user->isDemoAccount();
+    }
+
+    /**
+     * Strip formatting characters (spaces, dashes, parentheses) so the stored
+     * value matches the digit-only variants OtpService::findUser() generates
+     * from the login input.
+     */
+    public static function normalizePhone(?string $phone): ?string
+    {
+        if ($phone === null) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $phone);
+
+        return $digits === '' ? null : $digits;
     }
 
     public static function generateEmployeeId(int $companyId): string

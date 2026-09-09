@@ -91,13 +91,16 @@ class SyncAdmsAttendanceJob implements ShouldQueue
                     })
                     ->first();
 
-                // If found, ensure mapping exists for future lookups
+                // If found, ensure mapping exists for future lookups. Keyed on
+                // (device_id, employee_id) — the constraint that's actually
+                // enforced — so a PIN change on an already-mapped employee
+                // updates the row instead of colliding on insert.
                 if ($employee) {
-                    FingerprintUserMapping::firstOrCreate([
+                    FingerprintUserMapping::updateOrCreate([
                         'fingerprint_device_id' => $device->id,
-                        'device_user_pin' => $pin,
-                    ], [
                         'employee_id' => $employee->id,
+                    ], [
+                        'device_user_pin' => $pin,
                     ]);
                 }
             }

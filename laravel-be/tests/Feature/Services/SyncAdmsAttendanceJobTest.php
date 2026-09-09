@@ -85,4 +85,56 @@ describe('SyncAdmsAttendanceJob', function () {
         expect($attendance)->not->toBeNull();
         expect($attendance->clock_in_source)->toBe('fingerprint');
     });
+
+    it('updates a stale mapping instead of crashing when an already-mapped employee reports a new PIN', function () {
+        $employee = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'pin' => '2048',
+        ]);
+
+        $device = FingerprintDevice::factory()->create([
+            'company_id' => $this->company->id,
+            'serial_number' => 'ADMS-FACE-APP',
+        ]);
+
+        // Stale mapping from a previous PIN assignment — the unique constraint
+        // that matters here is (fingerprint_device_id, employee_id), not the pin.
+        FingerprintUserMapping::create([
+            'fingerprint_device_id' => $device->id,
+            'employee_id' => $employee->id,
+            'device_user_pin' => '1032',
+        ]);
+
+        Http::fake([
+            'http://adms.alazhar-rm.com/api/v1/face/attendance-logs*' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'id' => 522650,
+                        'pin' => 2048,
+                        'employee_id' => 256,
+                        'timestamp' => '2026-08-21 07:30:17',
+                        'type' => 'in',
+                        'source' => 'face-recognition',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $admsService = new AdmsApiService('http://adms.alazhar-rm.com/api/v1/face', 'test-token');
+        $reconciliationService = app(AttendanceReconciliationService::class);
+
+        $job = new SyncAdmsAttendanceJob($this->company->id, '2026-08-21');
+        $result = $job->handle($admsService, $reconciliationService);
+
+        expect($result['applied'])->toBe(1);
+
+        expect(FingerprintUserMapping::where('fingerprint_device_id', $device->id)
+            ->where('employee_id', $employee->id)
+            ->count())->toBe(1);
+
+        expect(FingerprintUserMapping::where('fingerprint_device_id', $device->id)
+            ->where('employee_id', $employee->id)
+            ->value('device_user_pin'))->toBe('2048');
+    });
 });

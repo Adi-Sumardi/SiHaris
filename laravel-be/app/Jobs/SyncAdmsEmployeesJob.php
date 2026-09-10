@@ -89,22 +89,34 @@ class SyncAdmsEmployeesJob implements ShouldQueue
                     $employee->update(['pin' => $pin]);
                 }
 
-                // Remove conflicting mapping if another employee held this pin on this device
-                FingerprintUserMapping::where('fingerprint_device_id', $device->id)
+                // Once an employee has a mapping, leave it alone. The ADMS master
+                // employee list can contain stale or duplicate pin entries for the
+                // same person (e.g. an old device pin alongside a newer SiHaris-style
+                // one), and the pin/name matching above can land on the wrong record.
+                // Overwriting an existing mapping from this signal has broken real,
+                // working attendance mappings before — only fill in employees who
+                // don't have one yet.
+                if (FingerprintUserMapping::where('fingerprint_device_id', $device->id)
+                    ->where('employee_id', $employee->id)
+                    ->exists()) {
+                    continue;
+                }
+
+                // Skip if another employee already holds this pin on this device —
+                // don't delete their mapping on the strength of a possibly-wrong match.
+                if (FingerprintUserMapping::where('fingerprint_device_id', $device->id)
                     ->where('device_user_pin', $pin)
                     ->where('employee_id', '!=', $employee->id)
-                    ->delete();
+                    ->exists()) {
+                    continue;
+                }
 
-                // Update or create mapping for this employee on this device
-                FingerprintUserMapping::updateOrCreate(
-                    [
-                        'fingerprint_device_id' => $device->id,
-                        'employee_id' => $employee->id,
-                    ],
-                    [
-                        'device_user_pin' => $pin,
-                    ]
-                );
+                // Create mapping for this employee on this device
+                FingerprintUserMapping::create([
+                    'fingerprint_device_id' => $device->id,
+                    'employee_id' => $employee->id,
+                    'device_user_pin' => $pin,
+                ]);
 
                 $mappedCount++;
             }

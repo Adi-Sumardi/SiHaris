@@ -56,7 +56,13 @@ describe('SyncAdmsEmployeesJob', function () {
         ]);
     });
 
-    it('updates existing employee mapping when ADMS returns a new pin without duplicate key error', function () {
+    it('does not overwrite an existing mapping even when ADMS reports a different pin for that employee', function () {
+        // Regression test: the ADMS employee master list can carry a stale or
+        // duplicate pin for someone who already has a working mapping (e.g. an
+        // old device-enrollment pin vs. a newer SiHaris-style one, or a fuzzy
+        // name match landing on the wrong record). Overwriting broke real
+        // attendance sync in production for several employees — this job must
+        // only fill in employees who don't have a mapping yet.
         $employee = Employee::factory()->create([
             'company_id' => $this->company->id,
             'employee_id' => 'EMP20260277',
@@ -74,7 +80,7 @@ describe('SyncAdmsEmployeesJob', function () {
         \App\Models\FingerprintUserMapping::create([
             'fingerprint_device_id' => $device->id,
             'employee_id' => $employee->id,
-            'device_user_pin' => '330002',
+            'device_user_pin' => '330010',
         ]);
 
         Http::fake([
@@ -84,7 +90,7 @@ describe('SyncAdmsEmployeesJob', function () {
                     [
                         'employee_id' => 999,
                         'name' => 'Ilmi Kharisah',
-                        'pin' => '330010',
+                        'pin' => '330002',
                         'email' => 'ilmi@example.com',
                     ],
                 ],
@@ -101,10 +107,44 @@ describe('SyncAdmsEmployeesJob', function () {
             'device_user_pin' => '330010',
         ]);
 
-        $this->assertDatabaseMissing('fingerprint_user_mappings', [
+        expect(\App\Models\FingerprintUserMapping::where('fingerprint_device_id', $device->id)
+            ->where('employee_id', $employee->id)
+            ->count())->toBe(1);
+    });
+
+    it('creates a mapping for an employee who has none yet, using the ADMS pin', function () {
+        $employee = Employee::factory()->create([
+            'company_id' => $this->company->id,
+            'first_name' => 'Anisa',
+            'last_name' => 'Oktavia',
+            'email' => 'anisa@example.com',
+            'pin' => '100013',
+        ]);
+
+        Http::fake([
+            'http://adms.alazhar-rm.com/api/v1/face/employees' => Http::response([
+                'success' => true,
+                'data' => [
+                    [
+                        'employee_id' => 328,
+                        'name' => 'Anisa Octavia',
+                        'pin' => '1066',
+                        'email' => 'anisa@example.com',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $admsService = new AdmsApiService('http://adms.alazhar-rm.com/api/v1/face', 'test-token');
+        $job = new SyncAdmsEmployeesJob($this->company->id);
+        $job->handle($admsService);
+
+        $device = FingerprintDevice::where('company_id', $this->company->id)->first();
+
+        $this->assertDatabaseHas('fingerprint_user_mappings', [
             'fingerprint_device_id' => $device->id,
             'employee_id' => $employee->id,
-            'device_user_pin' => '330002',
+            'device_user_pin' => '1066',
         ]);
     });
 });

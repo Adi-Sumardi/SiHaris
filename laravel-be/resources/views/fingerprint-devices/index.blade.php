@@ -20,6 +20,21 @@
                     Sync Log Presensi
                 </button>
             </form>
+            <button
+                type="button"
+                class="btn btn-primary flex items-center gap-2"
+                title="Kirim PIN karyawan dari SiHaris ke ADMS untuk karyawan yang PIN-nya berbeda"
+                @click="$dispatch('confirm-dialog', {
+                    title: 'Push PIN ke ADMS',
+                    message: 'PIN karyawan yang berbeda dari data SiHaris akan dikirim untuk memperbarui data di ADMS. Lanjutkan?',
+                    confirmText: 'Ya, Push PIN',
+                    type: 'info',
+                    formAction: '{{ route('fingerprint-devices.push-pins') }}'
+                })"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+                Push PIN ke ADMS
+            </button>
         </div>
     </div>
 @endsection

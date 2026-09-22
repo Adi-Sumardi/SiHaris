@@ -94,6 +94,34 @@ class FingerprintDeviceController extends Controller
         }
     }
 
+    public function pushPins(): RedirectResponse
+    {
+        $tenant = app('tenant');
+
+        try {
+            $job = new \App\Jobs\PushEmployeePinsToAdmsJob($tenant->id);
+            $result = $job->handle(app(\App\Services\AdmsApiService::class));
+
+            if ($result['total'] === 0) {
+                return redirect()->route('fingerprint-devices.index')
+                    ->with('success', 'Semua PIN sudah sinkron dengan ADMS, tidak ada yang perlu diperbarui.');
+            }
+
+            $message = "Push PIN ke ADMS selesai: {$result['updated']} berhasil, {$result['failed']} gagal dari {$result['total']} PIN yang berbeda.";
+
+            if ($result['failed'] > 0) {
+                $message .= ' Detail gagal: '.implode('; ', $result['failures']);
+
+                return redirect()->route('fingerprint-devices.index')->with('warning', $message);
+            }
+
+            return redirect()->route('fingerprint-devices.index')->with('success', $message);
+        } catch (\Throwable $e) {
+            return redirect()->route('fingerprint-devices.index')
+                ->with('error', 'Gagal push PIN ke ADMS: '.$e->getMessage());
+        }
+    }
+
     public function create(): View
     {
         $tenant = app('tenant');

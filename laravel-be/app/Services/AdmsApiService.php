@@ -103,6 +103,56 @@ class AdmsApiService
     }
 
     /**
+     * Update an employee's PIN in ADMS (PUT {base_url}/employees/{pin_lama},
+     * per docs/API_Face_Employees_ADMS.pdf §3). The path parameter is keyed
+     * on the employee's CURRENT pin, not their employee_id - inconsistent
+     * with GET /employees/{employeeId}, which is keyed on employee_id.
+     *
+     * Per that doc's developer notes: ADMS's own database is updated
+     * immediately, but the physical FACE machine may cache its own local
+     * PIN list and need a separate re-sync on ADMS's side if so - outside
+     * what this API call alone guarantees.
+     *
+     * @return array{success: bool, message: string, data: ?array}
+     */
+    public function updateEmployeePin(string $currentPin, string $newPin): array
+    {
+        try {
+            $response = Http::withHeaders([
+                'X-API-KEY' => $this->apiKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->timeout(10)->put("{$this->baseUrl}/employees/{$currentPin}", [
+                'pin' => $newPin,
+            ]);
+
+            if ($response->successful() && $response->json('success') === true) {
+                return [
+                    'success' => true,
+                    'message' => $response->json('message') ?? 'PIN updated in ADMS',
+                    'data' => $response->json('data'),
+                ];
+            }
+
+            Log::warning("ADMS API updateEmployeePin failed for pin {$currentPin}: ".($response->json('message') ?? $response->body()));
+
+            return [
+                'success' => false,
+                'message' => $response->json('message') ?? 'Failed to update PIN in ADMS',
+                'data' => null,
+            ];
+        } catch (\Throwable $e) {
+            Log::error("ADMS API updateEmployeePin exception for pin {$currentPin}: {$e->getMessage()}");
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+            ];
+        }
+    }
+
+    /**
      * Push face recognition attendance transaction log to ADMS API.
      *
      * @return array{success: bool, message: string, data: ?array}

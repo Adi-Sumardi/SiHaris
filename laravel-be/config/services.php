@@ -51,6 +51,31 @@ return [
         'secret' => env('SENDAGOMAIL_SECRET'),
     ],
 
+    // Mekari Qontak Omnichannel - WhatsApp Business Cloud API line used for
+    // OTP login (QontakWhatsAppGateway::sendOtp()). An official WhatsApp
+    // Business line can only message a number that hasn't messaged first via
+    // an approved template, so this needs its own Qontak account, verified
+    // WhatsApp Business number, and an approved "otp_login"-style
+    // Authentication template - these values are NOT interchangeable with
+    // another tenant's Qontak app (channel_integration_id and
+    // otp_template_id are both scoped to one WhatsApp Business number).
+    'qontak' => [
+        'base_url' => env('QONTAK_BASE_URL', 'https://api.mekari.com/qontak/chat/v1'),
+        // Signs every request (Mekari's own HMAC scheme, not a Bearer
+        // token) - see QontakWhatsAppGateway::post(). No access/refresh
+        // token to manage.
+        'client_id' => env('QONTAK_CLIENT_ID'),
+        'client_secret' => env('QONTAK_CLIENT_SECRET'),
+        // GET {base_url}/../../open/v1/integrations?target_channel=wa - the
+        // WhatsApp channel's own id inside this Qontak account, required on
+        // every broadcast send alongside the template id.
+        'channel_integration_id' => env('QONTAK_CHANNEL_INTEGRATION_ID'),
+        // UUID of the approved OTP Authentication template. Body has exactly
+        // one variable (the code itself); the template's own copy-code
+        // button repeats it as a button value.
+        'otp_template_id' => env('QONTAK_OTP_TEMPLATE_ID'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

@@ -8,3 +8,6 @@ Thumbs.db
 
 # Deployment docs excluded from version control by request
 deploy-gajipro-to-vps.pdf
+
+# Contains real API credentials (Qontak, ADMS, etc.) - never commit
+docs/secret.md

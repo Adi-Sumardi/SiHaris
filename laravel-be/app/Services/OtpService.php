@@ -14,7 +14,7 @@ class OtpService
     private const OTP_EXPIRY_SECONDS = 180; // 3 minutes
 
     public function __construct(
-        protected WhatsAppNotificationService $waService
+        protected QontakWhatsAppGateway $waService
     ) {}
 
     /**
@@ -53,8 +53,7 @@ class OtpService
             : $this->maskPhone($login);
 
         if ($type === 'phone') {
-            $message = "Kode verifikasi OTP SiHaris Anda adalah: *{$otpCode}*.\n\nKode ini berlaku selama 3 menit. Jangan bagikan kode ini kepada siapapun demi keamanan akun Anda.";
-            $waResult = $this->waService->sendMessage($login, $message);
+            $waResult = $this->waService->sendOtp($login, $otpCode);
 
             if (! $waResult['success']) {
                 Log::warning("OTP WhatsApp send failed for {$login}: {$waResult['error']}");

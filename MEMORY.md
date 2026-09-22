@@ -624,13 +624,21 @@ Audit ketiga di pola yang sama (setelah Cuti & Izin §32/33 dan Reimbursement §
 - Test: `leave_list_screen_balance_breakdown_test.dart` +2 (kartu total lama sudah tidak ada; grid scale ke 4 jenis termasuk "Cuti Haji" tanpa overflow — test ini yang nemu bug overflow di atas). Full suite Flutter 998 passed.
 - **Rilis**: mobile app **v1.2.8+26**, dibuild & dipublish ke `/download/android`.
 
+---
 
+## 41. "Server ADMS Down 4 Hari" Ternyata NAT Hairpin, Bukan Vendor Down — Plus Migrasi OTP WhatsApp ke Mekari Qontak
 
+- **Migrasi OTP WhatsApp: SendaGo → Mekari Qontak Omnichannel**. Permintaan user: pakai `QontakWhatsAppGateway` yang polanya sudah terbukti jalan di project `appdev/pmb` (folder sibling, bukan SiHaris), karena SendaGo (gateway WhatsApp lama, lihat §37) rawan device gateway-nya disconnect. Qontak = WhatsApp Business Cloud API resmi (bukan device-QR-scan kayak SendaGo) — konsekuensinya **cuma bisa kirim lewat approved Template** (tidak bisa free-text ke nomor yang belum pernah chat duluan, beda total dari SendaGo).
+  - **Fix**: `app/Services/QontakWhatsAppGateway.php` (baru) — HMAC-SHA256 request signing ala Mekari (`Authorization: hmac username="...", ...`, bukan Bearer token), method `sendOtp()` kirim ke `POST {base_url}/broadcasts/whatsapp/direct` pakai template `otp_login`. Nomor HP dinormalisasi ke format internasional `62...` di dalam gateway ini sendiri (beda dari SendaGo yang expect format lokal `0...` — lihat `WhatsAppNotificationService::normalizePhone()`), karena WhatsApp Cloud API mewajibkan format `62...`.
+  - `OtpService` di-switch constructor injection-nya dari `WhatsAppNotificationService` (SendaGo) ke `QontakWhatsAppGateway`, dan cabang kirim-OTP-phone dipanggil langsung dengan kode OTP (bukan lagi bangun string pesan bebas — Qontak tidak butuh itu, isinya dari template).
+  - `WhatsAppNotificationService` (SendaGo) **SENGAJA TIDAK DIHAPUS** dari codebase — dibiarkan ada tapi sudah tidak dipakai di mana pun, sesuai pola persis yang sama di project PMB (disimpan untuk referensi/fallback kalau suatu saat dibutuhkan lagi).
+  - **Kredensial**: `QONTAK_CLIENT_ID`/`QONTAK_CLIENT_SECRET`/`QONTAK_CHANNEL_INTEGRATION_ID`/`QONTAK_OTP_TEMPLATE_ID` di `.env` (lokal & production, sudah diisi) — **satu WhatsApp Business number & satu template yang SAMA dipakai bersama project PMB** (bukan salah — user konfirmasi eksplisit template yang disetujui tidak menyebut nama "PMB YAPI" apa pun jadi aman dipakai lintas-produk). Nilai asli tersimpan di `docs/secret.md` di root repo (**digitignore**, jangan pernah di-commit).
+  - Test: `tests/Feature/Services/QontakWhatsAppGatewayTest.php` (baru, 6 test — kontrak HMAC, normalisasi nomor, credentials-belum-diisi fail gracefully). Diverifikasi end-to-end di production (kirim OTP asli ke nomor user, diterima WhatsApp-nya).
 
-
-
-
-
-
-
-
+- **"Absen fingerprint tidak sinkron 4 hari" ternyata BUKAN server ADMS down — NAT hairpin loopback**. User laporan absen fingerprint tidak masuk berhari-hari (18-22 Sep 2026). Log production penuh `cURL error 28: Failed to connect to adms.alazhar-rm.com port 80 ... Timeout` setiap 5 menit tanpa henti sejak sync sukses terakhir (18 Sep 04:15).
+  - **Diagnosis awal (SALAH, kemudian dikoreksi)**: dicurigai server ADMS vendor down — DNS resolve normal, ping ke `adms.alazhar-rm.com` sukses cepat (~0.5ms, seharusnya jadi kecurigaan langsung karena sedekat itu berarti SATU JARINGAN LOKAL, bukan server jauh), tapi port 80 & 443 sama-sama timeout dari server SiHaris.
+  - **Kunci pembuka**: user share screenshot Postman miliknya sendiri yang BERHASIL hit endpoint sama persis dari jaringan lain. Ini yang membuktikan server ADMS **hidup normal**, cuma tidak bisa diakses SPESIFIK dari server SiHaris.
+  - **Root cause sebenarnya**: `curl https://api.ipify.org`/`icanhazip.com` dari server SiHaris balikin IP publik **persis sama** (`43.225.66.149`) dengan IP yang di-resolve `adms.alazhar-rm.com`. Server ADMS dan server SiHaris satu jaringan lokal yang sama (`172.16.5.0/24`, gateway `172.16.5.1`) — router kantor tidak mendukung **NAT hairpin/loopback** (perangkat di dalam LAN tidak bisa akses IP publik milik router-nya sendiri untuk balik lagi ke perangkat lain di LAN yang sama), makanya trafik dari LUAR jaringan (Postman user) lancar tapi dari SESAMA anggota LAN (server SiHaris) selalu gagal connect.
+  - Server ADMS asli ditemukan via scan ARP-neighbor table (`ip neigh show`) + probe `curl -H "Host: adms.alazhar-rm.com"` ke tiap kandidat IP lokal: ketemu di **`172.16.5.101`**, respons `/api/v1/face/health` normal (`"ADMS sehat"`).
+  - **Fix**: tambah baris `172.16.5.101 adms.alazhar-rm.com` ke `/etc/hosts` server SiHaris (**bukan perubahan kode**, OS-level) — bypass total router/hairpin, resolve langsung ke IP lokal ADMS. Backfill manual `SyncAdmsAttendanceJob` untuk 5 hari (18-22 Sep) berhasil menarik **791 data absensi** yang sebelumnya tidak pernah masuk.
+  - **PENTING untuk masa depan**: kalau server SiHaris pernah di-rebuild/dipindah/di-provision ulang, baris `/etc/hosts` ini HILANG dan bug "ADMS down" ini akan muncul lagi persis sama — cek `/etc/hosts` DULU sebelum menyimpulkan vendor/server ADMS down. IP lokal ADMS: `172.16.5.101`. Tidak perlu lapor ke vendor ADMS sama sekali untuk kasus ini — murni masalah jaringan internal kantor.

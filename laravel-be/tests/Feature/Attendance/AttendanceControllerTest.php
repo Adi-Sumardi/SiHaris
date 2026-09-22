@@ -162,6 +162,101 @@ describe('AttendanceController', function () {
 
             $response->assertOk();
         });
+
+        it('shows employees who have no attendance row at all when filtering by absent status', function () {
+            $today = Carbon::today();
+
+            $presentEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Hadir',
+                'last_name' => 'Terus',
+            ]);
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $presentEmployee->id,
+                'date' => $today,
+                'status' => 'present',
+            ]);
+
+            $absentEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Tidak',
+                'last_name' => 'Hadir',
+            ]);
+
+            $response = $this->get(route('attendances.index', [
+                'date' => $today->format('Y-m-d'),
+                'status' => 'absent',
+            ]));
+
+            $response->assertOk();
+            $response->assertSee('Tidak Hadir');
+            $response->assertDontSee('Hadir Terus');
+        });
+
+        it('excludes employees on approved leave from the absent list', function () {
+            $today = Carbon::today();
+
+            $onLeaveEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Sedang',
+                'last_name' => 'Cuti',
+            ]);
+            \App\Models\LeaveRequest::factory()->approved()->singleDay($today->format('Y-m-d'))->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $onLeaveEmployee->id,
+            ]);
+
+            $alpaEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Tanpa',
+                'last_name' => 'Keterangan',
+            ]);
+
+            $response = $this->get(route('attendances.index', [
+                'date' => $today->format('Y-m-d'),
+                'status' => 'absent',
+            ]));
+
+            $response->assertOk();
+            $response->assertSee('Tanpa Keterangan');
+            $response->assertDontSee('Sedang Cuti');
+        });
+
+        it('shows employees on approved leave when filtering by leave status', function () {
+            $today = Carbon::today();
+
+            $onLeaveEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Sedang',
+                'last_name' => 'Cuti',
+            ]);
+            \App\Models\LeaveRequest::factory()->approved()->singleDay($today->format('Y-m-d'))->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $onLeaveEmployee->id,
+            ]);
+
+            $response = $this->get(route('attendances.index', [
+                'date' => $today->format('Y-m-d'),
+                'status' => 'leave',
+            ]));
+
+            $response->assertOk();
+            $response->assertSee('Sedang Cuti');
+        });
+
+        it('defaults the absent roster diff to today when no date filter is given', function () {
+            $absentEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Tidak',
+                'last_name' => 'HadirHariIni',
+            ]);
+
+            $response = $this->get(route('attendances.index', ['status' => 'absent']));
+
+            $response->assertOk();
+            $response->assertSee('Tidak HadirHariIni');
+        });
     });
 
     describe('create', function () {

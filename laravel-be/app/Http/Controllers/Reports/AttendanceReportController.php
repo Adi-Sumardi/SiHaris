@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\LeaveRequest;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
@@ -95,22 +96,68 @@ class AttendanceReportController extends Controller
 
         $attendances = $query->orderBy('clock_in')->get();
 
-        // Get all active employees for comparison
-        $activeEmployees = Employee::where('company_id', $companyId)
-            ->where('is_active', true)
-            ->count();
+        // Active employees for this date, scoped like the attendance list above
+        $employeesQuery = Employee::where('company_id', $companyId)->where('is_active', true);
+
+        if ($request->filled('department_id')) {
+            $employeesQuery->where('department_id', $request->department_id);
+        }
+
+        $activeEmployees = (clone $employeesQuery)->count();
+
+        // Anyone with an attendance row today counts as present, regardless of the search filter above
+        $presentEmployeeIds = Attendance::where('company_id', $companyId)
+            ->whereDate('date', $date)
+            ->pluck('employee_id');
+
+        $absentEmployeesQuery = (clone $employeesQuery)
+            ->with(['department', 'position'])
+            ->whereNotIn('id', $presentEmployeeIds);
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $absentEmployeesQuery->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
+        $absentEmployees = $absentEmployeesQuery->orderBy('first_name')->get();
+
+        $onLeaveEmployeeIds = LeaveRequest::where('company_id', $companyId)
+            ->where('status', 'approved')
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->pluck('employee_id');
+
+        $onLeaveAbsentees = $absentEmployees->whereIn('id', $onLeaveEmployeeIds)->values();
+        $unexcusedAbsentees = $absentEmployees->whereNotIn('id', $onLeaveEmployeeIds)->values();
 
         $summary = [
             'total_employees' => $activeEmployees,
             'present' => $attendances->where('clock_in_status', 'on_time')->count(),
             'late' => $attendances->whereIn('clock_in_status', ['late', 'very_late'])->count(),
-            'absent' => $activeEmployees - $attendances->count(),
+            'absent' => $absentEmployees->count(),
+            'on_leave' => $onLeaveAbsentees->count(),
+            'unexcused' => $unexcusedAbsentees->count(),
             'attendance_rate' => $activeEmployees > 0 ? round(($attendances->count() / $activeEmployees) * 100, 1) : 0,
         ];
 
         $departments = Department::where('company_id', $companyId)->orderBy('name')->get();
 
-        return view('reports.attendance.daily', compact('attendances', 'summary', 'departments', 'date'));
+        return view('reports.attendance.daily', compact(
+            'attendances',
+            'summary',
+            'departments',
+            'date',
+            'onLeaveAbsentees',
+            'unexcusedAbsentees'
+        ));
     }
 
     public function lateness(Request $request)

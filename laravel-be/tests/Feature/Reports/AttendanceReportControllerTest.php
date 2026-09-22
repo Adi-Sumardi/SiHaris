@@ -5,7 +5,6 @@ use App\Models\Company;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
-use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
@@ -165,6 +164,61 @@ describe('AttendanceReportController', function () {
             ]));
 
             $response->assertStatus(200);
+        });
+
+        it('names employees with no attendance row as unexcused absentees', function () {
+            $today = now()->format('Y-m-d');
+
+            $presentEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Hadir',
+                'last_name' => 'Terus',
+            ]);
+            Attendance::factory()->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $presentEmployee->id,
+                'date' => $today,
+            ]);
+
+            $unexcusedEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Tanpa',
+                'last_name' => 'Keterangan',
+            ]);
+
+            $response = $this->get(route('reports.attendance.daily', ['date' => $today]));
+
+            $response->assertStatus(200);
+            $response->assertViewHas('unexcusedAbsentees', function ($absentees) use ($unexcusedEmployee) {
+                return $absentees->pluck('id')->contains($unexcusedEmployee->id);
+            });
+            $response->assertViewHas('onLeaveAbsentees', function ($absentees) use ($presentEmployee) {
+                return $absentees->pluck('id')->doesntContain($presentEmployee->id);
+            });
+        });
+
+        it('separates employees on approved leave from unexcused absentees', function () {
+            $today = now()->format('Y-m-d');
+
+            $onLeaveEmployee = Employee::factory()->create([
+                'company_id' => $this->company->id,
+                'first_name' => 'Sedang',
+                'last_name' => 'Cuti',
+            ]);
+            \App\Models\LeaveRequest::factory()->approved()->singleDay($today)->create([
+                'company_id' => $this->company->id,
+                'employee_id' => $onLeaveEmployee->id,
+            ]);
+
+            $response = $this->get(route('reports.attendance.daily', ['date' => $today]));
+
+            $response->assertStatus(200);
+            $response->assertViewHas('onLeaveAbsentees', function ($absentees) use ($onLeaveEmployee) {
+                return $absentees->pluck('id')->contains($onLeaveEmployee->id);
+            });
+            $response->assertViewHas('unexcusedAbsentees', function ($absentees) use ($onLeaveEmployee) {
+                return $absentees->pluck('id')->doesntContain($onLeaveEmployee->id);
+            });
         });
     });
 

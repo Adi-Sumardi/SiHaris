@@ -40,7 +40,7 @@
                                 class="input w-full @error('employee_id') border-danger-500 @enderror" required>
                             <option value="">Pilih Karyawan</option>
                             @foreach($employees as $employee)
-                                <option value="{{ $employee->id }}" {{ old('employee_id') == $employee->id ? 'selected' : '' }}>
+                                <option value="{{ $employee->id }}" {{ old('employee_id', request('employee_id')) == $employee->id ? 'selected' : '' }}>
                                     {{ $employee->full_name }} ({{ $employee->employee_id }})
                                 </option>
                             @endforeach
@@ -55,7 +55,7 @@
                         <label for="date" class="block text-sm font-medium text-secondary-700 mb-1">
                             Tanggal <span class="text-danger-500">*</span>
                         </label>
-                        <input type="date" name="date" id="date" value="{{ old('date', date('Y-m-d')) }}"
+                        <input type="date" name="date" id="date" value="{{ old('date', request('date', date('Y-m-d'))) }}"
                                class="input w-full @error('date') border-danger-500 @enderror" required>
                         @error('date')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>
@@ -94,13 +94,14 @@
                             Status
                         </label>
                         <select name="status" id="status" class="input w-full @error('status') border-danger-500 @enderror">
-                            <option value="present" {{ old('status', 'present') === 'present' ? 'selected' : '' }}>Hadir</option>
-                            <option value="absent" {{ old('status') === 'absent' ? 'selected' : '' }}>Tidak Hadir</option>
-                            <option value="late" {{ old('status') === 'late' ? 'selected' : '' }}>Terlambat</option>
-                            <option value="half_day" {{ old('status') === 'half_day' ? 'selected' : '' }}>Setengah Hari</option>
-                            <option value="leave" {{ old('status') === 'leave' ? 'selected' : '' }}>Cuti</option>
-                            <option value="holiday" {{ old('status') === 'holiday' ? 'selected' : '' }}>Libur</option>
-                            <option value="weekend" {{ old('status') === 'weekend' ? 'selected' : '' }}>Akhir Pekan</option>
+                            @php($prefillStatus = old('status', request('status', 'present')))
+                            <option value="present" {{ $prefillStatus === 'present' ? 'selected' : '' }}>Hadir</option>
+                            <option value="absent" {{ $prefillStatus === 'absent' ? 'selected' : '' }}>Tidak Hadir</option>
+                            <option value="late" {{ $prefillStatus === 'late' ? 'selected' : '' }}>Terlambat</option>
+                            <option value="half_day" {{ $prefillStatus === 'half_day' ? 'selected' : '' }}>Setengah Hari</option>
+                            <option value="leave" {{ $prefillStatus === 'leave' ? 'selected' : '' }}>Cuti</option>
+                            <option value="holiday" {{ $prefillStatus === 'holiday' ? 'selected' : '' }}>Libur</option>
+                            <option value="weekend" {{ $prefillStatus === 'weekend' ? 'selected' : '' }}>Akhir Pekan</option>
                         </select>
                         @error('status')
                             <p class="mt-1 text-sm text-danger-600">{{ $message }}</p>

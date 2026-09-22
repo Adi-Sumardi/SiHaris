@@ -119,13 +119,40 @@
             </div>
         </div>
 
-        {{-- Absent (would need employee list comparison) --}}
+        {{-- Absent --}}
         <div class="card">
             <div class="card-header bg-danger-50 border-b border-danger-100">
                 <h3 class="font-semibold text-danger-700">Tidak Hadir ({{ $summary['absent'] }})</h3>
             </div>
-            <div class="card-body max-h-64 overflow-y-auto">
-                <p class="text-secondary-400 text-sm">Data tidak hadir dapat dilihat dari selisih total karyawan dengan total kehadiran.</p>
+            <div class="card-body max-h-64 overflow-y-auto space-y-4">
+                <div>
+                    <p class="text-xs font-semibold text-warning-600 uppercase tracking-wide mb-2">Cuti / Izin ({{ $summary['on_leave'] }})</p>
+                    @forelse($onLeaveAbsentees as $employee)
+                        <div class="flex items-center justify-between py-1.5 border-b border-secondary-100 last:border-0">
+                            <div>
+                                <p class="font-medium text-secondary-900 text-sm">{{ $employee->full_name }}</p>
+                                <p class="text-xs text-secondary-500">{{ $employee->department?->name ?? '-' }}</p>
+                            </div>
+                            <x-badge type="warning">Cuti</x-badge>
+                        </div>
+                    @empty
+                        <p class="text-secondary-400 text-xs">Tidak ada</p>
+                    @endforelse
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-danger-600 uppercase tracking-wide mb-2">Alpa / Tanpa Keterangan ({{ $summary['unexcused'] }})</p>
+                    @forelse($unexcusedAbsentees as $employee)
+                        <div class="flex items-center justify-between py-1.5 border-b border-secondary-100 last:border-0">
+                            <div>
+                                <p class="font-medium text-secondary-900 text-sm">{{ $employee->full_name }}</p>
+                                <p class="text-xs text-secondary-500">{{ $employee->department?->name ?? '-' }}</p>
+                            </div>
+                            <x-badge type="danger">Alpa</x-badge>
+                        </div>
+                    @empty
+                        <p class="text-secondary-400 text-xs">Tidak ada</p>
+                    @endforelse
+                </div>
             </div>
         </div>
     </div>

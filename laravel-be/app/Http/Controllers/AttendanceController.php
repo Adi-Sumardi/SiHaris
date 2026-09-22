@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AttendanceRequest;
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\LeaveRequest;
 use App\Models\WorkSchedule;
 use App\Services\AttendanceReconciliationService;
 use App\Services\GpsValidationService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class AttendanceController extends Controller
@@ -23,6 +25,15 @@ class AttendanceController extends Controller
     public function index(Request $request): View
     {
         $tenant = app('tenant');
+
+        // "Tidak Hadir" and "Cuti" have no Attendance row for employees who never clocked in,
+        // so those two statuses are answered by a roster diff for a single date instead of a plain status filter.
+        if ($request->filled('status') && in_array($request->status, ['absent', 'leave'], true)) {
+            $date = $request->filled('date') ? $request->date : $tenant->today()->format('Y-m-d');
+            $attendances = $this->buildRosterStatusList($tenant, $request, $request->status, $date);
+
+            return view('attendances.index', compact('attendances'));
+        }
 
         $query = Attendance::with(['company', 'employee', 'workSchedule'])
             ->where('company_id', $tenant->id);
@@ -64,6 +75,85 @@ class AttendanceController extends Controller
             ->withQueryString();
 
         return view('attendances.index', compact('attendances'));
+    }
+
+    /**
+     * Build a paginated list of employees matching 'absent' or 'leave' for a single date, combining
+     * any explicit manual Attendance rows for that status with employees who simply have no
+     * attendance record at all (the common case, since rows are only created on a clock event).
+     */
+    private function buildRosterStatusList($tenant, Request $request, string $status, string $date): LengthAwarePaginator
+    {
+        $recordedEmployeeIds = Attendance::where('company_id', $tenant->id)
+            ->whereDate('date', $date)
+            ->pluck('employee_id');
+
+        $onLeaveEmployeeIds = LeaveRequest::where('company_id', $tenant->id)
+            ->where('status', 'approved')
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->pluck('employee_id');
+
+        $employeesQuery = Employee::where('company_id', $tenant->id)
+            ->where('is_active', true)
+            ->whereNotIn('id', $recordedEmployeeIds);
+
+        $employeesQuery = $status === 'leave'
+            ? $employeesQuery->whereIn('id', $onLeaveEmployeeIds)
+            : $employeesQuery->whereNotIn('id', $onLeaveEmployeeIds);
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $employeesQuery->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', COALESCE(last_name, '')) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
+        if ($request->filled('employee_id')) {
+            $employeesQuery->where('id', $request->employee_id);
+        }
+
+        $missingEmployees = $employeesQuery->orderBy('first_name')->get();
+
+        $syntheticAttendances = $missingEmployees->map(function (Employee $employee) use ($tenant, $status, $date) {
+            $attendance = new Attendance([
+                'company_id' => $tenant->id,
+                'employee_id' => $employee->id,
+                'date' => $date,
+                'status' => $status,
+                'working_minutes' => 0,
+            ]);
+            $attendance->setRelation('employee', $employee);
+
+            return $attendance;
+        });
+
+        $explicitAttendances = Attendance::with(['employee', 'workSchedule'])
+            ->where('company_id', $tenant->id)
+            ->whereDate('date', $date)
+            ->where('status', $status)
+            ->when($request->filled('employee_id'), fn ($q) => $q->where('employee_id', $request->employee_id))
+            ->get();
+
+        $items = $explicitAttendances->concat($syntheticAttendances)
+            ->sortBy(fn (Attendance $attendance) => $attendance->employee?->first_name)
+            ->values();
+
+        $perPage = 20;
+        $page = (int) ($request->get('page', 1));
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
     }
 
     public function syncAdmsAttendance(Request $request): RedirectResponse

@@ -35,6 +35,7 @@ use App\Http\Controllers\Import\EmployeeSalaryImportController;
 use App\Http\Controllers\Import\HolidayImportController;
 use App\Http\Controllers\Import\LeaveRequestImportController;
 use App\Http\Controllers\Import\LeaveTypeImportController;
+use App\Http\Controllers\Import\PinImportController;
 use App\Http\Controllers\Import\PositionImportController;
 use App\Http\Controllers\Import\WorkScheduleImportController;
 use App\Http\Controllers\LeaveBalanceController;
@@ -622,6 +623,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('employee-salaries', [EmployeeSalaryImportController::class, 'index'])->name('employee-salaries.index');
         Route::get('employee-salaries/template', [EmployeeSalaryImportController::class, 'template'])->name('employee-salaries.template');
         Route::post('employee-salaries', [EmployeeSalaryImportController::class, 'store'])->name('employee-salaries.store');
+
+        // PIN Import (bulk update + push to ADMS)
+        Route::get('pins', [PinImportController::class, 'index'])->name('pins.index');
+        Route::get('pins/template', [PinImportController::class, 'template'])->name('pins.template');
+        Route::post('pins', [PinImportController::class, 'store'])->name('pins.store');
+        Route::get('pins/status/{importId}', [PinImportController::class, 'status'])->name('pins.status');
     });
 });
 

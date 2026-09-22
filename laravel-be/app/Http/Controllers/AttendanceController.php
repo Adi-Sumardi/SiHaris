@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AttendanceRequest;
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\Holiday;
 use App\Models\LeaveRequest;
 use App\Models\WorkSchedule;
 use App\Services\AttendanceReconciliationService;
@@ -448,127 +449,141 @@ class AttendanceController extends Controller
     {
         $tenant = app('tenant');
 
-        // Determine date range
+        // Determine the month being reported on
         if ($request->filled('month')) {
-            $date = Carbon::parse($request->month);
-            $year = $date->year;
-            $month = $date->month;
+            $monthDate = Carbon::parse($request->month);
         } else {
-            $companyNow = $tenant->now();
-            $year = $companyNow->year;
-            $month = $companyNow->month;
+            $monthDate = $tenant->now();
         }
 
-        // Base query conditions
-        $baseConditions = function ($query) use ($tenant, $request, $year, $month) {
-            $query->where('company_id', $tenant->id)
-                ->forMonth($year, $month);
+        $periodStart = Carbon::create($monthDate->year, $monthDate->month, 1)->startOfDay();
+        $periodEnd = $periodStart->copy()->endOfMonth()->endOfDay();
 
-            if ($request->filled('search')) {
-                $search = trim($request->search);
-                $query->whereHas('employee', function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('employee_id', 'like', "%{$search}%")
-                        ->orWhere('nik', 'like', "%{$search}%")
-                        ->orWhere('pin', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+        // Don't count days that haven't happened yet as "should have attended" when the
+        // selected month is still in progress.
+        $today = $tenant->today()->endOfDay();
+        if ($periodEnd->gt($today)) {
+            $periodEnd = $today->copy();
+        }
+
+        // Roster this report covers: every active employee, not just those who happen to
+        // already have an Attendance row — otherwise anyone absent the whole month simply
+        // never appears.
+        $employeesQuery = Employee::where('company_id', $tenant->id)
+            ->where('is_active', true)
+            ->with(['weeklySchedules.workSchedule', 'workSchedule']);
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $employeesQuery->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%")
+                    ->orWhere('pin', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
+        if ($request->filled('employee_id')) {
+            $employeesQuery->where('id', $request->employee_id);
+        }
+
+        $employees = $employeesQuery->orderBy('first_name')->get();
+
+        $attendancesByEmployee = Attendance::where('company_id', $tenant->id)
+            ->whereBetween('date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+            ->get()
+            ->groupBy('employee_id');
+
+        $leaveRequestsByEmployee = LeaveRequest::where('company_id', $tenant->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $periodEnd)
+            ->where('end_date', '>=', $periodStart)
+            ->get()
+            ->groupBy('employee_id');
+
+        $holidayDates = Holiday::where('company_id', $tenant->id)
+            ->where('is_active', true)
+            ->whereBetween('date', [$periodStart, $periodEnd])
+            ->pluck('date')
+            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+            ->flip();
+
+        $reportData = collect();
+
+        foreach ($employees as $employee) {
+            $attendances = $attendancesByEmployee->get($employee->id, collect());
+
+            $leaveDays = $leaveRequestsByEmployee->get($employee->id, collect())
+                ->sum(function (LeaveRequest $leave) use ($periodStart, $periodEnd) {
+                    $start = Carbon::parse($leave->start_date)->max($periodStart);
+                    $end = Carbon::parse($leave->end_date)->min($periodEnd);
+
+                    return $start->lte($end) ? $start->diffInDays($end) + 1 : 0;
                 });
-            }
 
-            if ($request->filled('employee_id')) {
-                $query->where('employee_id', $request->employee_id);
-            }
+            $workingDays = $this->countWorkingDays($employee, $periodStart, $periodEnd, $holidayDates);
+            $presentDays = $attendances->whereIn('status', ['present', 'late'])->count();
 
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
-            }
-        };
+            $reportData->put($employee->id, [
+                'employee' => $employee,
+                'present' => $presentDays,
+                'late' => $attendances->where('status', 'late')->count(),
+                'absent' => max(0, $workingDays - $presentDays - (int) $leaveDays),
+                'leave' => (int) $leaveDays,
+                'working_hours' => round($attendances->sum('working_minutes') / 60, 1),
+                'overtime_hours' => round($attendances->sum('overtime_minutes') / 60, 1),
+                'late_hours' => round($attendances->sum('late_minutes') / 60, 1),
+            ]);
+        }
 
-        // Optimized: Get summary using database aggregate instead of loading all records
-        $summary = Attendance::where(function ($query) use ($baseConditions) {
-            $baseConditions($query);
-        })
-            ->selectRaw("
-                COUNT(DISTINCT DATE(date)) as total_days,
-                COUNT(DISTINCT employee_id) as total_employees,
-                SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present,
-                SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late,
-                SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
-                SUM(CASE WHEN status = 'leave' THEN 1 ELSE 0 END) as leave_count,
-                SUM(CASE WHEN status = 'half_day' THEN 1 ELSE 0 END) as half_day,
-                COALESCE(SUM(working_minutes), 0) as total_working_minutes,
-                COALESCE(SUM(overtime_minutes), 0) as total_overtime_minutes,
-                COALESCE(SUM(late_minutes), 0) as total_late_minutes
-            ")
-            ->first();
+        if ($request->filled('status') && in_array($request->status, ['present', 'late', 'absent', 'leave'], true)) {
+            $reportData = $reportData->filter(fn (array $row) => $row[$request->status] > 0);
+        }
 
         $summaryData = [
-            'total_days' => (int) ($summary->total_days ?? 0),
-            'total_employees' => (int) ($summary->total_employees ?? 0),
-            'present' => (int) ($summary->present ?? 0),
-            'late' => (int) ($summary->late ?? 0),
-            'absent' => (int) ($summary->absent ?? 0),
-            'leave' => (int) ($summary->leave_count ?? 0),
-            'half_day' => (int) ($summary->half_day ?? 0),
-            'total_working_hours' => round(($summary->total_working_minutes ?? 0) / 60, 1),
-            'total_overtime_hours' => round(($summary->total_overtime_minutes ?? 0) / 60, 1),
-            'total_late_hours' => round(($summary->total_late_minutes ?? 0) / 60, 1),
+            'total_employees' => $reportData->count(),
+            'present' => $reportData->sum('present'),
+            'late' => $reportData->sum('late'),
+            'absent' => $reportData->sum('absent'),
+            'leave' => $reportData->sum('leave'),
+            'total_working_hours' => round($reportData->sum('working_hours'), 1),
+            'total_overtime_hours' => round($reportData->sum('overtime_hours'), 1),
+            'total_late_hours' => round($reportData->sum('late_hours'), 1),
         ];
 
-        // Optimized: Get report data per employee using database aggregate
-        $reportData = Attendance::with('employee')
-            ->where(function ($query) use ($baseConditions) {
-                $baseConditions($query);
-            })
-            ->selectRaw("
-                employee_id,
-                SUM(CASE WHEN status IN ('present', 'late') THEN 1 ELSE 0 END) as present,
-                SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late,
-                SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
-                SUM(CASE WHEN status = 'leave' THEN 1 ELSE 0 END) as leave_count,
-                COALESCE(SUM(working_minutes), 0) as total_working_minutes,
-                COALESCE(SUM(overtime_minutes), 0) as total_overtime_minutes,
-                COALESCE(SUM(late_minutes), 0) as total_late_minutes
-            ")
-            ->groupBy('employee_id')
-            ->get()
-            ->map(function ($row) {
-                return [
-                    'employee' => $row->employee,
-                    'present' => (int) $row->present,
-                    'late' => (int) $row->late,
-                    'absent' => (int) $row->absent,
-                    'leave' => (int) $row->leave_count,
-                    'working_hours' => round($row->total_working_minutes / 60, 1),
-                    'overtime_hours' => round($row->total_overtime_minutes / 60, 1),
-                    'late_hours' => round($row->total_late_minutes / 60, 1),
-                ];
-            })
-            ->keyBy(fn ($item) => $item['employee']->id);
-
-        // Get attendances for detail view (still needed for the table)
-        $attendances = Attendance::with(['employee', 'workSchedule'])
-            ->where(function ($query) use ($baseConditions) {
-                $baseConditions($query);
-            })
-            ->orderBy('date', 'asc')
-            ->orderBy('employee_id')
-            ->paginate(50)
-            ->withQueryString();
-
-        $employees = Employee::where('company_id', $tenant->id)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
-
         return view('attendances.report', [
-            'attendances' => $attendances,
             'summary' => $summaryData,
-            'employees' => $employees,
             'reportData' => $reportData,
         ]);
+    }
+
+    /**
+     * Count the employee's scheduled working days in [start, end], skipping company holidays
+     * and any day their weekly pattern / work schedule marks as a day off.
+     */
+    private function countWorkingDays(Employee $employee, Carbon $start, Carbon $end, \Illuminate\Support\Collection $holidayDates): int
+    {
+        $hasSchedule = (bool) $employee->workSchedule || $employee->hasWeeklySchedulePattern();
+
+        $workingDays = 0;
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            if (! $holidayDates->has($cursor->toDateString())) {
+                $isWorkingDay = $hasSchedule
+                    ? (bool) $employee->resolveScheduleForDate($cursor)
+                    : $cursor->isWeekday();
+
+                if ($isWorkingDay) {
+                    $workingDays++;
+                }
+            }
+            $cursor->addDay();
+        }
+
+        return $workingDays;
     }
 
     public function export(Request $request)

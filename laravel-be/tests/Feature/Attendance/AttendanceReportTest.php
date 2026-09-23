@@ -255,6 +255,56 @@ describe('Attendance Report', function () {
         expect($periodEnd->format('Y-m-d'))->toBe($expectedEnd->format('Y-m-d'));
     });
 
+    it('computes the effective working days baseline excluding weekends and holidays', function () {
+        $targetMonth = Carbon::now()->subMonths(2)->startOfMonth();
+
+        $holidayDate = $targetMonth->copy();
+        while (! $holidayDate->isWeekday()) {
+            $holidayDate->addDay();
+        }
+
+        \App\Models\Holiday::factory()->create([
+            'company_id' => $this->company->id,
+            'date' => $holidayDate->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        $expectedWeekdays = 0;
+        $cursor = $targetMonth->copy();
+        while ($cursor->lte($targetMonth->copy()->endOfMonth())) {
+            if ($cursor->isWeekday()) {
+                $expectedWeekdays++;
+            }
+            $cursor->addDay();
+        }
+
+        $response = $this->get(route('attendances.report', ['month' => $targetMonth->format('Y-m')]));
+
+        $response->assertOk();
+        $summary = $response->viewData('summary');
+        expect($summary['holiday_count'])->toBe(1);
+        expect($summary['effective_working_days'])->toBe($expectedWeekdays - 1);
+    });
+
+    it('exposes each employee\'s own working days in their report row', function () {
+        $targetMonth = Carbon::now()->subMonths(2)->startOfMonth();
+
+        $expectedWorkingDays = 0;
+        $cursor = $targetMonth->copy();
+        while ($cursor->lte($targetMonth->copy()->endOfMonth())) {
+            if ($cursor->isWeekday()) {
+                $expectedWorkingDays++;
+            }
+            $cursor->addDay();
+        }
+
+        $response = $this->get(route('attendances.report', ['month' => $targetMonth->format('Y-m')]));
+
+        $response->assertOk();
+        $reportData = $response->viewData('reportData');
+        expect($reportData->get($this->employee->id)['working_days'])->toBe($expectedWorkingDays);
+    });
+
     it('shows only company attendances in report', function () {
         $myAttendance = Attendance::factory()->create([
             'company_id' => $this->company->id,

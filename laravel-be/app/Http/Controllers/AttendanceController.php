@@ -512,6 +512,19 @@ class AttendanceController extends Controller
             ->map(fn ($date) => Carbon::parse($date)->toDateString())
             ->flip();
 
+        // Baseline effective working days for the period (Mon–Fri minus company holidays),
+        // shown as the "should have attended" denominator in the summary. Individual
+        // employees can still differ (their own row shows their actual working_days) when
+        // they're on a non-standard schedule.
+        $effectiveWorkingDays = 0;
+        $cursor = $periodStart->copy();
+        while ($cursor->lte($periodEnd)) {
+            if ($cursor->isWeekday() && ! $holidayDates->has($cursor->toDateString())) {
+                $effectiveWorkingDays++;
+            }
+            $cursor->addDay();
+        }
+
         $reportData = collect();
 
         foreach ($employees as $employee) {
@@ -530,6 +543,7 @@ class AttendanceController extends Controller
 
             $reportData->put($employee->id, [
                 'employee' => $employee,
+                'working_days' => $workingDays,
                 'present' => $presentDays,
                 'late' => $attendances->where('status', 'late')->count(),
                 'absent' => max(0, $workingDays - $presentDays - (int) $leaveDays),
@@ -546,6 +560,8 @@ class AttendanceController extends Controller
 
         $summaryData = [
             'total_employees' => $reportData->count(),
+            'effective_working_days' => $effectiveWorkingDays,
+            'holiday_count' => $holidayDates->count(),
             'present' => $reportData->sum('present'),
             'late' => $reportData->sum('late'),
             'absent' => $reportData->sum('absent'),

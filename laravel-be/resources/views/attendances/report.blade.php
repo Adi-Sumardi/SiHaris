@@ -95,7 +95,18 @@
             </p>
 
             {{-- Summary Stats --}}
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-3 mb-4">
+                <div class="stat-card">
+                    <p class="stat-card-label">Efektif Hari Kerja</p>
+                    <p class="text-lg font-bold text-secondary-900">{{ $summary['effective_working_days'] }}</p>
+                    <p class="text-[11px] text-secondary-400 mt-0.5">
+                        @if($summary['holiday_count'] > 0)
+                            Senin&ndash;Jumat, sudah dikurangi {{ $summary['holiday_count'] }} hari libur
+                        @else
+                            Senin&ndash;Jumat dalam periode ini
+                        @endif
+                    </p>
+                </div>
                 <div class="stat-card">
                     <p class="stat-card-label">Total Hadir</p>
                     <p class="text-lg font-bold text-success-600">{{ $summary['present'] }}</p>
@@ -138,6 +149,7 @@
                 <x-table>
                     <x-slot name="header">
                         <th>Karyawan</th>
+                        <th class="text-center">Hari Efektif</th>
                         <th class="text-center">Hadir</th>
                         <th class="text-center">Terlambat</th>
                         <th class="text-center">Tidak Hadir</th>
@@ -158,6 +170,9 @@
                                         <p class="text-xs text-secondary-400 font-mono">{{ $data['employee']->employee_id ?? '-' }}</p>
                                     </div>
                                 </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-secondary-700 font-semibold" title="Hari kerja terjadwal karyawan ini, sudah dikurangi hari libur">{{ $data['working_days'] }}</span>
                             </td>
                             <td class="text-center">
                                 <span class="text-success-600 font-semibold">{{ $data['present'] }}</span>
@@ -184,7 +199,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-12">
+                            <td colspan="8" class="text-center py-12">
                                 <div class="flex flex-col items-center">
                                     <svg class="w-12 h-12 text-secondary-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     <p class="text-secondary-500">Tidak ada data kehadiran yang sesuai dengan filter.</p>

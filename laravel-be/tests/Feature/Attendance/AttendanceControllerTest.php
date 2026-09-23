@@ -517,6 +517,24 @@ describe('Clock In/Out', function () {
         $response->assertSessionHas('error');
     });
 
+    it('employee cannot clock out less than 5 minutes after clock in', function () {
+        $this->actingAs($this->employeeUser);
+
+        $attendance = Attendance::factory()->clockedInOnly()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->selfEmployee->id,
+            'date' => $this->company->today(),
+            'clock_in' => $this->company->toUtc($this->company->now()->subMinutes(2)),
+        ]);
+
+        $response = $this->post(route('attendances.clock-out'));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $attendance->refresh();
+        expect($attendance->clock_out)->toBeNull();
+    });
+
     it('marks attendance as late when clocking in after tolerance', function () {
         $this->actingAs($this->employeeUser);
 

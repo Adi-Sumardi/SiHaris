@@ -16,6 +16,13 @@ use OpenApi\Attributes as OA;
 
 class AttendanceController extends Controller
 {
+    /**
+     * A clock-out this soon after clock-in is almost certainly a mis-tap
+     * (the clock-in button turning into a clock-out button and getting hit
+     * twice in a row) rather than a genuine, very short shift.
+     */
+    private const MIN_MINUTES_BEFORE_CLOCK_OUT = 5;
+
     public function __construct(
         protected GpsValidationService $gpsValidationService,
         protected FaceRecognitionService $faceRecognitionService,
@@ -742,6 +749,13 @@ class AttendanceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda sudah melakukan clock out hari ini.',
+            ], 422);
+        }
+
+        if ($attendance->clock_in && $attendance->clock_in->diffInMinutes($company->now()) < self::MIN_MINUTES_BEFORE_CLOCK_OUT) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Clock out tidak bisa dilakukan kurang dari '.self::MIN_MINUTES_BEFORE_CLOCK_OUT.' menit setelah clock in. Jika ini kesalahan, hubungi admin/HR.',
             ], 422);
         }
 

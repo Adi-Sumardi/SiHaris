@@ -18,6 +18,12 @@ use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
+    /**
+     * A clock-out this soon after clock-in is almost certainly a mis-tap
+     * rather than a genuine, very short shift.
+     */
+    private const MIN_MINUTES_BEFORE_CLOCK_OUT = 5;
+
     public function __construct(
         protected GpsValidationService $gpsValidationService,
         protected AttendanceReconciliationService $reconciliationService
@@ -400,6 +406,11 @@ class AttendanceController extends Controller
         if (! $attendance) {
             return redirect()->back()
                 ->with('error', 'Anda belum melakukan clock in.');
+        }
+
+        if ($attendance->clock_in && $attendance->clock_in->diffInMinutes($tenant->now()) < self::MIN_MINUTES_BEFORE_CLOCK_OUT) {
+            return redirect()->back()
+                ->with('error', 'Clock out tidak bisa dilakukan kurang dari '.self::MIN_MINUTES_BEFORE_CLOCK_OUT.' menit setelah clock in. Jika ini kesalahan, hubungi admin/HR.');
         }
 
         $rules = $tenant->enable_gps_validation

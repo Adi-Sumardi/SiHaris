@@ -140,7 +140,7 @@ describe('POST /api/v1/attendance/clock-in', function () {
         $photo = UploadedFile::fake()->image('selfie.jpg');
 
         $response = $this->postJson('/api/v1/attendance/clock-in', [
-                'app_device_id' => 'test-device-001',
+            'app_device_id' => 'test-device-001',
             'latitude' => -6.200000,
             'longitude' => 106.816666,
             'photo' => $photo,
@@ -225,7 +225,7 @@ describe('POST /api/v1/attendance/clock-in', function () {
 
         // Try to clock in from far away location
         $response = $this->postJson('/api/v1/attendance/clock-in', [
-                'app_device_id' => 'test-device-001',
+            'app_device_id' => 'test-device-001',
             'latitude' => -6.300000, // Far from office
             'longitude' => 106.900000,
         ]);
@@ -247,7 +247,7 @@ describe('POST /api/v1/attendance/clock-in', function () {
         $this->travelTo(today()->setTime(9, 30));
 
         $response = $this->postJson('/api/v1/attendance/clock-in', [
-                'app_device_id' => 'test-device-001',
+            'app_device_id' => 'test-device-001',
             'latitude' => -6.200000,
             'longitude' => 106.816666,
         ]);
@@ -340,7 +340,7 @@ describe('POST /api/v1/attendance/clock-out', function () {
         $photo = UploadedFile::fake()->image('selfie.jpg');
 
         $response = $this->postJson('/api/v1/attendance/clock-out', [
-                'app_device_id' => 'test-device-001',
+            'app_device_id' => 'test-device-001',
             'latitude' => -6.200000,
             'longitude' => 106.816666,
             'photo' => $photo,
@@ -373,7 +373,7 @@ describe('POST /api/v1/attendance/clock-out', function () {
         Sanctum::actingAs($this->user);
 
         $response = $this->postJson('/api/v1/attendance/clock-out', [
-                'app_device_id' => 'test-device-001',
+            'app_device_id' => 'test-device-001',
             'latitude' => -6.200000,
             'longitude' => 106.816666,
         ]);
@@ -398,7 +398,7 @@ describe('POST /api/v1/attendance/clock-out', function () {
         ]);
 
         $response = $this->postJson('/api/v1/attendance/clock-out', [
-                'app_device_id' => 'test-device-001',
+            'app_device_id' => 'test-device-001',
             'latitude' => -6.200000,
             'longitude' => 106.816666,
         ]);
@@ -408,6 +408,53 @@ describe('POST /api/v1/attendance/clock-out', function () {
                 'success' => false,
                 'message' => 'Anda sudah melakukan clock out hari ini.',
             ]);
+    });
+
+    it('rejects a clock out submitted less than 5 minutes after clock in', function () {
+        Sanctum::actingAs($this->user);
+
+        Attendance::factory()->clockedInOnly()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'date' => today(),
+            'clock_in' => now()->subMinutes(2),
+            'status' => 'present',
+        ]);
+
+        $response = $this->postJson('/api/v1/attendance/clock-out', [
+            'app_device_id' => 'test-device-001',
+            'latitude' => -6.200000,
+            'longitude' => 106.816666,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Clock out tidak bisa dilakukan kurang dari 5 menit setelah clock in. Jika ini kesalahan, hubungi admin/HR.',
+            ]);
+
+        expect(Attendance::first()->clock_out)->toBeNull();
+    });
+
+    it('allows a clock out at least 5 minutes after clock in', function () {
+        Sanctum::actingAs($this->user);
+
+        Attendance::factory()->clockedInOnly()->create([
+            'company_id' => $this->company->id,
+            'employee_id' => $this->employee->id,
+            'date' => today(),
+            'clock_in' => now()->subMinutes(5),
+            'status' => 'present',
+        ]);
+
+        $response = $this->postJson('/api/v1/attendance/clock-out', [
+            'app_device_id' => 'test-device-001',
+            'latitude' => -6.200000,
+            'longitude' => 106.816666,
+        ]);
+
+        $response->assertOk();
+        expect($response->json('success'))->toBeTrue();
     });
 });
 

@@ -35,7 +35,7 @@
 
         {{-- Sidebar - Light Theme with subtle gradient --}}
         <aside :class="[sidebarCollapsed ? 'lg:w-20' : 'lg:w-64', sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
-               class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-slate-50 via-white to-slate-50 border-r border-slate-200/80 transform transition-all duration-300 ease-in-out lg:static lg:inset-auto lg:translate-x-0 flex flex-col shadow-lg shadow-slate-200/50">
+               class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-slate-50 via-white to-slate-50 border-r border-slate-200/80 transform transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:inset-y-auto lg:h-screen lg:self-start lg:translate-x-0 flex flex-col shadow-lg shadow-slate-200/50">
 
             {{-- Logo --}}
             <div class="h-16 flex items-center justify-between px-4 border-b border-slate-100">

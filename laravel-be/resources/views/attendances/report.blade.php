@@ -90,6 +90,10 @@
 
         {{-- Dynamic Content Area --}}
         <div id="attendance-report-content">
+            <p class="text-xs text-secondary-500 mb-3">
+                Periode: <span class="font-medium text-secondary-700">{{ $periodStart->translatedFormat('d F Y') }} &ndash; {{ $periodEnd->translatedFormat('d F Y') }}</span>
+            </p>
+
             {{-- Summary Stats --}}
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
                 <div class="stat-card">

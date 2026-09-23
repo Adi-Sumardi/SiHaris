@@ -18,8 +18,12 @@ class AttendanceReportController extends Controller
         $companyId = $company->id;
         $companyNow = $company->now();
 
-        $startDate = $request->get('start_date', $companyNow->copy()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->get('end_date', $companyNow->copy()->endOfMonth()->format('Y-m-d'));
+        // Default to the payroll cutoff period (e.g. 21st–20th) rather than a plain
+        // calendar month, unless the user picked an explicit range.
+        [$defaultStart, $defaultEnd] = $company->attendancePeriodFor($companyNow);
+
+        $startDate = $request->get('start_date', $defaultStart->format('Y-m-d'));
+        $endDate = $request->get('end_date', $defaultEnd->format('Y-m-d'));
 
         $query = Attendance::with(['employee.department'])
             ->where('company_id', $companyId)
@@ -166,8 +170,10 @@ class AttendanceReportController extends Controller
         $companyId = $company->id;
         $companyNow = $company->now();
 
-        $startDate = $request->get('start_date', $companyNow->copy()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->get('end_date', $companyNow->copy()->endOfMonth()->format('Y-m-d'));
+        [$defaultStart, $defaultEnd] = $company->attendancePeriodFor($companyNow);
+
+        $startDate = $request->get('start_date', $defaultStart->format('Y-m-d'));
+        $endDate = $request->get('end_date', $defaultEnd->format('Y-m-d'));
 
         $query = Attendance::with(['employee.department'])
             ->where('company_id', $companyId)
@@ -224,8 +230,10 @@ class AttendanceReportController extends Controller
         $companyNow = $company->now();
         $format = $request->get('format', 'excel');
 
-        $startDate = $request->get('start_date', $companyNow->copy()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->get('end_date', $companyNow->copy()->endOfMonth()->format('Y-m-d'));
+        [$defaultStart, $defaultEnd] = $company->attendancePeriodFor($companyNow);
+
+        $startDate = $request->get('start_date', $defaultStart->format('Y-m-d'));
+        $endDate = $request->get('end_date', $defaultEnd->format('Y-m-d'));
 
         $query = Attendance::with(['employee.department'])
             ->where('company_id', $companyId)

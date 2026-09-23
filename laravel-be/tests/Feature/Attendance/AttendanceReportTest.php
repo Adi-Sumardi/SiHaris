@@ -236,6 +236,25 @@ describe('Attendance Report', function () {
         $response->assertDontSee('Hadir Semua');
     });
 
+    it('uses the company payroll cutoff period instead of a calendar month when configured', function () {
+        $this->company->update(['attendance_recap_day_of_month' => 21]);
+
+        // A month comfortably in the past so the "don't count future days" clip never kicks in.
+        $targetMonth = Carbon::now()->subMonths(2)->startOfMonth();
+
+        $response = $this->get(route('attendances.report', ['month' => $targetMonth->format('Y-m')]));
+
+        $response->assertOk();
+        $periodStart = $response->viewData('periodStart');
+        $periodEnd = $response->viewData('periodEnd');
+
+        $expectedStart = $targetMonth->copy()->subMonthNoOverflow()->setDay(21);
+        $expectedEnd = $targetMonth->copy()->setDay(20);
+
+        expect($periodStart->format('Y-m-d'))->toBe($expectedStart->format('Y-m-d'));
+        expect($periodEnd->format('Y-m-d'))->toBe($expectedEnd->format('Y-m-d'));
+    });
+
     it('shows only company attendances in report', function () {
         $myAttendance = Attendance::factory()->create([
             'company_id' => $this->company->id,

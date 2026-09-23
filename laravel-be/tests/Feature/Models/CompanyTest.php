@@ -139,4 +139,34 @@ describe('Company Model', function () {
             ->and($company->settings['currency'])->toBe('IDR');
     });
 
+    describe('attendancePeriodFor', function () {
+        it('falls back to a plain calendar month when no cutoff day is configured', function () {
+            $company = Company::factory()->create(['attendance_recap_day_of_month' => 1]);
+
+            [$start, $end] = $company->attendancePeriodFor(\Carbon\Carbon::create(2026, 9, 15));
+
+            expect($start->format('Y-m-d'))->toBe('2026-09-01')
+                ->and($end->format('Y-m-d'))->toBe('2026-09-30');
+        });
+
+        it('runs from the cutoff day of the previous month through the day before it this month', function () {
+            $company = Company::factory()->create(['attendance_recap_day_of_month' => 21]);
+
+            [$start, $end] = $company->attendancePeriodFor(\Carbon\Carbon::create(2026, 9, 15));
+
+            expect($start->format('Y-m-d'))->toBe('2026-08-21')
+                ->and($end->format('Y-m-d'))->toBe('2026-09-20');
+        });
+
+        it('clamps the cutoff day when the previous month is shorter', function () {
+            $company = Company::factory()->create(['attendance_recap_day_of_month' => 30]);
+
+            // February has no 30th, so the start clamps to the last day of February.
+            [$start, $end] = $company->attendancePeriodFor(\Carbon\Carbon::create(2026, 3, 5));
+
+            expect($start->format('Y-m-d'))->toBe('2026-02-28')
+                ->and($end->format('Y-m-d'))->toBe('2026-03-29');
+        });
+    });
+
 });

@@ -207,6 +207,35 @@ class Company extends Model
     }
 
     /**
+     * Resolve the attendance/payroll period for a given reference month, using
+     * `attendance_recap_day_of_month` as the cutoff day (e.g. 21 → period runs
+     * from the 21st of the previous month through the 20th of the reference month).
+     * A cutoff day of 1 or less falls back to a plain calendar month.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    public function attendancePeriodFor(Carbon $referenceMonth): array
+    {
+        $cutoffDay = (int) ($this->attendance_recap_day_of_month ?? 1);
+
+        if ($cutoffDay <= 1) {
+            return [
+                $referenceMonth->copy()->startOfMonth()->startOfDay(),
+                $referenceMonth->copy()->endOfMonth()->endOfDay(),
+            ];
+        }
+
+        $previousMonth = $referenceMonth->copy()->subMonthNoOverflow();
+        $startDay = min($cutoffDay, $previousMonth->daysInMonth);
+        $start = Carbon::create($previousMonth->year, $previousMonth->month, $startDay, 0, 0, 0, $referenceMonth->timezone)->startOfDay();
+
+        $endDay = min($cutoffDay - 1, $referenceMonth->daysInMonth);
+        $end = Carbon::create($referenceMonth->year, $referenceMonth->month, $endDay, 0, 0, 0, $referenceMonth->timezone)->endOfDay();
+
+        return [$start, $end];
+    }
+
+    /**
      * Get timezone offset string (e.g., "+07:00")
      */
     public function getTimezoneOffsetAttribute(): string

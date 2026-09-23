@@ -122,6 +122,32 @@ describe('AttendanceReportController', function () {
             expect($attendances)->toHaveCount(1);
             expect($attendances->first()->employee_id)->toBe($emp1->id);
         });
+
+        it('defaults to the company payroll cutoff period instead of a calendar month', function () {
+            $this->company->update(['attendance_recap_day_of_month' => 21]);
+            $companyNow = $this->company->now();
+
+            $response = $this->get(route('reports.attendance'));
+
+            $response->assertStatus(200);
+            [$expectedStart, $expectedEnd] = $this->company->attendancePeriodFor($companyNow);
+
+            expect($response->viewData('startDate'))->toBe($expectedStart->format('Y-m-d'));
+            expect($response->viewData('endDate'))->toBe($expectedEnd->format('Y-m-d'));
+        });
+
+        it('still honors an explicit date range over the payroll cutoff default', function () {
+            $this->company->update(['attendance_recap_day_of_month' => 21]);
+
+            $response = $this->get(route('reports.attendance', [
+                'start_date' => '2026-01-05',
+                'end_date' => '2026-01-10',
+            ]));
+
+            $response->assertStatus(200);
+            expect($response->viewData('startDate'))->toBe('2026-01-05');
+            expect($response->viewData('endDate'))->toBe('2026-01-10');
+        });
     });
 
     describe('daily', function () {

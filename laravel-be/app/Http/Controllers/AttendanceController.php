@@ -456,11 +456,12 @@ class AttendanceController extends Controller
             $monthDate = $tenant->now();
         }
 
-        $periodStart = Carbon::create($monthDate->year, $monthDate->month, 1)->startOfDay();
-        $periodEnd = $periodStart->copy()->endOfMonth()->endOfDay();
+        // Payroll cutoff period (e.g. the 21st of the previous month through the 20th of
+        // this one), not a plain calendar month — see Company::attendancePeriodFor().
+        [$periodStart, $periodEnd] = $tenant->attendancePeriodFor($monthDate);
 
         // Don't count days that haven't happened yet as "should have attended" when the
-        // selected month is still in progress.
+        // selected period is still in progress.
         $today = $tenant->today()->endOfDay();
         if ($periodEnd->gt($today)) {
             $periodEnd = $today->copy();
@@ -557,6 +558,8 @@ class AttendanceController extends Controller
         return view('attendances.report', [
             'summary' => $summaryData,
             'reportData' => $reportData,
+            'periodStart' => $periodStart,
+            'periodEnd' => $periodEnd,
         ]);
     }
 
